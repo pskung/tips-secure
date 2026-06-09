@@ -1,3 +1,6 @@
+<svelte:head>
+  <title>Admin {theme.vtuberName}| Tips</title>
+</svelte:head>
 <script lang="ts">
   import theme from '$lib/config/theme.json';
 
