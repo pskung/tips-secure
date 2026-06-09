@@ -52,7 +52,6 @@
       }
     }
 
-    // 🛡️ [แก้ไข Finding #5] สุ่มลายพิมพ์นิ้วมือประจำตัวไคลเอนต์ด้วยความปลอดภัยระดับการเข้ารหัสข้อมูลที่มั่นคง (CSPRNG)
     const array = new Uint8Array(8);
     window.crypto.getRandomValues(array);
     const clientFp = 'fp_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -119,43 +118,67 @@
 </script>
 
 <main 
-  class="flex min-h-screen flex-col items-center justify-center p-6 bg-cover bg-center bg-no-repeat relative"
-  style="background-image: {theme.bannerUrl ? `url(${theme.bannerUrl})` : 'none'}; background-color: #0f172a;"
+  class="flex min-h-screen flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative transition-all duration-700"
+  style="background-image: {theme.bannerUrl ? `url(${theme.bannerUrl})` : 'none'}; background-color: #0b0f19;"
 >
-  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm -z-10"></div>
-  <div class="w-full max-w-md p-8 space-y-6 bg-slate-900/90 rounded-2xl shadow-2xl border border-slate-700/50 backdrop-blur-md text-white">
+  <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-[6px] -z-10"></div>
+  
+  <!-- 🌸 แสงเรืองระยิบระยับแบบคู่สีไล่เฉดตามสตรีมเมอร์กำหนด -->
+  <div class="absolute w-[25rem] h-[25rem] rounded-full blur-[110px] top-12 left-12 -z-10 animate-pulse" style="background-color: {theme.themeColor}1a;"></div>
+  <div class="absolute w-[20rem] h-[20rem] rounded-full blur-[90px] bottom-12 right-12 -z-10 animate-pulse" style="background-color: {theme.themeColorEnd || theme.themeColor}1a; animation-delay: 2s;"></div>
+
+  <div class="w-full max-w-lg p-6 md:p-8 space-y-8 bg-slate-900/60 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-800/80 backdrop-blur-xl text-white transition-all duration-300 hover:border-slate-700/60">
     
-    <div class="flex flex-col items-center space-y-3">
-      <img 
-        src={sanitizeUrl(theme.avatarUrl) || 'https://placehold.co/150'} 
-        alt="รูปภาพประจำช่องสตรีมของ {theme.vtuberName}" 
-        class="w-24 h-24 rounded-full border-4 object-cover shadow-lg" 
-        style="border-color: {theme.themeColor};" 
-      />
-      <h1 class="text-2xl font-bold text-center" style="color: {theme.themeColor};">{theme.vtuberName}</h1>
-      <p class="text-sm text-slate-300 text-center px-4">{theme.welcomeText}</p>
+    <div class="flex flex-col items-center space-y-4 text-center">
+      <div class="relative group">
+        <div class="absolute -inset-1 rounded-full opacity-60 blur-md transition duration-500 group-hover:opacity-100" style="background: linear-gradient(90deg, {theme.themeColor}, {theme.themeColorEnd || theme.themeColor});"></div>
+        <img 
+          src={sanitizeUrl(theme.avatarUrl) || 'https://placehold.co/150'} 
+          alt="รูปภาพประจำช่องสตรีมของ {theme.vtuberName}" 
+          class="relative w-28 h-28 rounded-full border-4 border-slate-900 object-cover shadow-2xl transition duration-500 group-hover:scale-105" 
+        />
+      </div>
+      <div class="space-y-1">
+        <!-- ไล่เฉดสีที่หัวข้อ VTuber Name -->
+        <h1 class="text-3xl font-extrabold tracking-wide" style="background: linear-gradient(135deg, {theme.themeColor}, {theme.themeColorEnd || theme.themeColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">{theme.vtuberName}</h1>
+        <p class="text-sm font-medium text-slate-300 px-4 leading-relaxed max-w-sm">{theme.welcomeText}</p>
+      </div>
     </div>
 
-    <form onsubmit={handleDonate} class="space-y-4">
+    <form onsubmit={handleDonate} class="space-y-5">
       <div style="position: absolute; left: -5000px;" aria-hidden="true">
         <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-1" for="nickname">ชื่อเล่นของคุณ (Nickname)</label>
-        <input id="nickname" type="text" required class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg text-white" bind:value={name} />
+      <div class="space-y-1.5">
+        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="nickname">ชื่อเล่นของคุณ (Nickname)</label>
+        <div class="relative group">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </span>
+          <input 
+            id="nickname" 
+            type="text" 
+            required 
+            placeholder="เช่น โอนเนอร์สุดน่ารัก"
+            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+            style="--tw-ring-color: {theme.themeColor};"
+            bind:value={name} 
+          />
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-2" for="preset-btn">ปุ่มยอดเงินสนับสนุนด่วน 💸</label>
+      <!-- 💸 ปุ่มตัวเลือกยอดเงินด่วนจำกัดไว้ที่ 4 ปุ่มพอดีกับสัดส่วนช่องกรอกพอดี -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="preset-btn">เลือกยอดเงินสนับสนุนด่วน 🌸</label>
         <div class="grid grid-cols-4 gap-2">
-          {#each theme.presetAmounts as amt}
-            <!-- 🛡️ [แก้ไข Finding #5] ยกระดับความเข้ากันของผู้พิการตามมาตรฐาน WCAG 2.1 ด้วยป้าย ARIA อธิบายวัตถุประสงค์การคลิกชัดเจน -->
+          {#each theme.presetAmounts.slice(0, 4) as amt}
             <button 
               type="button" 
               onclick={() => amount = String(amt)} 
               aria-label="เลือกยอดเงินสนับสนุนด่วนจำนวน {amt} บาท" 
-              class="p-2 text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 cursor-pointer"
+              class="py-2.5 px-1 text-sm font-bold bg-slate-950/60 hover:bg-slate-950 hover:scale-105 border rounded-xl text-slate-200 cursor-pointer tracking-wide transition-all duration-200"
+              style="border-color: {amount === String(amt) ? theme.themeColor : '#1e293b'}; color: {amount === String(amt) ? theme.themeColor : '#e2e8f0'};"
             >
               {amt}฿
             </button>
@@ -163,32 +186,69 @@
         </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-1" for="custom-amount">ระบุจำนวนเงินเอง (บาท)</label>
-        <input id="custom-amount" type="number" required min="10" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg text-white" bind:value={amount} />
+      <div class="space-y-1.5">
+        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="custom-amount">ระบุจำนวนเงินเอง (บาท)</label>
+        <div class="relative group">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </span>
+          <input 
+            id="custom-amount" 
+            type="number" 
+            required 
+            min="10" 
+            placeholder="ขั้นต่ำ 10 บาทขึ้นไปนะคะ"
+            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 font-bold tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+            style="--tw-ring-color: {theme.themeColor};"
+            bind:value={amount} 
+          />
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium mb-1" for="donor-msg">ข้อความสนับสนุน (ส่งอวยพรขึ้นจอ)</label>
-        <textarea id="donor-msg" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg text-white" rows="2" bind:value={message}></textarea>
+      <div class="space-y-1.5">
+        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="donor-msg">ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)</label>
+        <div class="relative group">
+          <span class="absolute top-3.5 left-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          </span>
+          <textarea 
+            id="donor-msg" 
+            placeholder="เขียนข้อความให้กำลังใจสตรีมเมอร์ได้ที่นี่เลยนะคะ..."
+            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+            rows="3" 
+            style="--tw-ring-color: {theme.themeColor};"
+            bind:value={message}
+          ></textarea>
+        </div>
       </div>
 
+      <!-- 💖 ปุ่มส่งเงินโดเนทเปลี่ยนเป็น Gradient ไหลลื่นจากสีเริ่มต้นหาสีปลายทาง -->
       <button
         type="submit"
         disabled={loading || powLoading || cooldownRemaining > 0}
         aria-live="polite"
         aria-busy={loading || powLoading}
-        class="w-full p-3 text-white font-bold rounded-lg cursor-pointer transition-colors"
-        style="background-color: {cooldownRemaining > 0 ? '#4b5563' : theme.themeColor};"
+        class="w-full py-4 text-base font-extrabold rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed text-white tracking-wider uppercase"
+        style="background: {cooldownRemaining > 0 ? '#4b5563' : `linear-gradient(135deg, ${theme.themeColor}, ${theme.themeColorEnd || theme.themeColor})`}; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);"
       >
         {#if cooldownRemaining > 0}
-          กรุณารออีก {cooldownRemaining} วินาที ⏳
+          <span class="flex items-center justify-center gap-2">
+            กรุณารออีก {cooldownRemaining} วินาทีนะคะ ⏳
+          </span>
         {:else if powLoading}
-          ระบบกำลังเตรียมช่องทางเชื่อมโยงที่ปลอดภัย...
+          <span class="flex items-center justify-center gap-2">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            กำลังเชื่อมโยงเครือข่ายความปลอดภัย...
+          </span>
         {:else if loading}
-          กำลังขอคิวอาร์ชำระเงิน...
+          <span class="flex items-center justify-center gap-2">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            กำลังขอคิวอาร์พร้อมเพย์รับเงิน...
+          </span>
         {:else}
-          โดเนทสนับสนุน 💖
+          <span class="flex items-center justify-center gap-1.5">
+            โอนเงินสนับสนุน 💖
+          </span>
         {/if}
       </button>
     </form>
