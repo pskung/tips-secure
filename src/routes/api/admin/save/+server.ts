@@ -4,7 +4,7 @@ import { safeLog } from '$lib/utils/logger';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
 
-// 🛡️ [แก้ไข Finding #1] หน่วยจำกัดความถี่คำขอทดสอบรหัสผ่านผู้ดูแลระบบ สกัดกั้นพฤติกรรมบุกรุกสวมสิทธิ์แผงแอดมินช่อง
+// 🛡️ หน่วยจำกัดความถี่คำขอทดสอบรหัสผ่านผู้ดูแลระบบ สกัดกั้นพฤทีบุกรุกสวมสิทธิ์แผงแอดมินช่อง
 const adminIpCache = new Map<string, number>();
 
 export const POST: RequestHandler = async ({ request, getClientAddress, url }) => {
@@ -19,14 +19,14 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     }
   }
 
-  // 🛡️ [แก้ไข Finding #1] บังคับหน่วงจำกัดการส่งลองพาสเวิร์ดผิดรัว ๆ ให้อั้นไว้ที่ 10 วินาทีต่อครั้ง (Admin Throttling System)
+  // บังคับหน่วงจำกัดการส่งลองพาสเวิร์ดผิดรัว ๆ ให้อั้นไว้ที่ 10 วินาทีต่อครั้ง
   const lastAttempt = adminIpCache.get(clientIp);
   if (lastAttempt && (now - lastAttempt < 10000)) {
     return json({ error: 'Too many admin attempts. Please wait 10 seconds before retrying.' }, { status: 429 });
   }
   adminIpCache.set(clientIp, now);
 
-  // 🛡️ [แก้ไข Finding #2] คัดกรองปฏิเสธความสอดคล้องข้ามโดเมนอย่างสมบูรณ์ (Strict Anti-CSRF on Admin Configuration API)
+  // คัดกรองปฏิเสธความสอดคล้องข้ามโดเมนอย่างสมบูรณ์ ป้องกันการส่งสัญญาน CSRF ปลอมแปลงมาแก้หน้าเว็บ
   const origin = request.headers.get('origin');
   const host = request.headers.get('host') || url.host;
   const protocol = request.headers.get('x-forwarded-proto') || url.protocol;
@@ -45,7 +45,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    const { vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts } = config;
+    // 🛡️ [แก้ไขจุดบกพร่อง] เพิ่มการดักรับและประมวลผลตัวแปรสีคู่ปลายทาง (themeColorEnd) เพื่อป้องกันไม่ให้ข้อมูลหาย
+    const { vtuberName, avatarUrl, bannerUrl, themeColor, themeColorEnd, welcomeText, presetAmounts } = config;
 
     const urlPattern = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
     if (avatarUrl && !urlPattern.test(avatarUrl)) {
@@ -77,8 +78,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       sha = fileData.sha;
     }
 
+    // 🛡️ [แก้ไขจุดบกพร่อง] จัดเขียนโครงสร้างคู่สีเริ่มต้นคู่สีปลายทางลงสู่ไฟล์ข้อมูล GitHub โดยตรง
     const updatedContent = Buffer.from(JSON.stringify({
-      vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts
+      vtuberName, avatarUrl, bannerUrl, themeColor, themeColorEnd, welcomeText, presetAmounts
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
