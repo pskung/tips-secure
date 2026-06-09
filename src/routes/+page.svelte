@@ -179,7 +179,6 @@
             <button 
               type="button" 
               onclick={() => amount = String(amt)} 
-              aria-label="เลือกยอดเงินสนับสนุนด่วนจำนวน {amt} บาท" 
               class="py-2.5 px-1 text-sm font-bold bg-slate-950/60 hover:bg-slate-950 hover:scale-105 border rounded-xl text-slate-200 cursor-pointer tracking-wide transition-all duration-200"
               style="border-color: {amount === String(amt) ? theme.themeColor : '#1e293b'}; color: {amount === String(amt) ? theme.themeColor : '#e2e8f0'};"
             >
