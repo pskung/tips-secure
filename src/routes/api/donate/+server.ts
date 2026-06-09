@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
   }
   if (usedNonces.size > 3000) {
     const cutoff = now;
-    for (const [key, val] as [string, number] of usedNonces.entries()) {
+    for (const [key, val] of usedNonces.entries()) {
       if (val < cutoff) usedNonces.delete(key);
     }
   }
