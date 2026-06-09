@@ -23,8 +23,6 @@ function verifyMicroPoW(token: string, nonce: string, difficulty: number): boole
 export const POST: RequestHandler = async ({ request, cookies, url, getClientAddress }) => {
   const now = Date.now();
   
-  // 🛡️ [แก้ไข Finding #4] ย้ายการล้างตัวแปรประวัติหน่วยความจำขึ้นมาประมวลผลก่อนด่านตรวจสอบข้อกำหนด (Early Pruning)
-  // เพื่อสกัดกั้นการก่อกวนแบบปล่อยคำขอเสียเข้ามาสะสมขยะทำลายหน่วยความจำเซิร์ฟเวอร์ (Anti-OOM Exhaustion Protection)
   if (ipCache.size > 1500) {
     const cutoff = now - 60000;
     for (const [key, val] of ipCache.entries()) {
@@ -39,7 +37,6 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
   }
 
   try {
-    // 🛡️ [แก้ไข Finding #6] ป้องกันการยิงสวมสิทธิ์ประเภท CSRF บนคำขอแบบส่งดิบ JSON POST ด้วยระบบเช็กโดเมนต้นทาง (Origin)
     const origin = request.headers.get('origin');
     const host = request.headers.get('host') || url.host;
     const protocol = request.headers.get('x-forwarded-proto') || url.protocol;
@@ -58,18 +55,15 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
 
     const clientIp = getClientAddress() || '127.0.0.1';
 
-    // 🛡️ [แก้ไข Finding #3] ป้องกันสิทธิ์ข้อมูลส่วนบุคคล (PII) ภายใต้เกณฑ์ PDPA และ GDPR อย่างเคร่งครัด
-    // โดยใช้ระบบเข้ารหัสไอพีรวมเกลือ (HMAC SHA-256 IP Anonymization) ทำให้ข้อมูลในหน่วยความจำไม่ระบุตัวตนจริง
-    const salt = env.XENDIT_SECRET_KEY || 'dynamic-anonymization-salt-factor';
+    // 🛡️ ผนวกใช้คีย์ลับสำรองที่ตรงกัน เพื่อแก้ปัญหากรณีไม่มี Xendit Secret Key
+    const salt = env.XENDIT_SECRET_KEY || 'default-cryptographic-handshake-signing-salt';
     const hashedIp = crypto.createHmac('sha256', salt).update(clientIp).digest('hex');
 
-    // ตรวจจับบ็อทอัตโนมัติด้วยกับดัก Honeypot
     if (email_confirm) {
       safeLog('Spam Bot Detected: Invisible honeypot trap triggered.', 'WARN', { email_confirm });
       return json({ error: 'Operation rejected' }, { status: 400 });
     }
 
-    // ตรวจจับความเร็วในการพิมพ์กรอกฟอร์มประวัติผู้โดเนท
     if (render_time && (now - Number(render_time) < 1500)) {
       safeLog('Spam Bot Detected: Trigger speed abnormal.', 'WARN');
       return json({ error: 'Operation rate limit exceeded' }, { status: 400 });
@@ -91,40 +85,35 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
       return json({ error: 'Challenge session signature expired' }, { status: 400 });
     }
 
-    // ตรวจทานลายเซ็นเพื่อรับรองความเป็นเจ้าของของเซิร์ฟเวอร์
+    // 🛡️ ตรวจความถูกต้องของสิทธิ์ตั๋ว (ตอนนี้รองรับ fallback มั่นคงสมบูรณ์แล้วค่ะ)
     const expectedSignature = crypto.createHmac('sha256', salt).update(`${fingerprint}.${timestampStr}`).digest('hex');
     if (!timingSafeCompare(incomingSignature, expectedSignature)) {
       safeLog('Security Hack Attempt: Token signature invalid.', 'ERROR');
       return json({ error: 'Handshake token validation failed' }, { status: 400 });
     }
 
-    // พิสูจน์ผลความถูกต้องเชิงคณิตศาสตร์ของสมการ PoW
     const isPoWValid = verifyMicroPoW(token, client_nonce, 3);
     if (!isPoWValid) {
       safeLog('Security Hack Attempt: Mathematical challenge failure.', 'ERROR');
       return json({ error: 'Challenge verification failed' }, { status: 400 });
     }
 
-    // ป้องกันการแฝงรันสคริปต์ยิงรัวซ้ำซ้อน (Anti-Replay Protection)
     const nonceKey = `${fingerprint}_${client_nonce}`;
     if (usedNonces.has(nonceKey)) {
       return json({ error: 'Challenge signature already consumed' }, { status: 400 });
     }
     usedNonces.set(nonceKey, now + 5 * 60 * 1000);
 
-    // เช็กสถานะคุ้กกี้ Cooldown ของบราวเซอร์ผู้โอนเงินชั่วคราว
     if (cookies.get('cooldown_active') === 'true') {
       return json({ error: 'Rate limit exceeded: Cooldown dynamic signature is currently active' }, { status: 429 });
     }
 
-    // เช็กสถานะสเปมจากผลแฮชไอพีผู้ส่ง
     const lastRequestTime = ipCache.get(hashedIp);
     if (lastRequestTime && (now - lastRequestTime < 60000)) {
       return json({ error: 'IP address rate limit exceeded' }, { status: 429 });
     }
     ipCache.set(hashedIp, now);
 
-    // ตรวจตัวอักษรนิคเนมและสัดส่วนข้อความ
     if (!name || typeof name !== 'string' || !/^[a-zA-Z0-9\u0e00-\u0e7f\s._-]+$/.test(name) || name.length < 2 || name.length > 25) {
       return json({ error: 'Validation failed: Invalid Nickname configuration rules' }, { status: 400 });
     }
@@ -137,7 +126,7 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
 
     if (!env.XENDIT_SECRET_KEY) {
       return json({ 
-        error: 'Streamer is currently setting up the channel. Payment gateway is temporary inactive. Please check back later!' 
+        error: 'สตรีมเมอร์กำลังตั้งค่าระบบรับเงินชั่วคราวอยู่ค่ะ ช่องทางโดเนทจะเปิดใช้งานเร็วๆ นี้นะคะ!' 
       }, { status: 501 });
     }
 
@@ -167,7 +156,6 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
       return json({ error: 'Unable to communicate with downstream payment gateway' }, { status: response.status });
     }
 
-    // 🛡️ [แก้ไข Finding #4] ฝังคุกกี้ความปลอดภัย โดยปรับให้ยอมรับการเซฟบน localhost HTTP ยามพัฒนา (Secure: !dev)
     cookies.set('cooldown_active', 'true', {
       maxAge: 60,
       path: '/',
