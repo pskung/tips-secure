@@ -1,8 +1,9 @@
 {
-  "vtuberName": "Vtuber",
+  "vtuberName": "สตรีมเมอร์สุดน่ารัก",
   "avatarUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
   "bannerUrl": "",
-  "themeColor": "#00a838",
+  "themeColor": "#db2777",
+  "themeColorEnd": "#6366f1",
   "welcomeText": "ส่งค่าขนมให้กำลังใจและส่งข้อความขึ้นสตรีมได้ที่นี่เลยนะคะ! ✨",
   "presetAmounts": [
     20,
