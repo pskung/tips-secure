@@ -41,6 +41,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
+    // แตกโครงสร้างข้อมูลการกำหนดค่าทั้งหมด รวมถึงค่าตกแต่งที่เพิ่มมาใหม่
     const { 
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
@@ -54,7 +55,17 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
       presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText,
+
+      // ค่าตกแต่งหน้าชำระสำเร็จที่เพิ่มใหม่ (Success Page Specs)
+      successTitle, successTitleColor, successTitleFontFamily, successTitleFontSize,
+      successMessage, successMessageColor, successMessageFontFamily, successMessageFontSize,
+      successEmoji, successBtnText, successBtnColor, successBtnTextColor, successBtnFontSize,
+
+      // ค่าตกแต่งหน้าชำระล้มเหลวที่เพิ่มใหม่ (Failure Page Specs)
+      failureTitle, failureTitleColor, failureTitleFontFamily, failureTitleFontSize,
+      failureMessage, failureMessageColor, failureMessageFontFamily, failureMessageFontSize,
+      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor, failureBtnFontSize
     } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
@@ -79,6 +90,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       sha = fileData.sha;
     }
 
+    // บรรจุลงเป็นรูปแบบ Base64 เขียนลง theme.json บนคลังโค้ด GitHub
     const updatedContent = Buffer.from(JSON.stringify({
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
@@ -92,7 +104,17 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
       presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText,
+
+      // เขียนทับค่าเฉพาะ หน้าสำเร็จ
+      successTitle, successTitleColor, successTitleFontFamily, successTitleFontSize,
+      successMessage, successMessageColor, successMessageFontFamily, successMessageFontSize,
+      successEmoji, successBtnText, successBtnColor, successBtnTextColor, successBtnFontSize,
+
+      // เขียนทับค่าเฉพาะ หน้าล้มเหลว
+      failureTitle, failureTitleColor, failureTitleFontFamily, failureTitleFontSize,
+      failureMessage, failureMessageColor, failureMessageFontFamily, failureMessageFontSize,
+      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor, failureBtnFontSize
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
