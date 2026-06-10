@@ -41,32 +41,29 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    // ทำลายสัญญานฟอนต์ขนาดพิกเซล และรับส่งตัวแปรข้อความปุ่มที่เพิ่มเข้ามาเทียบเท่า Success Button
     const { 
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
       cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
       profileAreaBgColor, profileAreaOpacity,
       inputBgColor, inputBgOpacity, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontFamily,
+      vtuberName, nameColor, mainFontFamily, // ใช้ฟอนต์เดี่ยวร่วมทั้งหน้าแรก
+      welcomeText, welcomeColor,
       nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
-      labelColor, labelFontFamily,
-      placeholderColor, placeholderFontFamily,
+      labelColor,
+      placeholderColor,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
-      
-      // ปุ่มโดเนทหลัก (เทียบเท่าปุ่มกลับหน้าหลัก)
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnText,
+      presetAmounts, presetBtnColor, presetBorderColor, // ยอด Preset แบบอาร์เรย์ที่ตั้งค่าได้
+      submitBtnColor, submitBtnTextColor, submitBtnText,
 
-      // หน้าโอนสำเร็จ
-      successTitle, successTitleColor, successTitleFontFamily,
-      successMessage, successMessageColor, successMessageFontFamily,
+      // หน้าชำระสำเร็จ (รวมใช้ successFontFamily)
+      successTitle, successTitleColor, successFontFamily,
+      successMessage, successMessageColor,
       successEmoji, successBtnText, successBtnColor, successBtnTextColor,
 
-      // หน้าโอนล้มเหลว
-      failureTitle, failureTitleColor, failureTitleFontFamily,
-      failureMessage, failureMessageColor, failureMessageFontFamily,
+      // หน้าชำระล้มเหลว (รวมใช้ failureFontFamily)
+      failureTitle, failureTitleColor, failureFontFamily,
+      failureMessage, failureMessageColor,
       failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor
     } = config;
 
@@ -98,21 +95,21 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
       profileAreaBgColor, profileAreaOpacity,
       inputBgColor, inputBgOpacity, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontFamily,
+      vtuberName, nameColor, mainFontFamily,
+      welcomeText, welcomeColor,
       nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
-      labelColor, labelFontFamily,
-      placeholderColor, placeholderFontFamily,
+      labelColor,
+      placeholderColor,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnText,
+      presetAmounts, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnText,
 
-      successTitle, successTitleColor, successTitleFontFamily,
-      successMessage, successMessageColor, successMessageFontFamily,
+      successTitle, successTitleColor, successFontFamily,
+      successMessage, successMessageColor,
       successEmoji, successBtnText, successBtnColor, successBtnTextColor,
 
-      failureTitle, failureTitleColor, failureTitleFontFamily,
-      failureMessage, failureMessageColor, failureMessageFontFamily,
+      failureTitle, failureTitleColor, failureFontFamily,
+      failureMessage, failureMessageColor,
       failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor
     }, null, 2)).toString('base64');
 
@@ -120,7 +117,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Saved customized text configs, removed absolute font sizes.',
+        message: '💅 Unified font families and enabled preset amount customization.',
         content: updatedContent,
         sha: sha || undefined,
       }),
