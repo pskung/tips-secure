@@ -1,12 +1,12 @@
 <svelte:head>
-  <title>Admin Dashboard | Tips Secure Setup</title>
+  <title>Admin Dashboard | Config Setup</title>
 </svelte:head>
 
 <script lang="ts">
   import { onMount } from 'svelte';
   import theme from '$lib/config/theme.json';
 
-  // 🛡️ ระบบรหัสผ่านความปลอดภัยสูง
+  // 🛡️ ด่านล็อกอินเบื้องต้น
   let isAuthenticated = $state(false);
   let inputPassword = $state('');
   let authenticating = $state(false);
@@ -53,12 +53,19 @@
 
   // 9. ชื่อหัวข้อช่องกรอกต่างๆ (Labels), สี + Font หัวข้อ + ขนาด Font หัวข้อ
   let nicknameLabel = $state(theme.nicknameLabel || 'ชื่อเล่นของคุณ (Nickname)');
+  let nicknamePlaceholder = $state(theme.nicknamePlaceholder || 'เช่น ผู้สนับสนุนสุดน่ารัก');
   let messageLabel = $state(theme.messageLabel || 'ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)');
+  let messagePlaceholder = $state(theme.messagePlaceholder || 'เขียนข้อความให้กำลังใจสตรีมเมอร์ได้ที่นี่เลยนะคะ...');
   let amountLabel = $state(theme.amountLabel || 'ระบุจำนวนเงินเอง (บาท)');
+  let amountPlaceholder = $state(theme.amountPlaceholder || 'ขั้นต่ำ 10 บาทขึ้นไปนะคะ');
   let presetLabel = $state(theme.presetLabel || 'เลือกยอดเงินสนับสนุนด่วน 🌸');
   let labelColor = $state(theme.labelColor || '#94a3b8');
   let labelFontFamily = $state(theme.labelFontFamily || 'Mitr');
   let labelFontSize = $state(parseInt(theme.labelFontSize || '14'));
+
+  // 🌟 (เพิ่มใหม่) ตั้งค่าสี ฟอนต์ และข้อความตัวอย่างในช่องกรอก (Placeholders)
+  let placeholderColor = $state(theme.placeholderColor || '#64748b');
+  let placeholderFontFamily = $state(theme.placeholderFontFamily || 'Mitr');
 
   // 10. Link social media + สี link social media
   let socialLinks = $state(theme.socialLinks || [
@@ -91,7 +98,7 @@
 
   let isSaving = $state(false);
 
-  // 🛠️ แปลง HEX เป็น RGBA ให้ประมวลผลความโปร่งแสงสดๆ
+  // 🛠️ แปลง HEX เป็น RGBA ให้ประมวลผลความโปร่งแสงสดๆ ใน Live Preview
   const hexToRgba = (hex: string, opacity: number): string => {
     if (!hex) return `rgba(15, 23, 42, ${opacity})`;
     const cleanHex = hex.replace('#', '');
@@ -102,14 +109,15 @@
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  // 🛡️ โหลดคิว Google Fonts เรียลไทม์
+  // 🛡️ โหลดคิว Google Fonts เรียลไทม์เบื้องหลัง
   const uniqueFonts = $derived([
     ...new Set([
       nameFontFamily,
       welcomeFontFamily,
       labelFontFamily,
       presetFontFamily,
-      submitBtnFontFamily
+      submitBtnFontFamily,
+      placeholderFontFamily
     ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
   ]);
 
@@ -180,8 +188,9 @@
             inputBgColor, inputBgOpacity, inputBorderColor,
             vtuberName, nameColor, nameFontFamily, nameFontSize: `${nameFontSize}px`,
             welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize: `${welcomeFontSize}px`,
-            nicknameLabel, messageLabel, amountLabel, presetLabel,
+            nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
             labelColor, labelFontFamily, labelFontSize: `${labelFontSize}px`,
+            placeholderColor, placeholderFontFamily,
             socialLinks, socialColor,
             presetAmounts: finalPresets, presetFontFamily, presetFontSize: `${presetFontSize}px`, presetBtnColor, presetBorderColor,
             submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize: `${submitBtnFontSize}px`, submitBtnText
@@ -268,7 +277,7 @@
         <form onsubmit={handleSave} class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-xl space-y-6">
           
           <!-- [1] รูป Profile -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-3">
+          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-3">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 รูป Profile (Avatar)</h3>
             <div class="flex items-center gap-4">
               <div class="w-16 h-16 rounded-full border border-slate-800 overflow-hidden flex-shrink-0 bg-slate-950">
@@ -282,8 +291,8 @@
           </div>
 
           <!-- [2] Banner -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-3">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Banner (ขยายขนาดแบนเนอร์เพิ่มอีก 20% + Fade Blending)</h3>
+          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-3">
+            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Banner (ขยายขนาดแบนเนอร์เพิ่มขึ้นอีก 20% + Fade Blending)</h3>
             <div class="space-y-3">
               <div class="w-full h-32 rounded-xl border border-slate-800 bg-cover bg-center opacity-70 bg-slate-950" style="background-image: {bannerUrl ? `url(${bannerUrl})` : 'none'}">
                 {#if !bannerUrl}
@@ -298,7 +307,7 @@
           </div>
 
           <!-- [3] Background หลัก -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Background หลัก (พื้นหลังหน้าเว็บ)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1.5">
@@ -315,7 +324,7 @@
                     <div class="relative w-10 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                       <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={bgColor} />
                     </div>
-                    <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-850 rounded text-xs text-slate-300 w-24 font-mono uppercase" bind:value={bgColor} />
+                    <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-855 rounded text-xs text-slate-300 w-24 font-mono uppercase" bind:value={bgColor} />
                   </div>
                 {:else}
                   <label class="block text-[10px] font-bold text-slate-400" for="main-bg">ระบุ URL ภาพพื้นหลังใหญ่</label>
@@ -517,6 +526,43 @@
             </div>
           </div>
 
+          <!-- [🌟 เพิ่มใหม่] แผงปรับข้อความตัวอย่าง Placeholder (ข้อความ, สี, ฟอนต์) -->
+          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ข้อความตัวอย่างช่องกรอก (Placeholders), สี และฟอนต์</h3>
+            <p class="text-[10px] text-slate-400">ตกแต่งเนื้อหาข้อความจางๆ และสไตล์ฟอนต์ที่โชว์เป็นไกด์ไลน์ก่อนกดพิมพ์ได้ตามใจชอบค่ะ:</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400">สีของข้อความตัวอย่าง (Placeholder Color)</label>
+                <div class="flex items-center gap-2">
+                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
+                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={placeholderColor} />
+                  </div>
+                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={placeholderColor} />
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400" for="ph-font-f">ฟอนต์ข้อความตัวอย่าง (Font Family)</label>
+                <input id="ph-font-f" type="text" placeholder="เช่น Mitr, Noto Sans Thai" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={placeholderFontFamily} />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/20">
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400" for="ph-nick">ตัวอย่างช่องชื่อเล่น</label>
+                <input id="ph-nick" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknamePlaceholder} />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400" for="ph-msg">ตัวอย่างช่องข้อความ</label>
+                <input id="ph-msg" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messagePlaceholder} />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400" for="ph-amt">ตัวอย่างช่องจำนวนเงิน</label>
+                <input id="ph-amt" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountPlaceholder} />
+              </div>
+            </div>
+          </div>
+
           <!-- [10] Link social media + สี link social media -->
           <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 บัญชีโซเชียลมีเดีย และสีปุ่มทางออก</h3>
@@ -533,7 +579,7 @@
               {#each socialLinks as link}
                 <div class="flex items-center gap-2 bg-slate-950/70 p-2.5 border border-slate-800 rounded-xl">
                   <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 w-20">{link.platform}</span>
-                  <input type="text" placeholder="ปล่อยว่างไว้หากไม่มี..." class="flex-1 bg-transparent border-b border-slate-800 py-1 text-xs text-white focus:outline-none focus:border-pink-500" bind:value={link.url} />
+                  <input type="text" placeholder="ปล่อยว่างไว้หากยังไม่มี..." class="flex-1 bg-transparent border-b border-slate-800 py-1 text-xs text-white focus:outline-none focus:border-pink-500" bind:value={link.url} />
                 </div>
               {/each}
             </div>
@@ -644,14 +690,14 @@
         </form>
       </div>
 
-      <!-- 📺 พรีวิวจำลองผลแบบ Live (5 จาก 12) -->
+      <!-- 📺 พรีวิวจำลองผลแบบ Live (สเกลจำลองตรงกับหน้าเบราว์เซอร์จริง 100%) -->
       <div class="lg:col-span-5 flex flex-col space-y-4 sticky top-6">
         <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
           <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-          สลับพรีวิวเรียลไทม์ (Live Layout Preview)
+          พรีวิวจำลองผลเรียลไทม์ (Live Layout Simulation)
         </h2>
 
-        <!-- หน้าต่างมือถือจำลองสัดส่วนใหม่ทั้งหมด -->
+        <!-- หน้าต่างมือถือจำลอง (สัดส่วนตรงกับหน้าหลัก 100% แต่ย่อลงด้วยสไตล์สมส่วน) -->
         <div 
           class="w-full aspect-[9/13] rounded-3xl border border-slate-800 bg-cover bg-center relative overflow-y-auto shadow-2xl p-4 select-none pointer-events-none"
           style="
@@ -662,42 +708,62 @@
           <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]"></div>
 
           <div 
-            class="relative w-full max-w-sm mx-auto rounded-3xl border p-4 text-xs text-white space-y-4 mt-2 transition-all duration-300"
+            class="relative w-full max-w-sm mx-auto rounded-3xl border p-4 text-[10px] text-white space-y-4 mt-2 transition-all duration-300"
             style="
               background-color: {hexToRgba(cardBgColor, cardOpacity)};
               border-color: {hexToRgba(cardBorderColor, cardBorderOpacity)};
               backdrop-filter: blur({cardBlur}px);
+              --ph-color: {placeholderColor};
+              --ph-font: '{placeholderFontFamily}', sans-serif;
             "
           >
-            <!-- ส่วนหัวรวมแบนเนอร์ขยายขนาดขึ้นอีก 20% + Fade Blending -->
+            <!-- ส่วนแบนเนอร์กับพิกเซลโอเวอร์เลย์ 10% และ Gradient Transition Fade -->
             <div 
-              class="relative rounded-xl overflow-hidden border border-slate-800/30 pb-4 transition-all duration-500"
+              class="relative rounded-xl overflow-hidden border border-slate-800/30 pb-3 transition-all duration-500"
               style="background-color: {hexToRgba(profileAreaBgColor, profileAreaOpacity)};"
             >
               {#if bannerUrl}
-                <div class="w-full h-24 bg-cover bg-center opacity-40" style="background-image: url({bannerUrl});"></div>
+                <div class="w-full h-24 bg-cover bg-center opacity-40 transition-all duration-500" style="background-image: url({bannerUrl});"></div>
               {:else}
                 <div class="w-full h-24 bg-slate-800/50 opacity-40"></div>
               {/if}
-              
-              <!-- Gradient Blend ทับระหว่าง แบนเนอร์ กับฉากหลังส่วนหัว -->
+
+              <!-- Gradient Blend ผสานเฉดสีแบบเดียวกับหน้าเบราว์เซอร์หลัก -->
               <div 
-                class="absolute top-12 left-0 right-0 h-12 bg-gradient-to-t"
+                class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t" 
                 style="background-image: linear-gradient(to top, {hexToRgba(profileAreaBgColor, profileAreaOpacity)}, transparent);"
               ></div>
 
-              <!-- โปรไฟล์จัดเกยทับ banner ลงมาเพียง 10% (ใช้ -mt-3.5) -->
-              <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 px-3 -mt-3.5 relative z-10 w-full">
+              <!-- โปรไฟล์จัดเกยทับแบนเนอร์เพียง 10% (ใช้ขยับขอบ -mt-3 sm:-mt-4) -->
+              <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 px-3 -mt-3 sm:-mt-4 relative z-10 w-full">
                 <!-- อวาตาร์โปรไฟล์ขนาด 30% -->
                 <div class="relative flex-shrink-0">
                   <div class="absolute -inset-0.5 rounded-full blur-sm" style="background-color: {nameColor};"></div>
-                  <img src={avatarUrl || 'https://placehold.co/100'} alt="Avatar" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-slate-950 object-cover shadow-xl" />
+                  <img src={avatarUrl || 'https://placehold.co/150'} alt="Avatar" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-slate-950 object-cover shadow-2xl transition-all duration-300" />
                 </div>
 
-                <!-- ข้อมูลด้านขวาและโซเชียลมีเดียห่างขึ้น -->
-                <div class="flex-1 pt-4 text-left space-y-3">
-                  <h4 class="font-extrabold truncate" style="color: {nameColor}; font-family: '{nameFontFamily}', sans-serif; font-size: {nameFontSize * 0.4}px;">{vtuberName}</h4>
-                  <p class="leading-relaxed" style="color: {welcomeColor}; font-family: '{welcomeFontFamily}', sans-serif; font-size: {welcomeFontSize * 0.7}px;">{welcomeText}</p>
+                <!-- ข้อมูลด้านขวาและโซเชียลมีเดียห่างขึ้น (space-y-3 เพื่อความกระชับของหน้าจอจำลอง) -->
+                <div class="flex-1 pt-4 space-y-2 text-left">
+                  <h4 
+                    class="font-extrabold tracking-wide" 
+                    style="
+                      color: {nameColor}; 
+                      font-family: '{nameFontFamily}', sans-serif;
+                      font-size: {nameFontSize * 0.5}px;
+                    "
+                  >
+                    {vtuberName}
+                  </h4>
+                  <p 
+                    class="font-medium leading-relaxed" 
+                    style="
+                      color: {welcomeColor}; 
+                      font-family: '{welcomeFontFamily}', sans-serif;
+                      font-size: {welcomeFontSize * 0.7}px;
+                    "
+                  >
+                    {welcomeText}
+                  </p>
                   
                   <div class="flex gap-2 pt-1">
                     {#each socialLinks as link}
@@ -712,42 +778,45 @@
               </div>
             </div>
 
-            <!-- ช่องเล่นตามลำดับ (แต่งสี + ฟอนต์หัวข้อ Label) -->
+            <!-- ช่องกรอกจำลอง (ผูก CSS Placeholder สี และ ฟอนต์) -->
             <div class="space-y-1">
               <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{nicknameLabel}</span>
-              <div class="w-full h-8 rounded-lg border" style="background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; border-color: {inputBorderColor};"></div>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  disabled
+                  placeholder={nicknamePlaceholder}
+                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
+                  style="
+                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
+                    border-color: {inputBorderColor};
+                    --placeholder-color: {placeholderColor};
+                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
+                  "
+                />
+              </div>
             </div>
 
             <div class="space-y-1">
               <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{messageLabel}</span>
-              <div class="w-full h-10 rounded-lg border" style="background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; border-color: {inputBorderColor};"></div>
+              <div class="relative">
+                <textarea 
+                  disabled
+                  rows="2"
+                  placeholder={messagePlaceholder}
+                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
+                  style="
+                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
+                    border-color: {inputBorderColor};
+                    --placeholder-color: {placeholderColor};
+                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
+                  "
+                ></textarea>
+              </div>
             </div>
 
             <div class="space-y-1">
               <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{presetLabel}</span>
               <div class="grid grid-cols-4 gap-1">
                 <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount1}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount2}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount3}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount4}฿</div>
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{amountLabel}</span>
-              <div class="w-full h-8 rounded-lg border" style="background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; border-color: {inputBorderColor};"></div>
-            </div>
-
-            <div class="pt-2">
-              <div class="w-full h-9 rounded-xl flex items-center justify-center font-extrabold shadow" style="background-color: {submitBtnColor}; color: {submitBtnTextColor}; font-family: '{submitBtnFontFamily}', sans-serif; font-size: {submitBtnFontSize * 0.7}px;">
-                {submitBtnText}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
-{/if}
+                <div c
