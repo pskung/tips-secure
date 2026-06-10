@@ -1,84 +1,47 @@
 {
-  "vtuberName": "สตรีมเมอร์สุดน่ารัก",
   "avatarUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
-  "bannerUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
-  "themeColor": "#db2777",
+  "bannerUrl": "",
+  "bgType": "solid",
+  "bgColor": "#0b0f19",
+  "bgUrl": "",
+  "cardBgColor": "rgba(15, 23, 42, 0.6)",
+  "cardBorderColor": "rgba(30, 41, 59, 0.8)",
+  "inputBgColor": "rgba(2, 6, 23, 0.8)",
+  "inputBorderColor": "rgba(30, 41, 59, 1)",
+  "vtuberName": "สตรีมเมอร์สุดน่ารัก",
+  "nameColor": "#db2777",
+  "nameFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
+  "nameFontFamily": "Mitr",
   "welcomeText": "ส่งค่าขนมให้กำลังใจและส่งข้อความขึ้นสตรีมได้ที่นี่เลยนะคะ! ✨",
+  "welcomeColor": "#cbd5e1",
+  "welcomeFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
+  "welcomeFontFamily": "Mitr",
+  "nicknameLabel": "ชื่อเล่นของคุณ (Nickname)",
+  "messageLabel": "ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)",
+  "amountLabel": "ระบุจำนวนเงินเอง (บาท)",
+  "presetLabel": "เลือกยอดเงินสนับสนุนด่วน 🌸",
+  "socialLinks": [
+    { "platform": "youtube", "url": "" },
+    { "platform": "twitch", "url": "" },
+    { "platform": "tiktok", "url": "" },
+    { "platform": "twitter", "url": "" },
+    { "platform": "facebook", "url": "" },
+    { "platform": "discord", "url": "" },
+    { "platform": "instagram", "url": "" }
+  ],
+  "socialColor": "#db2777",
   "presetAmounts": [
     20,
     50,
     100,
     500
   ],
-  "bgType": "solid",
-  "bgColor": "#0b0f19",
-  "bgUrl": "",
-  "fontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
-  "socialLinks": [
-    {
-      "platform": "youtube",
-      "url": "test"
-    },
-    {
-      "platform": "twitch",
-      "url": ""
-    },
-    {
-      "platform": "tiktok",
-      "url": "test"
-    },
-    {
-      "platform": "twitter",
-      "url": "test"
-    },
-    {
-      "platform": "facebook",
-      "url": ""
-    },
-    {
-      "platform": "discord",
-      "url": "test"
-    },
-    {
-      "platform": "instagram",
-      "url": ""
-    }
-  ],
-  "layout": [
-    {
-      "id": "profile",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "nickname",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "message",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "presets",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "amount",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "socials",
-      "width": "large",
-      "padding": "medium"
-    },
-    {
-      "id": "submit",
-      "width": "large",
-      "padding": "medium"
-    }
-  ]
+  "presetFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
+  "presetFontFamily": "Mitr",
+  "presetBtnColor": "#0f172a",
+  "presetBorderColor": "#1e293b",
+  "submitBtnColor": "#db2777",
+  "submitBtnTextColor": "#ffffff",
+  "submitBtnFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
+  "submitBtnFontFamily": "Mitr"
 }
