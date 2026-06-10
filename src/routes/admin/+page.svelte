@@ -296,19 +296,19 @@
                 <p class="text-[10px] text-slate-400 line-clamp-1">{welcomeText || 'คำต้อนรับ...'}</p>
               </div>
 
-            {:elseif block.id === 'nickname'}
+            {:else if block.id === 'nickname'}
               <div class="col-span-12 py-1 space-y-1">
                 <span class="block text-[10px] text-slate-400">ช่องกรอกชื่อผู้โอน (จำลอง)</span>
                 <div class="w-full h-8 bg-slate-950/80 border border-slate-800 rounded-lg"></div>
               </div>
 
-            {:elseif block.id === 'message'}
+            {:else if block.id === 'message'}
               <div class="col-span-12 py-1 space-y-1">
                 <span class="block text-[10px] text-slate-400">ช่องกรอกความอวยพร (จำลอง)</span>
                 <div class="w-full h-12 bg-slate-950/80 border border-slate-800 rounded-lg"></div>
               </div>
 
-            {:elseif block.id === 'presets'}
+            {:else if block.id === 'presets'}
               <div class="col-span-12 py-1 space-y-1">
                 <span class="block text-[10px] text-slate-400">ปุ่มเลือกราคาด่วน (จำลอง)</span>
                 <div class="grid grid-cols-4 gap-1">
@@ -318,13 +318,13 @@
                 </div>
               </div>
 
-            {:elseif block.id === 'amount'}
+            {:else if block.id === 'amount'}
               <div class="col-span-12 py-1 space-y-1">
                 <span class="block text-[10px] text-slate-400">ช่องระบุจำนวนเงินเอง (จำลอง)</span>
                 <div class="w-full h-8 bg-slate-950/80 border border-slate-800 rounded-lg"></div>
               </div>
 
-            {:elseif block.id === 'socials'}
+            {:else if block.id === 'socials'}
               <div class="col-span-12 py-2 flex justify-center gap-2">
                 {#each socialLinks as link}
                   {#if link.url}
@@ -333,7 +333,7 @@
                 {/each}
               </div>
 
-            {:elseif block.id === 'submit'}
+            {:else if block.id === 'submit'}
               <div class="col-span-12 py-1">
                 <div class="w-full h-9 rounded-xl flex items-center justify-center font-extrabold text-[10px]" style="background-color: {themeColor};">โดเนทสนับสนุน 💖</div>
               </div>
