@@ -44,15 +44,16 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     const { 
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
-      cardBgColor, cardBorderColor,
-      inputBgColor, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontFamily,
+      cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
+      profileAreaBgColor, profileAreaOpacity,
+      inputBgColor, inputBgOpacity, inputBorderColor,
+      vtuberName, nameColor, nameFontFamily, nameFontSize,
+      welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
       nicknameLabel, messageLabel, amountLabel, presetLabel,
-      labelColor, labelFontFamily,
+      labelColor, labelFontFamily, labelFontSize,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily
+      presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
     } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
@@ -80,22 +81,23 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     const updatedContent = Buffer.from(JSON.stringify({
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
-      cardBgColor, cardBorderColor,
-      inputBgColor, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontFamily,
+      cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
+      profileAreaBgColor, profileAreaOpacity,
+      inputBgColor, inputBgOpacity, inputBorderColor,
+      vtuberName, nameColor, nameFontFamily, nameFontSize,
+      welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
       nicknameLabel, messageLabel, amountLabel, presetLabel,
-      labelColor, labelFontFamily,
+      labelColor, labelFontFamily, labelFontSize,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily
+      presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Customized theme properties securely saved with Auto-Font Loader.',
+        message: '💅 Customized styling layouts and customized label properties saved.',
         content: updatedContent,
         sha: sha || undefined,
       }),
