@@ -10,16 +10,16 @@
   "inputBorderColor": "rgba(30, 41, 59, 1)",
   "vtuberName": "สตรีมเมอร์สุดน่ารัก",
   "nameColor": "#db2777",
-  "nameFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
   "nameFontFamily": "Mitr",
   "welcomeText": "ส่งค่าขนมให้กำลังใจและส่งข้อความขึ้นสตรีมได้ที่นี่เลยนะคะ! ✨",
   "welcomeColor": "#cbd5e1",
-  "welcomeFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
   "welcomeFontFamily": "Mitr",
   "nicknameLabel": "ชื่อเล่นของคุณ (Nickname)",
   "messageLabel": "ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)",
   "amountLabel": "ระบุจำนวนเงินเอง (บาท)",
   "presetLabel": "เลือกยอดเงินสนับสนุนด่วน 🌸",
+  "labelColor": "#94a3b8",
+  "labelFontFamily": "Mitr",
   "socialLinks": [
     { "platform": "youtube", "url": "" },
     { "platform": "twitch", "url": "" },
@@ -36,12 +36,10 @@
     100,
     500
   ],
-  "presetFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
   "presetFontFamily": "Mitr",
   "presetBtnColor": "#0f172a",
   "presetBorderColor": "#1e293b",
   "submitBtnColor": "#db2777",
   "submitBtnTextColor": "#ffffff",
-  "submitBtnFontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
   "submitBtnFontFamily": "Mitr"
 }
