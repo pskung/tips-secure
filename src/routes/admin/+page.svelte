@@ -346,5 +346,3 @@
 
   </div>
 </main>
-  </div>
-</main>
