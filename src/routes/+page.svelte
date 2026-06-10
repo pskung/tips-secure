@@ -1,6 +1,3 @@
-<svelte:head>
-  <title>สนับสนุน {theme.vtuberName}| Tips</title>
-</svelte:head>
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
@@ -18,6 +15,19 @@
   let clientNonce = $state('');
   let cooldownRemaining = $state(0);
 
+  // ฟังก์ชันแยกชื่อ Font Family อัตโนมัติจาก URL
+  const getFontFamily = (url: string | undefined): string => {
+    if (!url) return '';
+    const match = url.match(/family=([^:&]+)/);
+    if (match && match[1]) {
+      const rawFont = match[1].split(':')[0];
+      return decodeURIComponent(rawFont.replace(/\+/g, ' '));
+    }
+    return '';
+  };
+
+  const fontFamily = getFontFamily(theme.fontUrl);
+
   const sanitizeUrl = (url: string | undefined): string => {
     if (!url) return '';
     const cleanUrl = url.trim();
@@ -25,6 +35,19 @@
       return cleanUrl;
     }
     return '';
+  };
+
+  // แมปปิ้งสไตล์ความกว้างและระยะห่างย่อขยายของบล็อก
+  const getWidthClass = (width: string) => {
+    if (width === 'small') return 'lg:col-span-4 col-span-12';
+    if (width === 'medium') return 'lg:col-span-6 col-span-12';
+    return 'col-span-12';
+  };
+
+  const getPaddingClass = (padding: string) => {
+    if (padding === 'small') return 'py-1.5 px-2';
+    if (padding === 'large') return 'py-6 px-4';
+    return 'py-3.5 px-3';
   };
 
   async function solveMicroPoW(token: string, difficulty: number): Promise<string> {
@@ -120,139 +143,195 @@
   };
 </script>
 
+<svelte:head>
+  <title>สนับสนุน {theme.vtuberName} 💖 | Donation</title>
+  {#if theme.fontUrl}
+    <link rel="stylesheet" href={theme.fontUrl} />
+  {/if}
+</svelte:head>
+
 <main 
   class="flex min-h-screen flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative transition-all duration-700"
-  style="background-image: {theme.bannerUrl ? `url(${theme.bannerUrl})` : 'none'}; background-color: #0b0f19;"
+  style="
+    font-family: {fontFamily ? `'${fontFamily}', sans-serif` : 'sans-serif'};
+    background-image: {theme.bgType === 'image' && theme.bgUrl ? `url(${theme.bgUrl})` : 'none'}; 
+    background-color: {theme.bgType === 'solid' ? theme.bgColor : '#0b0f19'};
+  "
 >
-  <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-[6px] -z-10"></div>
-  
-  <!-- 🌸 แสงเรืองระยิบระยับแบบคู่สีไล่เฉดตามสตรีมเมอร์กำหนด -->
-  <div class="absolute w-[25rem] h-[25rem] rounded-full blur-[110px] top-12 left-12 -z-10 animate-pulse" style="background-color: {theme.themeColor}1a;"></div>
-  <div class="absolute w-[20rem] h-[20rem] rounded-full blur-[90px] bottom-12 right-12 -z-10 animate-pulse" style="background-color: {theme.themeColorEnd || theme.themeColor}1a; animation-delay: 2s;"></div>
+  <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[4px] -z-10"></div>
 
-  <div class="w-full max-w-lg p-6 md:p-8 space-y-8 bg-slate-900/60 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-800/80 backdrop-blur-xl text-white transition-all duration-300 hover:border-slate-700/60">
-    
-    <div class="flex flex-col items-center space-y-4 text-center">
-      <div class="relative group">
-        <div class="absolute -inset-1 rounded-full opacity-60 blur-md transition duration-500 group-hover:opacity-100" style="background: linear-gradient(90deg, {theme.themeColor}, {theme.themeColorEnd || theme.themeColor});"></div>
-        <img 
-          src={sanitizeUrl(theme.avatarUrl) || 'https://placehold.co/150'} 
-          alt="รูปภาพประจำช่องสตรีมของ {theme.vtuberName}" 
-          class="relative w-28 h-28 rounded-full border-4 border-slate-900 object-cover shadow-2xl transition duration-500 group-hover:scale-105" 
-        />
-      </div>
-      <div class="space-y-1">
-        <!-- ไล่เฉดสีที่หัวข้อ VTuber Name -->
-        <h1 class="text-3xl font-extrabold tracking-wide" style="background: linear-gradient(135deg, {theme.themeColor}, {theme.themeColorEnd || theme.themeColor}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">{theme.vtuberName}</h1>
-        <p class="text-sm font-medium text-slate-300 px-4 leading-relaxed max-w-sm">{theme.welcomeText}</p>
-      </div>
+  <!-- 📦 ฟอร์มแก้วโปร่งแสงดีไซน์ responsive มัลติกริด -->
+  <form 
+    onsubmit={handleDonate} 
+    class="w-full max-w-lg p-6 md:p-8 bg-slate-900/60 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-800/80 backdrop-blur-xl text-white grid grid-cols-12 gap-x-4 gap-y-3 relative overflow-hidden"
+  >
+    <!-- 🛡️ กับดักสแปมแบบซ่อนตามมาตรฐานสากล -->
+    <div class="hidden">
+      <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
     </div>
 
-    <form onsubmit={handleDonate} class="space-y-5">
-      <div class="hidden">
-        <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="nickname">ชื่อเล่นของคุณ (Nickname)</label>
-        <div class="relative group">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          </span>
-          <input 
-            id="nickname" 
-            type="text" 
-            required 
-            placeholder="เช่น โอนเนอร์สุดน่ารัก"
-            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
-            style="--tw-ring-color: {theme.themeColor};"
-            bind:value={name} 
-          />
+    <!-- 🔄 วนลูปวาดกล่ององค์ประกอบตามเลย์เอาต์ยืดหยุ่นที่ถูก Drag / Resize จัดลำดับไว้ -->
+    {#each theme.layout || [] as block}
+      
+      <!-- 1. บล็อกโปรไฟล์ -->
+      {#if block.id === 'profile'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} flex flex-col items-center text-center space-y-4 relative z-10 w-full">
+          {#if theme.bannerUrl}
+            <div class="absolute top-0 left-0 right-0 h-24 bg-cover bg-center rounded-t-2xl -z-10 opacity-40" style="background-image: url({theme.bannerUrl});"></div>
+          {/if}
+          <div class="relative mt-2">
+            <div class="absolute -inset-1 rounded-full opacity-60 blur-md" style="background-color: {theme.themeColor};"></div>
+            <img 
+              src={sanitizeUrl(theme.avatarUrl) || 'https://placehold.co/150'} 
+              alt="Avatar of {theme.vtuberName}" 
+              class="relative w-24 h-24 rounded-full border-4 border-slate-900 object-cover shadow-2xl" 
+            />
+          </div>
+          <div class="space-y-1">
+            <h1 class="text-3xl font-extrabold tracking-wide" style="color: {theme.themeColor};">{theme.vtuberName}</h1>
+            <p class="text-xs font-medium text-slate-300 max-w-sm px-2">{theme.welcomeText}</p>
+          </div>
         </div>
-      </div>
 
-      <!-- 💸 ปุ่มตัวเลือกยอดเงินด่วนจำกัดไว้ที่ 4 ปุ่มพอดีกับสัดส่วนช่องกรอกพอดี -->
-      <div class="space-y-2">
-        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="preset-btn">เลือกยอดเงินสนับสนุนด่วน 🌸</label>
-        <div class="grid grid-cols-4 gap-2">
-          {#each theme.presetAmounts.slice(0, 4) as amt}
-            <button 
-              type="button" 
-              onclick={() => amount = String(amt)} 
-              class="py-2.5 px-1 text-sm font-bold bg-slate-950/60 hover:bg-slate-950 hover:scale-105 border rounded-xl text-slate-200 cursor-pointer tracking-wide transition-all duration-200"
-              style="border-color: {amount === String(amt) ? theme.themeColor : '#1e293b'}; color: {amount === String(amt) ? theme.themeColor : '#e2e8f0'};"
-            >
-              {amt}฿
-            </button>
-          {/each}
+      <!-- 2. บล็อกกรอกชื่อเล่น -->
+      {:elseif block.id === 'nickname'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} space-y-1.5 w-full">
+          <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="nickname">ชื่อเล่นของคุณ (Nickname)</label>
+          <div class="relative group">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            </span>
+            <input 
+              id="nickname" 
+              type="text" 
+              required 
+              placeholder="เช่น ผู้สนับสนุนสุดน่ารัก"
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+              style="--tw-ring-color: {theme.themeColor};"
+              bind:value={name} 
+            />
+          </div>
         </div>
-      </div>
 
-      <div class="space-y-1.5">
-        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="custom-amount">ระบุจำนวนเงินเอง (บาท)</label>
-        <div class="relative group">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </span>
-          <input 
-            id="custom-amount" 
-            type="number" 
-            required 
-            min="10" 
-            placeholder="ขั้นต่ำ 10 บาทขึ้นไปนะคะ"
-            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 font-bold tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
-            style="--tw-ring-color: {theme.themeColor};"
-            bind:value={amount} 
-          />
+      <!-- 3. บล็อกข้อความสนับสนุน (เลื่อนขึ้นมาถัดจากช่องชื่อโดยสัญชาตญาณ) -->
+      {:elseif block.id === 'message'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} space-y-1.5 w-full">
+          <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="donor-msg">ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)</label>
+          <div class="relative group">
+            <span class="absolute top-3 left-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+            </span>
+            <textarea 
+              id="donor-msg" 
+              placeholder="เขียนข้อความให้กำลังใจสตรีมเมอร์ได้ที่นี่เลยนะคะ..."
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+              rows="2" 
+              style="--tw-ring-color: {theme.themeColor};"
+              bind:value={message}
+            ></textarea>
+          </div>
         </div>
-      </div>
 
-      <div class="space-y-1.5">
-        <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="donor-msg">ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)</label>
-        <div class="relative group">
-          <span class="absolute top-3.5 left-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-          </span>
-          <textarea 
-            id="donor-msg" 
-            placeholder="เขียนข้อความให้กำลังใจสตรีมเมอร์ได้ที่นี่เลยนะคะ..."
-            class="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
-            rows="3" 
-            style="--tw-ring-color: {theme.themeColor};"
-            bind:value={message}
-          ></textarea>
+      <!-- 4. บล็อกปุ่มราคาด่วน -->
+      {:elseif block.id === 'presets'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} space-y-2 w-full">
+          <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="preset-btn">เลือกยอดเงินสนับสนุนด่วน 🌸</label>
+          <div class="grid grid-cols-4 gap-2">
+            {#each theme.presetAmounts.slice(0, 4) as amt}
+              <button 
+                type="button" 
+                onclick={() => amount = String(amt)} 
+                class="py-2 px-1 text-sm font-bold bg-slate-950/60 hover:bg-slate-950 border rounded-xl text-slate-200 cursor-pointer tracking-wide transition-all duration-200"
+                style="border-color: {amount === String(amt) ? theme.themeColor : '#1e293b'}; color: {amount === String(amt) ? theme.themeColor : '#e2e8f0'};"
+              >
+                {amt}฿
+              </button>
+            {/each}
+          </div>
         </div>
-      </div>
 
-      <!-- 💖 ปุ่มส่งเงินโดเนทเปลี่ยนเป็น Gradient ไหลลื่นจากสีเริ่มต้นหาสีปลายทาง -->
-      <button
-        type="submit"
-        disabled={loading || powLoading || cooldownRemaining > 0}
-        aria-live="polite"
-        aria-busy={loading || powLoading}
-        class="w-full py-4 text-base font-extrabold rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed text-white tracking-wider uppercase"
-        style="background: {cooldownRemaining > 0 ? '#4b5563' : `linear-gradient(135deg, ${theme.themeColor}, ${theme.themeColorEnd || theme.themeColor})`}; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);"
-      >
-        {#if cooldownRemaining > 0}
-          <span class="flex items-center justify-center gap-2">
-            กรุณารออีก {cooldownRemaining} วินาทีนะคะ ⏳
-          </span>
-        {:else if powLoading}
-          <span class="flex items-center justify-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            กำลังเชื่อมโยงเครือข่ายความปลอดภัย...
-          </span>
-        {:else if loading}
-          <span class="flex items-center justify-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            กำลังขอคิวอาร์พร้อมเพย์รับเงิน...
-          </span>
-        {:else}
-          <span class="flex items-center justify-center gap-1.5">
-            โอนเงินสนับสนุน 💖
-          </span>
-        {/if}
-      </button>
-    </form>
-  </div>
+      <!-- 5. บล็อกระบุเงินเอง -->
+      {:elseif block.id === 'amount'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} space-y-1.5 w-full">
+          <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="custom-amount">ระบุจำนวนเงินเอง (บาท)</label>
+          <div class="relative group">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 transition-colors group-focus-within:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </span>
+            <input 
+              id="custom-amount" 
+              type="number" 
+              required 
+              min="10" 
+              placeholder="ขั้นต่ำ 10 บาทขึ้นไปนะคะ"
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-500 font-bold tracking-wide transition-all focus:outline-none focus:ring-2 focus:border-transparent" 
+              style="--tw-ring-color: {theme.themeColor};"
+              bind:value={amount} 
+            />
+          </div>
+        </div>
+
+      <!-- 6. บล็อกแสดงผลลิงก์ Social Media ต่างๆ -->
+      {:elseif block.id === 'socials'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} w-full">
+          <div class="flex flex-wrap justify-center gap-3.5">
+            {#each theme.socialLinks || [] as link}
+              {#if link.url}
+                <a 
+                  href={link.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  aria-label="ติดตามช่องทาง {link.platform}"
+                  class="p-2 bg-slate-950/50 rounded-full border border-slate-800 transition-all duration-300 hover:scale-110"
+                  style="--theme-color: {theme.themeColor};"
+                  onmouseenter={(e) => e.currentTarget.style.borderColor = theme.themeColor}
+                  onmouseleave={(e) => e.currentTarget.style.borderColor = '#1e293b'}
+                >
+                  {#if link.platform === 'youtube'}
+                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.107C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.388.511a3.003 3.003 0 0 0-2.11 2.107C0 8.053 0 12 0 12s0 3.947.512 5.837a3.003 3.003 0 0 0 2.11 2.107c1.883.511 9.388.511 9.388.511s7.505 0 9.388-.511a3.003 3.003 0 0 0 2.11-2.107c.512-1.89.512-5.837.512-5.837s0-3.947-.512-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                  {:elseif link.platform === 'twitch'}
+                    <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
+                  {:elseif link.platform === 'tiktok'}
+                    <svg class="w-5 h-5 text-teal-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.99-1.72-.11-.1-.21-.21-.31-.32v7.59c-.04 2.22-.96 4.41-2.67 5.8-1.72 1.4-4.04 1.94-6.2 1.46-2.16-.48-4.11-1.95-5.06-3.99-1.04-2.22-.9-4.94.4-7.01 1.25-2.03 3.57-3.32 5.92-3.35.08 0 .16 0 .24.01v4.06c-1.12.02-2.28.48-3.03 1.34-.78.89-.95 2.19-.53 3.3.41 1.09 1.45 1.87 2.61 1.99 1.16.12 2.38-.28 3.02-1.28.45-.69.61-1.53.59-2.35L12.51.02z"/></svg>
+                  {:elseif link.platform === 'twitter'}
+                    <svg class="w-5 h-5 text-sky-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  {:elseif link.platform === 'facebook'}
+                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  {:elseif link.platform === 'discord'}
+                    <svg class="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.094 13.094 0 0 1-1.873-.894.077.077 0 0 1-.008-.128c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.073 0 0 1 .078.009c.12.099.246.195.373.289a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z"/></svg>
+                  {:else}
+                    <svg class="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                  {/if}
+                </a>
+              {/if}
+            {/each}
+          </div>
+        </div>
+
+      <!-- 7. บล็อกปุ่มชำระเงินส่งข้อมูล -->
+      {:elseif block.id === 'submit'}
+        <div class="{getWidthClass(block.width)} {getPaddingClass(block.padding)} w-full">
+          <button
+            type="submit"
+            disabled={loading || powLoading || cooldownRemaining > 0}
+            aria-live="polite"
+            aria-busy={loading || powLoading}
+            class="w-full py-3.5 text-base font-extrabold rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed text-white tracking-wider uppercase"
+            style="background: {cooldownRemaining > 0 ? '#4b5563' : theme.themeColor}; box-shadow: 0 8px 24px rgba(0,0,0,0.3);"
+          >
+            {#if cooldownRemaining > 0}
+              กรุณารออีก {cooldownRemaining} วินาทีน้า ⏳
+            {:else if powLoading}
+              กำลังเตรียมเส้นทางปลอดภัย...
+            {:else if loading}
+              กำลังขอคิวอาร์พร้อมเพย์...
+            {:else}
+              โดเนทสนับสนุน 💖
+            {/if}
+          </button>
+        </div>
+      {/if}
+
+    {/each}
+  </form>
 </main>
