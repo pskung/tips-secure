@@ -46,12 +46,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       bgType, bgColor, bgUrl,
       cardBgColor, cardBorderColor,
       inputBgColor, inputBorderColor,
-      vtuberName, nameColor, nameFontUrl, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontUrl, welcomeFontFamily,
+      vtuberName, nameColor, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontFamily,
       nicknameLabel, messageLabel, amountLabel, presetLabel,
+      labelColor, labelFontFamily,
       socialLinks, socialColor,
-      presetAmounts, presetFontUrl, presetFontFamily, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontUrl, submitBtnFontFamily
+      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily
     } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
@@ -81,19 +82,20 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       bgType, bgColor, bgUrl,
       cardBgColor, cardBorderColor,
       inputBgColor, inputBorderColor,
-      vtuberName, nameColor, nameFontUrl, nameFontFamily,
-      welcomeText, welcomeColor, welcomeFontUrl, welcomeFontFamily,
+      vtuberName, nameColor, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontFamily,
       nicknameLabel, messageLabel, amountLabel, presetLabel,
+      labelColor, labelFontFamily,
       socialLinks, socialColor,
-      presetAmounts, presetFontUrl, presetFontFamily, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontUrl, submitBtnFontFamily
+      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Updated customized styling properties securely without layout indices.',
+        message: '💅 Customized theme properties securely saved with Auto-Font Loader.',
         content: updatedContent,
         sha: sha || undefined,
       }),
