@@ -3,11 +3,10 @@
 
   const failureTitle = theme.failureTitle ?? 'ทำรายการไม่สำเร็จ';
   const failureTitleColor = theme.failureTitleColor ?? '#ef4444';
-  const failureTitleFontFamily = theme.failureTitleFontFamily ?? 'Mitr';
+  const failureFontFamily = theme.failureFontFamily ?? 'Mitr'; // ฟอนต์ส่วนกลางหน้าล้มเหลว
 
   const failureMessage = theme.failureMessage ?? 'รายการชำระเงินถูกยกเลิก หรือหมดอายุการสแกน QR Code ค่ะ';
   const failureMessageColor = theme.failureMessageColor ?? '#cbd5e1';
-  const failureMessageFontFamily = theme.failureMessageFontFamily ?? 'Mitr';
 
   const failureEmoji = theme.failureEmoji ?? '❌';
   const failureBtnText = theme.failureBtnText ?? 'กลับหน้าหลัก/ลองอีกครั้ง';
@@ -25,11 +24,7 @@
   };
 
   const uniqueFonts = [
-    ...new Set([
-      failureTitleFontFamily,
-      failureMessageFontFamily,
-      theme.submitBtnFontFamily
-    ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
+    ...new Set([failureFontFamily].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
   ];
 </script>
 
@@ -45,6 +40,7 @@
   style="
     background-image: {theme.bgType === 'image' && theme.bgUrl ? `url(${theme.bgUrl})` : 'none'}; 
     background-color: {theme.bgType === 'solid' ? theme.bgColor : '#0b0f19'};
+    font-family: '{failureFontFamily}', sans-serif;
   "
 >
   <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[4px] -z-10"></div>
@@ -59,22 +55,21 @@
   >
     <div class="text-6xl sm:text-7xl animate-pulse drop-shadow-[0_10px_15px_rgba(0,0,0,0.3)]">{failureEmoji}</div>
 
-    <h1 class="text-xl sm:text-2xl font-black tracking-wide" style="color: {failureTitleColor}; font-family: '{failureTitleFontFamily}', sans-serif;">
+    <h1 class="text-xl sm:text-2xl font-black tracking-wide" style="color: {failureTitleColor};">
       {failureTitle}
     </h1>
 
-    <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color: {failureMessageColor}; font-family: '{failureMessageFontFamily}', sans-serif;">
+    <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color: {failureMessageColor};">
       {failureMessage}
     </p>
 
     <div class="pt-4">
       <a 
         href="/"
-        class="inline-block w-full py-4 rounded-xl text-sm sm:text-base font-extrabold cursor-pointer transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg text-center uppercase"
+        class="inline-block w-full py-4 rounded-xl text-sm sm:text-base font-extrabold cursor-pointer transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg text-center uppercase animate-none"
         style="
           background-color: {failureBtnColor};
           color: {failureBtnTextColor};
-          font-family: '{theme.submitBtnFontFamily}', sans-serif;
           box-shadow: 0 8px 24px rgba(0,0,0,0.25);
         "
       >
