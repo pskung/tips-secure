@@ -1,104 +1,63 @@
-<svelte:head>
-  <title>Admin Dashboard | Config Setup</title>
-</svelte:head>
-
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import theme from '$lib/config/theme.json';
 
-  // 🛡️ ด่านล็อกอินเบื้องต้น
+  // 🛡️ ป้องกันหน้าเว็บพังเมื่อตรวจไม่พบตัวแปรตกแต่งใหม่ใน theme.json ด้วยการวาง Default fallback ไว้ล่วงหน้า
+  let config = $state({
+    ...theme,
+    successTitle: theme.successTitle ?? 'โดเนทสำเร็จแล้วน้า! 🎉',
+    successTitleColor: theme.successTitleColor ?? '#10b981',
+    successTitleFontFamily: theme.successTitleFontFamily ?? 'Mitr',
+    successTitleFontSize: theme.successTitleFontSize ?? '28px',
+    successMessage: theme.successMessage ?? 'ขอบคุณสำหรับการสนับสนุนนะคะ ระบบส่งข้อความและยอดเงินของคุณขึ้นจอ OBS ของสตรีมเมอร์เรียบร้อยแล้วค่ะ 💕',
+    successMessageColor: theme.successMessageColor ?? '#cbd5e1',
+    successMessageFontFamily: theme.successMessageFontFamily ?? 'Mitr',
+    successMessageFontSize: theme.successMessageFontSize ?? '14px',
+    successEmoji: theme.successEmoji ?? '🎉',
+    successBtnText: theme.successBtnText ?? 'กลับหน้าหลัก',
+    successBtnColor: theme.successBtnColor ?? '#10b981',
+    successBtnTextColor: theme.successBtnTextColor ?? '#ffffff',
+    successBtnFontSize: theme.successBtnFontSize ?? '16px',
+
+    failureTitle: theme.failureTitle ?? 'ทำรายการไม่สำเร็จ',
+    failureTitleColor: theme.failureTitleColor ?? '#ef4444',
+    failureTitleFontFamily: theme.failureTitleFontFamily ?? 'Mitr',
+    failureTitleFontSize: theme.failureTitleFontSize ?? '28px',
+    failureMessage: theme.failureMessage ?? 'รายการชำระเงินถูกยกเลิก หรือหมดอายุการสแกน QR Code ค่ะ',
+    failureMessageColor: theme.failureMessageColor ?? '#cbd5e1',
+    failureMessageFontFamily: theme.failureMessageFontFamily ?? 'Mitr',
+    failureMessageFontSize: theme.failureMessageFontSize ?? '14px',
+    failureEmoji: theme.failureEmoji ?? '❌',
+    failureBtnText: theme.failureBtnText ?? 'กลับหน้าหลัก/ลองอีกครั้ง',
+    failureBtnColor: theme.failureBtnColor ?? '#ef4444',
+    failureBtnTextColor: theme.failureBtnTextColor ?? '#ffffff',
+    failureBtnFontSize: theme.failureBtnFontSize ?? '16px'
+  });
+
+  // ตัวแปรระบบแผงควบคุมหลัก
+  let activeTab = $state<'main' | 'success' | 'failure'>('main');
   let isAuthenticated = $state(false);
-  let inputPassword = $state('');
-  let authenticating = $state(false);
+  let password = $state('');
   let authError = $state('');
+  let authLoading = $state(false);
+  let saveLoading = $state(false);
 
-  // 1. รูป Profile
-  let avatarUrl = $state(theme.avatarUrl || '');
-
-  // 2. Banner
-  let bannerUrl = $state(theme.bannerUrl || '');
-
-  // 3. Background หลัก
-  let bgType = $state(theme.bgType || 'solid');
-  let bgColor = $state(theme.bgColor || '#0b0f19');
-  let bgUrl = $state(theme.bgUrl || '');
-
-  // 4. Background รอง (กล่องฟอร์มแก้วโปร่งแสง)
-  let cardBgColor = $state(theme.cardBgColor || '#0f172a');
-  let cardOpacity = $state(theme.cardOpacity ?? 0.6);
-  let cardBorderColor = $state(theme.cardBorderColor || '#1e293b');
-  let cardBorderOpacity = $state(theme.cardBorderOpacity ?? 0.8);
-  let cardBlur = $state(theme.cardBlur ?? 16);
-
-  // 5. พื้นที่สีชื่อโปรไฟล์
-  let profileAreaBgColor = $state(theme.profileAreaBgColor || '#020617');
-  let profileAreaOpacity = $state(theme.profileAreaOpacity ?? 0.3);
-
-  // 6. สีช่องกรอกข้อมูล
-  let inputBgColor = $state(theme.inputBgColor || '#020617');
-  let inputBgOpacity = $state(theme.inputBgOpacity ?? 0.8);
-  let inputBorderColor = $state(theme.inputBorderColor || '#1e293b');
-
-  // 7. ชื่อ, สี + Font ชื่อ + ขนาด Font ชื่อ
-  let vtuberName = $state(theme.vtuberName || 'ชื่อสตรีมเมอร์');
-  let nameColor = $state(theme.nameColor || '#db2777');
-  let nameFontFamily = $state(theme.nameFontFamily || 'Mitr');
-  let nameFontSize = $state(parseInt(theme.nameFontSize || '28'));
-
-  // 8. คำทักทาย, สี + Font คำทักทาย + ขนาด Font คำทักทาย
-  let welcomeText = $state(theme.welcomeText || '');
-  let welcomeColor = $state(theme.welcomeColor || '#cbd5e1');
-  let welcomeFontFamily = $state(theme.welcomeFontFamily || 'Mitr');
-  let welcomeFontSize = $state(parseInt(theme.welcomeFontSize || '14'));
-
-  // 9. ชื่อหัวข้อช่องกรอกต่างๆ (Labels), สี + Font หัวข้อ + ขนาด Font หัวข้อ
-  let nicknameLabel = $state(theme.nicknameLabel || 'ชื่อเล่นของคุณ (Nickname)');
-  let nicknamePlaceholder = $state(theme.nicknamePlaceholder || 'เช่น ผู้สนับสนุนสุดน่ารัก');
-  let messageLabel = $state(theme.messageLabel || 'ข้อความสนับสนุน (ส่งอวยพรขึ้นจอไลฟ์สด)');
-  let messagePlaceholder = $state(theme.messagePlaceholder || 'เขียนข้อความให้กำลังใจสตรีมเมอร์ได้ที่นี่เลยนะคะ...');
-  let amountLabel = $state(theme.amountLabel || 'ระบุจำนวนเงินเอง (บาท)');
-  let amountPlaceholder = $state(theme.amountPlaceholder || 'ขั้นต่ำ 10 บาทขึ้นไปนะคะ');
-  let presetLabel = $state(theme.presetLabel || 'เลือกยอดเงินสนับสนุนด่วน 🌸');
-  let labelColor = $state(theme.labelColor || '#94a3b8');
-  let labelFontFamily = $state(theme.labelFontFamily || 'Mitr');
-  let labelFontSize = $state(parseInt(theme.labelFontSize || '14'));
-
-  // ตั้งค่าสี ฟอนต์ และข้อความตัวอย่างในช่องกรอก (Placeholders)
-  let placeholderColor = $state(theme.placeholderColor || '#64748b');
-  let placeholderFontFamily = $state(theme.placeholderFontFamily || 'Mitr');
-
-  // 10. Link social media + สี link social media
-  let socialLinks = $state(theme.socialLinks || [
-    { platform: 'youtube', url: '' },
-    { platform: 'twitch', url: '' },
-    { platform: 'tiktok', url: '' },
-    { platform: 'twitter', url: '' },
-    { platform: 'facebook', url: '' },
-    { platform: 'discord', url: '' },
-    { platform: 'instagram', url: '' }
+  // คำนวณรายชื่อฟอนต์ทั้งหมดเพื่อเรียกผ่าน Google Fonts API ครบถ้วน
+  const uniqueFonts = $derived([
+    ...new Set([
+      config.nameFontFamily,
+      config.welcomeFontFamily,
+      config.labelFontFamily,
+      config.presetFontFamily,
+      config.submitBtnFontFamily,
+      config.successTitleFontFamily,
+      config.successMessageFontFamily,
+      config.failureTitleFontFamily,
+      config.failureMessageFontFamily
+    ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
   ]);
-  let socialColor = $state(theme.socialColor || '#db2777');
 
-  // 11. แก้ preset ราคา, สี + Font preset ราคา + ขนาด Font preset ราคา
-  let presetAmount1 = $state(theme.presetAmounts?.[0] ?? 20);
-  let presetAmount2 = $state(theme.presetAmounts?.[1] ?? 50);
-  let presetAmount3 = $state(theme.presetAmounts?.[2] ?? 100);
-  let presetAmount4 = $state(theme.presetAmounts?.[3] ?? 500);
-  let presetFontFamily = $state(theme.presetFontFamily || 'Mitr');
-  let presetFontSize = $state(parseInt(theme.presetFontSize || '14'));
-  let presetBtnColor = $state(theme.presetBtnColor || '#0f172a');
-  let presetBorderColor = $state(theme.presetBorderColor || '#1e293b');
-
-  // 12. สี + Font ปุ่มโดเนท + ขนาด Font ปุ่มโดเนท, สีปุ่มโดเนท, สีตัวอักษรปุ่มโดเนท, ข้อความปุ่มโดเนท
-  let submitBtnColor = $state(theme.submitBtnColor || '#db2777');
-  let submitBtnTextColor = $state(theme.submitBtnTextColor || '#ffffff');
-  let submitBtnFontFamily = $state(theme.submitBtnFontFamily || 'Mitr');
-  let submitBtnFontSize = $state(parseInt(theme.submitBtnFontSize || '16'));
-  let submitBtnText = $state(theme.submitBtnText || 'โดเนทสนับสนุน 💖');
-
-  let isSaving = $state(false);
-
-  // 🛠️ แปลง HEX เป็น RGBA ให้ประมวลผลความโปร่งแสงสดๆ ใน Live Preview
   const hexToRgba = (hex: string, opacity: number): string => {
     if (!hex) return `rgba(15, 23, 42, ${opacity})`;
     const cleanHex = hex.replace('#', '');
@@ -109,759 +68,525 @@
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  // 🛡️ โหลดคิว Google Fonts เรียลไทม์เบื้องหลัง
-  const uniqueFonts = $derived([
-    ...new Set([
-      nameFontFamily,
-      welcomeFontFamily,
-      labelFontFamily,
-      presetFontFamily,
-      submitBtnFontFamily,
-      placeholderFontFamily
-    ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
-  ]);
-
   onMount(() => {
-    const savedAuth = sessionStorage.getItem('admin_authenticated');
-    const savedPass = sessionStorage.getItem('admin_password');
-    if (savedAuth === 'true' && savedPass) {
-      inputPassword = savedPass;
-      isAuthenticated = true;
+    if (browser) {
+      const isVerified = sessionStorage.getItem('admin_verified') === 'true';
+      const storedPass = sessionStorage.getItem('admin_pass_key');
+      if (isVerified && storedPass) {
+        password = storedPass;
+        isAuthenticated = true;
+      }
     }
   });
 
-  async function handleVerify(e: Event) {
+  const handleVerify = async (e: Event) => {
     e.preventDefault();
-    authenticating = true;
+    authLoading = true;
     authError = '';
-
     try {
       const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: inputPassword })
+        body: JSON.stringify({ password })
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        sessionStorage.setItem('admin_verified', 'true');
+        sessionStorage.setItem('admin_pass_key', password);
         isAuthenticated = true;
-        sessionStorage.setItem('admin_authenticated', 'true');
-        sessionStorage.setItem('admin_password', inputPassword);
       } else {
-        authError = data.error || 'รหัสผ่านไม่ถูกต้องกรุณาลองใหม่อีกครั้งค่ะ';
+        authError = data.error || 'รหัสผ่านไม่ถูกต้องค่ะ';
       }
-    } catch (err) {
-      authError = 'เครือข่ายความปลอดภัยหลังบ้านปฏิเสธคำขอ';
+    } catch {
+      authError = 'เกิดข้อผิดพลาดในการเชื่อมต่อด่านตรวจรหัสผ่าน';
     } finally {
-      authenticating = false;
+      authLoading = false;
     }
-  }
+  };
 
-  function handleLogout() {
-    sessionStorage.removeItem('admin_authenticated');
-    sessionStorage.removeItem('admin_password');
-    isAuthenticated = false;
-    inputPassword = '';
-  }
-
-  const handleSave = async (e: Event) => {
-    e.preventDefault();
-    isSaving = true;
-
-    const finalPresets = [
-      Number(presetAmount1),
-      Number(presetAmount2),
-      Number(presetAmount3),
-      Number(presetAmount4)
-    ];
-
+  const handleSave = async () => {
+    saveLoading = true;
     try {
-      const response = await fetch('/api/admin/save', {
+      const res = await fetch('/api/admin/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          password: inputPassword,
-          config: { 
-            avatarUrl, bannerUrl,
-            bgType, bgColor, bgUrl,
-            cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
-            profileAreaBgColor, profileAreaOpacity,
-            inputBgColor, inputBgOpacity, inputBorderColor,
-            vtuberName, nameColor, nameFontFamily, nameFontSize: `${nameFontSize}px`,
-            welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize: `${welcomeFontSize}px`,
-            nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
-            labelColor, labelFontFamily, labelFontSize: `${labelFontSize}px`,
-            placeholderColor, placeholderFontFamily,
-            socialLinks, socialColor,
-            presetAmounts: finalPresets, presetFontFamily, presetFontSize: `${presetFontSize}px`, presetBtnColor, presetBorderColor,
-            submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize: `${submitBtnFontSize}px`, submitBtnText
-          }
-        }),
+        body: JSON.stringify({ password, config })
       });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert('บันทึกสำเร็จเรียบร้อยแล้วค่ะ! รอระบบคลาวด์สร้างเว็บใหม่ (จะแสดงผลจริงในอีกประมาณ 45 วินาทีนะคะ)');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('🎉 บันทึกการเปลี่ยนแปลงและอัปโหลดข้อมูลเข้า GitHub สำเร็จแล้วค่ะ! กรุณารอสักครู่ให้ Vercel บิวด์ข้อมูลใหม่หลังบ้านนะคะ');
       } else {
-        alert(data.error || 'บันทึกการตกแต่งไม่สำเร็จชั่วคราวค่ะ');
+        alert(data.error || 'บันทึกไม่สำเร็จเนื่องจากพารามิเตอร์ไม่ผ่านด่านตรวจความปลอดภัยค่ะ');
       }
-    } catch (err) {
-      alert('ระบบเชื่อมโยงข้อมูลขัดข้อง');
+    } catch {
+      alert('ระบบหลังบ้านไม่ว่างชั่วคราวค่ะ');
     } finally {
-      isSaving = false;
+      saveLoading = false;
     }
   };
 </script>
 
-{#each uniqueFonts as font}
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
-{/each}
+<svelte:head>
+  <title>ระบบหลังบ้านผู้ดูแลระบบ 💅</title>
+  {#each uniqueFonts as font}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
+  {/each}
+</svelte:head>
 
 {#if !isAuthenticated}
-  <!-- 🔐 ด่านล็อกอินเพื่อปลดล็อก Dashboard -->
-  <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-slate-900/60 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 backdrop-blur-xl text-center">
-      <div class="space-y-2">
-        <span class="text-4xl block animate-bounce">🔐</span>
-        <h1 class="text-2xl font-black tracking-wide text-pink-400">ควบคุมระบบส่วนตัว</h1>
-        <p class="text-slate-400 text-xs">กรุณากรอก ADMIN_PASSWORD เพื่อทำการปรับปรุงเลย์เอาต์การตกแต่งค่ะ</p>
+  <!-- 🛡️ ม่านสีเข้มล็อกหน้าจอ Admin Password Gate Overlay ป้องกันการดักจับเนื้อหา -->
+  <div class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
+    <form onsubmit={handleVerify} class="w-full max-w-sm p-8 bg-slate-900 border border-slate-800 rounded-3xl space-y-6 shadow-2xl">
+      <div class="text-center">
+        <span class="text-4xl text-pink-500">🔒</span>
+        <h1 class="text-xl font-extrabold mt-3 text-white">แผงความปลอดภัยหลังบ้าน</h1>
+        <p class="text-xs text-slate-400 mt-1">กรุณากรอกรหัสแอดมินเพื่อปลดล็อกแผ่นสไตล์สตรีมเมอร์</p>
       </div>
 
-      <form onsubmit={handleVerify} class="space-y-4 text-left">
-        <div class="space-y-1.5">
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest" for="pass-gate">รหัสผ่านแอดมิน</label>
-          <input 
-            id="pass-gate"
-            type="password" 
-            required 
-            placeholder="••••••••" 
-            class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-center tracking-widest focus:ring-2 focus:ring-pink-500/50 focus:outline-none" 
-            bind:value={inputPassword} 
-          />
-        </div>
+      {#if authError}
+        <div class="p-3 bg-red-950/50 border border-red-500/30 text-red-400 text-xs text-center rounded-xl font-bold animate-pulse">{authError}</div>
+      {/if}
 
-        {#if authError}
-          <p class="text-red-400 text-xs text-center font-bold">{authError}</p>
-        {/if}
-
-        <button 
-          type="submit" 
-          disabled={authenticating}
-          class="w-full py-3 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 text-white font-extrabold rounded-xl transition-all shadow-lg text-xs tracking-wider uppercase cursor-pointer"
-        >
-          {#if authenticating}
-            กำลังตรวจสอบสิทธิ์...
-          {:else}
-            ปลดล็อกระบบควบคุม 🔓
-          {/if}
-        </button>
-      </form>
-    </div>
-  </main>
-{:else}
-  <!-- 💅 คอนโซลหลังบ้าน -->
-  <main class="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-4 md:p-8">
-    <header class="max-w-7xl w-full mx-auto mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5">
-      <div>
-        <h1 class="text-3xl font-extrabold tracking-wide text-pink-400">💅 แผงตั้งค่าดีไซน์เสรีระดับพรีเมียม</h1>
-        <p class="text-slate-400 text-sm mt-1">คุมดีไซน์ ความเบลอกระจกฝ้า ขนาดฟอนต์ และเฉดสีโปร่งใสได้อย่างเบ็ดเสร็จค่ะ</p>
+      <div class="space-y-1">
+        <label for="pwd" class="text-xs font-bold text-slate-300 uppercase tracking-wider">ADMIN PASSWORD</label>
+        <input 
+          id="pwd" 
+          type="password" 
+          required 
+          placeholder="•••••••••••••••"
+          class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-pink-500 focus:outline-none transition-all text-white"
+          bind:value={password}
+        />
       </div>
-      <button onclick={handleLogout} class="px-4 py-2 bg-slate-900 hover:bg-red-950/40 border border-slate-800 hover:border-red-500/30 text-xs font-bold text-slate-400 hover:text-red-400 rounded-xl transition-all cursor-pointer">
-        ออกจากระบบหลังบ้าน 🚪
+
+      <button 
+        type="submit" 
+        disabled={authLoading}
+        class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:opacity-90 font-bold rounded-xl cursor-pointer transition text-white"
+      >
+        {authLoading ? 'กำลังปลดม่านหลังบ้าน...' : 'ล็อกอินและถอดรหัสหลังบ้าน'}
       </button>
-    </header>
-
-    <div class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      
-      <!-- ⚙️ แถบควบคุมปรับสไตล์ (7 จาก 12) -->
-      <div class="lg:col-span-7 space-y-6">
-        <form onsubmit={handleSave} class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-xl space-y-6">
-          
-          <!-- [1] รูป Profile -->
-          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-3">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 รูป Profile (Avatar)</h3>
-            <div class="flex items-center gap-4">
-              <div class="w-16 h-16 rounded-full border border-slate-800 overflow-hidden flex-shrink-0 bg-slate-950">
-                <img src={avatarUrl || 'https://placehold.co/150'} alt="Preview" class="w-full h-full object-cover" />
-              </div>
-              <div class="flex-1 space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="avatar-img">ลิงก์ภาพอวาตาร์ (Avatar URL)</label>
-                <input id="avatar-img" type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white" bind:value={avatarUrl} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [2] Banner -->
-          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-3">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Banner (ขยายขนาดแบนเนอร์เพิ่มขึ้นอีก 20% + Fade Blending)</h3>
-            <div class="space-y-3">
-              <div class="w-full h-32 rounded-xl border border-slate-800 bg-cover bg-center opacity-70 bg-slate-950" style="background-image: {bannerUrl ? `url(${bannerUrl})` : 'none'}">
-                {#if !bannerUrl}
-                  <div class="w-full h-full flex items-center justify-center text-xs text-slate-500 font-bold">ไม่มีภาพแบนเนอร์ (จะแสดงเป็นสีใส)</div>
-                {/if}
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="banner-img">ลิงก์ภาพแบนเนอร์ใหญ่ (Banner URL)</label>
-                <input id="banner-img" type="text" placeholder="ปล่อยว่างไว้เพื่อโชว์สีใสสะอาดตาค่ะ" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={bannerUrl} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [3] Background หลัก -->
-          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Background หลัก (พื้นหลังหน้าเว็บ)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="space-y-1.5">
-                <span class="block text-[10px] font-bold text-slate-400">ประเภทพื้นหลังหลัก</span>
-                <div class="flex flex-col gap-2 mt-1">
-                  <label class="inline-flex items-center gap-2 cursor-pointer text-xs"><input type="radio" value="solid" bind:group={bgType} /> สีเดี่ยว (Solid Color)</label>
-                  <label class="inline-flex items-center gap-2 cursor-pointer text-xs"><input type="radio" value="image" bind:group={bgType} /> ภาพพื้นหลัง (Background Image)</label>
-                </div>
-              </div>
-              <div class="space-y-1.5 col-span-2">
-                {#if bgType === 'solid'}
-                  <label class="block text-[10px] font-bold text-slate-400">เลือกสีพื้นหลังเดี่ยว</label>
-                  <div class="flex items-center gap-2">
-                    <div class="relative w-10 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                      <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={bgColor} />
-                    </div>
-                    <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-855 rounded text-xs text-slate-300 w-24 font-mono uppercase" bind:value={bgColor} />
-                  </div>
-                {:else}
-                  <label class="block text-[10px] font-bold text-slate-400" for="main-bg">ระบุ URL ภาพพื้นหลังใหญ่</label>
-                  <input id="main-bg" type="text" placeholder="https://..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white" bind:value={bgUrl} />
-                {/if}
-              </div>
-            </div>
-          </div>
-
-          <!-- [4] Background รอง (กล่องฟอร์มแก้วโปร่งแสง) -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 Background รอง (กล่องฟอร์มกระจกฝ้าโปร่งแสง)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">สีพื้นหลังกล่อง (HEX)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={cardBgColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={cardBgColor} />
-                </div>
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ระดับความโปร่งใสกล่อง (Opacity: {cardOpacity})</label>
-                <input type="range" min="0" max="1" step="0.05" class="w-full accent-pink-500" bind:value={cardOpacity} />
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800/30">
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">สีขอบกล่อง (HEX)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={cardBorderColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={cardBorderColor} />
-                </div>
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ความโปร่งขอบ (Border Opacity: {cardBorderOpacity})</label>
-                <input type="range" min="0" max="1" step="0.05" class="w-full accent-pink-500" bind:value={cardBorderOpacity} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ความเบลอกล่องกระจก (Blur: {cardBlur}px)</label>
-                <input type="range" min="0" max="40" step="1" class="w-full accent-pink-500" bind:value={cardBlur} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [5] พื้นที่สีชื่อโปรไฟล์ (Profile Area Background) -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 พื้นหลังบริเวณส่วนหัวโปรไฟล์ (Profile Header Background)</h3>
-            <p class="text-[10px] text-slate-400">ช่วยให้พื้นที่ ชื่อ, คำทักทาย และ Social Media มีฉากหลังเป็นของตัวเอง เพื่อผสาน Fade กับภาพแบนเนอร์ด้านบนค่ะ</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">สีพื้นหลังส่วนหัว (HEX)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={profileAreaBgColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={profileAreaBgColor} />
-                </div>
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ความโปร่งฉากหลังส่วนหัว (Opacity: {profileAreaOpacity})</label>
-                <input type="range" min="0" max="1" step="0.05" class="w-full accent-pink-500" bind:value={profileAreaOpacity} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [6] สีช่องกรอกข้อมูล -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-3">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 สีช่องกรอกข้อมูล (Inputs Field Styling)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีพื้นหลังช่องข้อความ (HEX)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={inputBgColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={inputBgColor} />
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">ความโปร่งหลังช่องกรอก (Opacity: {inputBgOpacity})</label>
-                <input type="range" min="0" max="1" step="0.05" class="w-full accent-pink-500" bind:value={inputBgOpacity} />
-              </div>
-              <div class="space-y-1 col-span-2 pt-2 border-t border-slate-800/30">
-                <label class="block text-[10px] font-bold text-slate-400">สีเส้นขอบช่องข้อความ (HEX)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={inputBorderColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={inputBorderColor} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- [7] ชื่อ, สี + Font ชื่อ + ขนาด Font ชื่อ -->
-          <div class="p-5 bg-slate-955/60 border border-slate-855 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ชื่อสตรีมเมอร์ สี และฟอนต์ขนาดพิกเซล</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="v-name">ชื่อช่องสตรีมเมอร์</label>
-                <input id="v-name" type="text" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={vtuberName} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีของชื่อช่อง</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={nameColor} />
-                  </div>
-                  <input type="text" class="px-2 py-1.5 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={nameColor} />
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="v-font">ชื่อฟอนต์กูเกิล (Font Family)</label>
-                <input id="v-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nameFontFamily} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ขนาดตัวอักษรชื่อช่อง (Font Size: {nameFontSize}px)</label>
-                <input type="range" min="14" max="60" step="1" class="w-full accent-pink-500" bind:value={nameFontSize} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [8] คำทักทาย, สี + Font คำทักทาย + ขนาด Font คำทักทาย -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 คำทักทาย สี และฟอนต์ขนาดพิกเซล</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="space-y-1 col-span-2">
-                <label class="block text-[10px] font-bold text-slate-400" for="wel-text">คำทักทายต้อนรับหลัก</label>
-                <textarea id="wel-text" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-medium" rows="2" bind:value={welcomeText}></textarea>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีคำทักทาย</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={welcomeColor} />
-                  </div>
-                  <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={welcomeColor} />
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="wel-font">ฟอนต์คำทักทาย (Font Family)</label>
-                <input id="wel-font" type="text" placeholder="เช่น Mitr, Sarabun" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={welcomeFontFamily} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์คำทักทาย (Font Size: {welcomeFontSize}px)</label>
-                <input type="range" min="10" max="36" step="1" class="w-full accent-pink-500" bind:value={welcomeFontSize} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [9] ชื่อหัวข้อช่องกรอกต่างๆ (Labels), สี + Font หัวข้อ + ขนาด Font หัวข้อ -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ชื่อช่องกรอก และขนาดฟอนต์หัวข้อ Label</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีหัวข้อป้ายช่องกรอก</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={labelColor} />
-                  </div>
-                  <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={labelColor} />
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="lbl-font-f">ฟอนต์หัวข้อ (Font Family)</label>
-                <input id="lbl-font-f" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={labelFontFamily} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ (Font Size: {labelFontSize}px)</label>
-                <input type="range" min="10" max="32" step="1" class="w-full accent-pink-500" bind:value={labelFontSize} />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-800/20">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="l-nick">ป้ายช่องชื่อเล่น</label>
-                <input id="l-nick" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknameLabel} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="l-msg">ป้ายช่องเขียนข้อความ</label>
-                <input id="l-msg" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messageLabel} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="l-preset">ป้ายปุ่มเลือกเงินด่วน</label>
-                <input id="l-preset" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetLabel} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="l-amt">ป้ายระบุเงินกำหนดเอง</label>
-                <input id="l-amt" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountLabel} />
-              </div>
-            </div>
-          </div>
-
-          <!-- แผงปรับข้อความตัวอย่าง Placeholder (ข้อความ, สี, ฟอนต์) -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ข้อความตัวอย่างช่องกรอก (Placeholders), สี และฟอนต์</h3>
-            <p class="text-[10px] text-slate-400">ตกแต่งเนื้อหาข้อความจางๆ และสไตล์ฟอนต์ที่โชว์เป็นไกด์ไลน์ก่อนกดพิมพ์ได้ตามใจชอบค่ะ:</p>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีของข้อความตัวอย่าง (Placeholder Color)</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={placeholderColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={placeholderColor} />
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="ph-font-f">ฟอนต์ข้อความตัวอย่าง (Font Family)</label>
-                <input id="ph-font-f" type="text" placeholder="เช่น Mitr, Noto Sans Thai" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={placeholderFontFamily} />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/20">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="ph-nick">ตัวอย่างช่องชื่อเล่น</label>
-                <input id="ph-nick" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknamePlaceholder} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="ph-msg">ตัวอย่างช่องข้อความ</label>
-                <input id="ph-msg" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messagePlaceholder} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="ph-amt">ตัวอย่างช่องจำนวนเงิน</label>
-                <input id="ph-amt" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountPlaceholder} />
-              </div>
-            </div>
-          </div>
-
-          <!-- [10] Link social media + สี link social media -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 บัญชีโซเชียลมีเดีย และสีปุ่มทางออก</h3>
-            <div class="space-y-1">
-              <label class="block text-[10px] font-bold text-slate-400">สีปุ่ม Social Media</label>
-              <div class="flex items-center gap-2">
-                <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                  <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={socialColor} />
-                </div>
-                <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={socialColor} />
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {#each socialLinks as link}
-                <div class="flex items-center gap-2 bg-slate-955/70 p-2.5 border border-slate-800 rounded-xl">
-                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 w-20">{link.platform}</span>
-                  <input type="text" placeholder="ปล่อยว่างไว้หากยังไม่มี..." class="flex-1 bg-transparent border-b border-slate-800 py-1 text-xs text-white focus:outline-none focus:border-pink-500" bind:value={link.url} />
-                </div>
-              {/each}
-            </div>
-          </div>
-
-          <!-- [11] แก้ preset ราคา, สี + Font preset ราคา + ขนาด Font preset ราคา -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ตั้งค่าเงินด่วน (Presets) สี ขนาด และฟอนต์ปุ่มด่วน</h3>
-            <div class="grid grid-cols-4 gap-2">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 1 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount1} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 2 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount2} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 3 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount3} />
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 4 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount4} />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="p-font">ฟอนต์ปุ่มด่วน (Font Family)</label>
-                <input id="p-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetFontFamily} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ปุ่มด่วน (Font Size: {presetFontSize}px)</label>
-                <input type="range" min="10" max="32" step="1" class="w-full accent-pink-500" bind:value={presetFontSize} />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-800/40">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีพื้นหลังปุ่มด่วนสถานะปกติ</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={presetBtnColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBtnColor} />
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีเส้นขอบปุ่มด่วนสถานะปกติ</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={presetBorderColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBorderColor} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- [12] สี + Font ปุ่มโดเนท + ขนาด Font ปุ่มโดเนท, สีปุ่มโดเนท, สีตัวอักษรปุ่มโดเนท, ข้อความปุ่มโดเนท -->
-          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
-            <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ดีไซน์ปุ่มส่งสนับสนุนโดเนทหลัก (Submit Button)</h3>
-            <div class="space-y-2">
-              <label class="block text-[10px] font-bold text-slate-400" for="btn-txt">ข้อความแสดงบนปุ่มโดเนทหลัก</label>
-              <input id="btn-txt" type="text" class="w-full px-4 py-2.5 bg-slate-955 border border-slate-800 rounded-xl text-xs text-white font-bold" bind:value={submitBtnText} />
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีพื้นหลังของปุ่มโดเนท</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={submitBtnColor} />
-                  </div>
-                  <input type="text" class="px-2 py-1.5 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={submitBtnColor} />
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400">สีตัวอักษรของปุ่มโดเนท</label>
-                <div class="flex items-center gap-2">
-                  <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
-                    <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={submitBtnTextColor} />
-                  </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={submitBtnTextColor} />
-                </div>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-800/40">
-              <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-400" for="btn-font">ฟอนต์ปุ่มโดเนท (Font Family)</label>
-                <input id="btn-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={submitBtnFontFamily} />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ปุ่มโดเนท (Font Size: {submitBtnFontSize}px)</label>
-                <input type="range" min="12" max="36" step="1" class="w-full accent-pink-500" bind:value={submitBtnFontSize} />
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" disabled={isSaving} class="w-full py-4 text-white font-extrabold rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-lg text-xs tracking-wider uppercase" style="background: {nameColor}; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-            {#if isSaving}
-              กำลังบันทึกดีไซน์ส่งขึ้นคลัง GitHub...
-            {:else}
-              บันทึกสไตล์การแต่งแบรนด์เสรี ✨
-            {/if}
-          </button>
-        </form>
-      </div>
-
-      <!-- 📺 พรีวิวจำลองผลแบบ Live (สเกลจำลองตรงกับหน้าเบราว์เซอร์จริง 100%) -->
-      <div class="lg:col-span-5 flex flex-col space-y-4 sticky top-6">
-        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-          พรีวิวจำลองผลเรียลไทม์ (Live Layout Simulation)
-        </h2>
-
-        <!-- หน้าต่างมือถือจำลอง -->
-        <div 
-          class="w-full aspect-[9/13] rounded-3xl border border-slate-800 bg-cover bg-center relative overflow-y-auto shadow-2xl p-4 select-none pointer-events-none"
-          style="
-            background-image: {bgType === 'image' && bgUrl ? `url(${bgUrl})` : 'none'}; 
-            background-color: {bgType === 'solid' ? bgColor : '#0b0f19'};
-          "
-        >
-          <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]"></div>
-
-          <div 
-            class="relative w-full max-w-sm mx-auto rounded-3xl border p-4 text-[10px] text-white space-y-4 mt-2 transition-all duration-300"
-            style="
-              background-color: {hexToRgba(cardBgColor, cardOpacity)};
-              border-color: {hexToRgba(cardBorderColor, cardBorderOpacity)};
-              backdrop-filter: blur({cardBlur}px);
-              --placeholder-color: {placeholderColor};
-              --placeholder-font: '{placeholderFontFamily}', sans-serif;
-            "
-          >
-            <!-- ส่วนแบนเนอร์กับพิกเซลโอเวอร์เลย์ 10% และ Gradient Transition Fade -->
-            <div 
-              class="relative rounded-xl overflow-hidden border border-slate-800/30 pb-3 transition-all duration-500"
-              style="background-color: {hexToRgba(profileAreaBgColor, profileAreaOpacity)};"
-            >
-              {#if bannerUrl}
-                <div class="w-full h-24 bg-cover bg-center opacity-40 transition-all duration-500" style="background-image: url({bannerUrl});"></div>
-              {:else}
-                <div class="w-full h-24 bg-slate-800/50 opacity-40"></div>
-              {/if}
-
-              <!-- Gradient Blend ผสานเฉดสีแบบเดียวกับหน้าเบราว์เซอร์หลัก -->
-              <div 
-                class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t" 
-                style="background-image: linear-gradient(to top, {hexToRgba(profileAreaBgColor, profileAreaOpacity)}, transparent);"
-              ></div>
-
-              <!-- โปรไฟล์จัดเกยทับแบนเนอร์เพียง 10% (ใช้ขยับขอบ -mt-3 sm:-mt-4) -->
-              <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 px-3 -mt-3 sm:-mt-4 relative z-10 w-full">
-                <!-- อวาตาร์โปรไฟล์ขนาด 30% -->
-                <div class="relative flex-shrink-0">
-                  <div class="absolute -inset-0.5 rounded-full blur-sm" style="background-color: {nameColor};"></div>
-                  <img src={avatarUrl || 'https://placehold.co/150'} alt="Avatar" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-slate-950 object-cover shadow-2xl transition-all duration-300" />
-                </div>
-
-                <!-- ข้อมูลด้านขวาและโซเชียลมีเดียห่างขึ้น -->
-                <div class="flex-1 pt-4 space-y-2 text-left">
-                  <h4 
-                    class="font-extrabold tracking-wide" 
-                    style="
-                      color: {nameColor}; 
-                      font-family: '{nameFontFamily}', sans-serif;
-                      font-size: {nameFontSize * 0.5}px;
-                    "
-                  >
-                    {vtuberName}
-                  </h4>
-                  <p 
-                    class="font-medium leading-relaxed" 
-                    style="
-                      color: {welcomeColor}; 
-                      font-family: '{welcomeFontFamily}', sans-serif;
-                      font-size: {welcomeFontSize * 0.7}px;
-                    "
-                  >
-                    {welcomeText}
-                  </p>
-                  
-                  <div class="flex gap-2 pt-1">
-                    {#each socialLinks as link}
-                      {#if link.url}
-                        <span class="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold border" style="color: {socialColor}; border-color: {socialColor}; background-color: rgba(2, 6, 23, 0.6)">
-                          {link.platform.substring(0,1).toUpperCase()}
-                        </span>
-                      {/if}
-                    {/each}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- ช่องกรอกจำลอง -->
-            <div class="space-y-1">
-              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{nicknameLabel}</span>
-              <div class="relative">
-                <input 
-                  type="text" 
-                  disabled
-                  placeholder={nicknamePlaceholder}
-                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
-                  style="
-                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
-                    border-color: {inputBorderColor};
-                    --placeholder-color: {placeholderColor};
-                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
-                  "
-                />
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{messageLabel}</span>
-              <div class="relative">
-                <textarea 
-                  disabled
-                  rows="2"
-                  placeholder={messagePlaceholder}
-                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
-                  style="
-                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
-                    border-color: {inputBorderColor};
-                    --placeholder-color: {placeholderColor};
-                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
-                  "
-                ></textarea>
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{presetLabel}</span>
-              <div class="grid grid-cols-4 gap-1">
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount1}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount2}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount3}฿</div>
-                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount4}฿</div>
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{amountLabel}</span>
-              <div class="relative">
-                <input 
-                  type="text" 
-                  disabled
-                  placeholder={amountPlaceholder}
-                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
-                  style="
-                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
-                    border-color: {inputBorderColor};
-                    --placeholder-color: {placeholderColor};
-                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
-                  "
-                />
-              </div>
-            </div>
-
-            <div class="pt-2">
-              <div class="w-full h-9 rounded-xl flex items-center justify-center font-extrabold shadow" style="background-color: {submitBtnColor}; color: {submitBtnTextColor}; font-family: '{submitBtnFontFamily}', sans-serif; font-size: {submitBtnFontSize * 0.7}px;">
-                {submitBtnText}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
+    </form>
+  </div>
 {/if}
 
-<style>
-  /* 🛡️ สไตลิสต์คุม Placeholder จำลองภายในแผงควบคุมหลังบ้านแบบ Native CSS Variables */
-  .mock-input::placeholder {
-    color: var(--placeholder-color) !important;
-    font-family: var(--placeholder-font) !important;
-    opacity: 0.8 !important;
-  }
-</style>
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+  <!-- เมนูหัวแถวแบบ Fixed -->
+  <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🎨</span>
+      <div>
+        <h1 class="font-extrabold text-lg text-white">Secure Tip Configurator</h1>
+        <p class="text-xs text-slate-400">ระบบประมวลผลสไตล์และตกแต่งเพจ VTuber เรียลไทม์</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+      <button 
+        onclick={handleSave} 
+        disabled={saveLoading}
+        class="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 font-bold rounded-xl cursor-pointer transition flex items-center justify-center gap-2"
+      >
+        {saveLoading ? '⏳ กำลังพุชไฟล์...' : '💾 บันทึกสไตล์ขึ้นคลังโค้ด'}
+      </button>
+    </div>
+  </header>
+
+  <!-- พื้นที่หน้าจอแบ่งปีก: ควบคุม (ซ้าย) VS พรีวิวตัวอย่างตามหน้าจอปัจจุบัน (ขวา) -->
+  <div class="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-8 p-6 max-w-7xl w-full mx-auto">
+    
+    <!-- โซนควบคุมและปรับแต่ง (ซ้าย) -->
+    <div class="space-y-6">
+      
+      <!-- 🎛️ ปุ่มเลือกแท็บสไตล์พรีเมียม -->
+      <div class="grid grid-cols-3 gap-2 p-1.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+        <button 
+          onclick={() => activeTab = 'main'} 
+          class="py-3 px-1 font-extrabold rounded-xl transition text-sm cursor-pointer {activeTab === 'main' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}"
+        >
+          📱 หน้าแรก (โดเนท)
+        </button>
+        <button 
+          onclick={() => activeTab = 'success'} 
+          class="py-3 px-1 font-extrabold rounded-xl transition text-sm cursor-pointer {activeTab === 'success' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}"
+        >
+          🟢 หน้าโอนสำเร็จ
+        </button>
+        <button 
+          onclick={() => activeTab = 'failure'} 
+          class="py-3 px-1 font-extrabold rounded-xl transition text-sm cursor-pointer {activeTab === 'failure' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}"
+        >
+          🔴 หน้าโอนล้มเหลว
+        </button>
+      </div>
+
+      <!-- กล่องฟอร์มกรอกค่าตกแต่ง -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 space-y-6 max-h-[72vh] overflow-y-auto">
+        
+        {#if activeTab === 'main'}
+          <!-- ================= TAB 1: หน้าแรก ================= -->
+          <h2 class="text-lg font-bold text-white border-b border-slate-800 pb-3">📱 แต่งหน้าสนับสนุนหลัก</h2>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">ชื่อสตรีมเมอร์ (VTuber Name)</label>
+              <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.vtuberName} />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">สีตัวอักษรชื่อ</label>
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.nameColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.nameColor} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">ฟอนต์ชื่อ VTuber (ชื่อ Google Font เช่น Mitr, Kanit)</label>
+            <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.nameFontFamily} />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความทักทายตอนโดเนท</label>
+            <textarea class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" rows="2" bind:value={config.welcomeText}></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">ลิงก์ภาพอวาตาร์กลม</label>
+              <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs" bind:value={config.avatarUrl} />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">ลิงก์ภาพแบนเนอร์หลังหัวข้อ</label>
+              <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs" bind:value={config.bannerUrl} />
+            </div>
+          </div>
+
+          <!-- จัดการพื้นหลัง -->
+          <div class="border-t border-slate-800/80 pt-4 space-y-4">
+            <h3 class="text-sm font-bold text-slate-300">🖼️ จัดการพื้นหลังเว็บไซต์หลัก (Global BG)</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <button 
+                class="py-2 rounded-lg font-bold text-xs cursor-pointer border {config.bgType === 'solid' ? 'bg-pink-600 border-pink-500' : 'bg-slate-950 border-slate-800'}"
+                onclick={() => config.bgType = 'solid'}
+              >
+                สีพื้นหลังสีเดียว (Solid)
+              </button>
+              <button 
+                class="py-2 rounded-lg font-bold text-xs cursor-pointer border {config.bgType === 'image' ? 'bg-pink-600 border-pink-500' : 'bg-slate-950 border-slate-800'}"
+                onclick={() => config.bgType = 'image'}
+              >
+                ใส่รูปพื้นหลัง (Wallpaper URL)
+              </button>
+            </div>
+            {#if config.bgType === 'solid'}
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.bgColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white uppercase" bind:value={config.bgColor} />
+              </div>
+            {:else}
+              <input type="text" placeholder="ป้อนที่อยู่รูปภาพออนไลน์ (https://...)" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs" bind:value={config.bgUrl} />
+            {/if}
+          </div>
+
+        {:else}
+          <!-- ================= TAB 2 & 3: ปรับสลับหน้าสำเร็จ / หน้าล้มเหลว ================= -->
+          <div>
+            <h2 class="text-lg font-bold text-white border-b border-slate-800 pb-3">
+              {#if activeTab === 'success'}🟢 ตกแต่งแผงชำระเงินสำเร็จ{:else}🔴 ตกแต่งแผงชำระเงินล้มเหลว{/if}
+            </h2>
+          </div>
+
+          {#if activeTab === 'success'}
+            <!-- ชุดตั้งค่า หน้าโอนเงินสำเร็จ -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-1">
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Emoji ปลายจังหวะ</label>
+                  <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-center text-lg font-bold" bind:value={config.successEmoji} />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ชื่อหัวข้อแสดงเด่น</label>
+                  <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.successTitle} />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีข้อความเด่น</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successTitleColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successTitleColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดฟอนต์หัวข้อสำเร็จ ({config.successTitleFontSize})</label>
+                  <input type="range" min="16" max="42" step="1" class="w-full accent-emerald-500 cursor-pointer" 
+                    value={parseInt(config.successTitleFontSize)} 
+                    oninput={(e) => config.successTitleFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ฟอนต์ของหัวข้อเด่น</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.successTitleFontFamily} />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความสนับสนุนขอบคุณยาว</label>
+                <textarea class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" rows="3" bind:value={config.successMessage}></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีข้อความยาว</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successMessageColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successMessageColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดข้อความขอบคุณ ({config.successMessageFontSize})</label>
+                  <input type="range" min="12" max="24" step="1" class="w-full accent-emerald-500 cursor-pointer" 
+                    value={parseInt(config.successMessageFontSize)} 
+                    oninput={(e) => config.successMessageFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                  />
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/80 pt-4 space-y-4">
+                <h3 class="text-xs font-black text-slate-300">🔘 ตกแต่งปุ่มกลับหน้าหลักหลังชำระเงิน</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความบนปุ่ม</label>
+                    <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.successBtnText} />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดอักษรบนปุ่ม ({config.successBtnFontSize})</label>
+                    <input type="range" min="12" max="24" step="1" class="w-full accent-emerald-500 cursor-pointer" 
+                      value={parseInt(config.successBtnFontSize)} 
+                      oninput={(e) => config.successBtnFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">สีพื้นหลังปุ่ม</label>
+                    <div class="flex gap-2">
+                      <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successBtnColor} />
+                      <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successBtnColor} />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">สีตัวอักษรบนปุ่ม</label>
+                    <div class="flex gap-2">
+                      <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successBtnTextColor} />
+                      <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successBtnTextColor} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {:else}
+            <!-- ชุดตั้งค่า หน้าชำระเงินล้มเหลว -->
+            <div class="space-y-4">
+              <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-1">
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Emoji ปลายจังหวะ</label>
+                  <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-center text-lg font-bold" bind:value={config.failureEmoji} />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ชื่อหัวข้อแสดงเด่น</label>
+                  <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.failureTitle} />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีข้อความล้มเหลวเด่น</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureTitleColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureTitleColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดหัวข้อ ({config.failureTitleFontSize})</label>
+                  <input type="range" min="16" max="42" step="1" class="w-full accent-red-500 cursor-pointer" 
+                    value={parseInt(config.failureTitleFontSize)} 
+                    oninput={(e) => config.failureTitleFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ฟอนต์ของหัวข้อเด่น</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.failureTitleFontFamily} />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">คำชี้แจงความขัดข้องระบบชำระ</label>
+                <textarea class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" rows="3" bind:value={config.failureMessage}></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีข้อความชี้แจง</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureMessageColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureMessageColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดฟอนต์ชี้แจง ({config.failureMessageFontSize})</label>
+                  <input type="range" min="12" max="24" step="1" class="w-full accent-red-500 cursor-pointer" 
+                    value={parseInt(config.failureMessageFontSize)} 
+                    oninput={(e) => config.failureMessageFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                  />
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800/80 pt-4 space-y-4">
+                <h3 class="text-xs font-black text-slate-300">🔘 ตกแต่งปุ่มปิดย้อนกลับ</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความบนปุ่ม</label>
+                    <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.failureBtnText} />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">ขนาดอักษรบนปุ่ม ({config.failureBtnFontSize})</label>
+                    <input type="range" min="12" max="24" step="1" class="w-full accent-red-500 cursor-pointer" 
+                      value={parseInt(config.failureBtnFontSize)} 
+                      oninput={(e) => config.failureBtnFontSize = `${(e.target as HTMLInputElement).value}px`} 
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">สีพื้นหลังปุ่ม</label>
+                    <div class="flex gap-2">
+                      <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureBtnColor} />
+                      <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureBtnColor} />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">สีตัวอักษรบนปุ่ม</label>
+                    <div class="flex gap-2">
+                      <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureBtnTextColor} />
+                      <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureBtnTextColor} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {/if}
+        {/if}
+
+      </div>
+    </div>
+
+    <!-- โซนหน้าต่างพรีวิวตามเวลากรอกเรียลไทม์ (ขวา) -->
+    <div class="flex flex-col items-center justify-center p-4 rounded-3xl relative overflow-hidden border border-slate-800/80 min-h-[500px]"
+      style="
+        background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
+        background-color: {config.bgType === 'solid' ? config.bgColor : '#0c111d'};
+        background-size: cover;
+        background-position: center;
+      "
+    >
+      <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px]"></div>
+      
+      <!-- ป้ายแสตมป์แจ้งสถานะบอกโหมดพรีวิวอยู่ด้านบนมุมซ้าย -->
+      <span class="absolute top-4 left-4 z-20 text-[10px] font-black uppercase tracking-wider px-3 py-1 bg-slate-900 border border-slate-700 rounded-md text-slate-400">
+        Live Mockup (หน้า {activeTab === 'main' ? 'แรก' : activeTab === 'success' ? 'สำเร็จ' : 'ล้มเหลว'})
+      </span>
+
+      <!-- ⚡ ตัวพรีวิวจำลองจะถูกสับเปลี่ยนสไตล์ (Svelte Render Control) ตามแท็บที่ผู้ใช้เปิดใช้งานฝั่งซ้ายโดยทันที! -->
+      <div 
+        class="w-full max-w-sm p-6 rounded-2xl border text-center relative overflow-hidden transition-all duration-300 z-10"
+        style="
+          background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
+          border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
+          backdrop-filter: blur({config.cardBlur}px);
+        "
+      >
+        
+        {#if activeTab === 'main'}
+          <!-- พรีวิว หน้าหลัก -->
+          <div class="space-y-4">
+            <!-- แบนเนอร์จำลองย่อขนาด -->
+            <div class="relative rounded-xl overflow-hidden bg-slate-950 pb-3">
+              {#if config.bannerUrl}
+                <div class="w-full h-24 bg-cover bg-center opacity-40" style="background-image: url({config.bannerUrl});"></div>
+              {:else}
+                <div class="w-full h-24 bg-slate-900 opacity-40"></div>
+              {/if}
+              <div class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-slate-950 to-transparent"></div>
+              <div class="flex items-center gap-3 px-4 -mt-2 relative z-10">
+                <img src={config.avatarUrl || 'https://placehold.co/150'} alt="p" class="w-12 h-12 rounded-full border-2 border-slate-950 object-cover" />
+                <div class="text-left">
+                  <h3 class="font-extrabold text-sm" style="color: {config.nameColor}; font-family: '{config.nameFontFamily}', sans-serif;">{config.vtuberName}</h3>
+                  <p class="text-[10px] text-slate-400" style="font-family: '{config.welcomeFontFamily}', sans-serif;">{config.welcomeText}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ฟิลด์รับเงินจำลอง -->
+            <div class="space-y-2 text-left">
+              <div class="h-8 rounded bg-slate-950/50 border border-slate-800 flex items-center px-3 text-[10px] text-slate-500">กรอกชื่อเล่น...</div>
+              <div class="h-8 rounded bg-slate-950/50 border border-slate-800 flex items-center px-3 text-[10px] text-slate-500">ใส่คำทักทาย...</div>
+            </div>
+
+            <button class="w-full py-3 rounded-lg font-bold text-xs" style="background-color: {config.submitBtnColor}; color: {config.submitBtnTextColor}; font-family: '{config.submitBtnFontFamily}', sans-serif;">
+              {config.submitBtnText || 'โดเนทสนับสนุน 💖'}
+            </button>
+          </div>
+
+        {:else}
+          <!-- พรีวิว หน้าชำระเงินสำเร็จ / ล้มเหลว -->
+          <div class="space-y-4 py-4">
+            <div class="text-5xl animate-pulse">
+              {#if activeTab === 'success'}{config.successEmoji}{:else}{config.failureEmoji}{/if}
+            </div>
+
+            <h3 
+              class="font-black"
+              style="
+                color: {activeTab === 'success' ? config.successTitleColor : config.failureTitleColor};
+                font-family: '{activeTab === 'success' ? config.successTitleFontFamily : config.failureTitleFontFamily}', sans-serif;
+                font-size: {activeTab === 'success' ? config.successTitleFontSize : config.failureTitleFontSize};
+              "
+            >
+              {#if activeTab === 'success'}{config.successTitle}{:else}{config.failureTitle}{/if}
+            </h3>
+
+            <p 
+              class="font-medium leading-relaxed"
+              style="
+                color: {activeTab === 'success' ? config.successMessageColor : config.failureMessageColor};
+                font-family: '{activeTab === 'success' ? config.successMessageFontFamily : config.failureMessageFontFamily}', sans-serif;
+                font-size: {activeTab === 'success' ? config.successMessageFontSize : config.failureMessageFontSize};
+              "
+            >
+              {#if activeTab === 'success'}{config.successMessage}{:else}{config.failureMessage}{/if}
+            </p>
+
+            <button 
+              class="w-full py-3 rounded-lg font-bold transition duration-300"
+              style="
+                background-color: {activeTab === 'success' ? config.successBtnColor : config.failureBtnColor}; 
+                color: {activeTab === 'success' ? config.successBtnTextColor : config.failureBtnTextColor};
+                font-family: '{config.submitBtnFontFamily}', sans-serif;
+                font-size: {activeTab === 'success' ? config.successBtnFontSize : config.failureBtnFontSize};
+              "
+            >
+              {#if activeTab === 'success'}{config.successBtnText}{:else}{config.failureBtnText}{/if}
+            </button>
+          </div>
+        {/if}
+
+      </div>
+    </div>
+
+  </div>
+</div>
