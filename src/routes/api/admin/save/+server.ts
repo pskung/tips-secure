@@ -41,31 +41,33 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    // แตกโครงสร้างข้อมูลการกำหนดค่าทั้งหมด รวมถึงค่าตกแต่งที่เพิ่มมาใหม่
+    // ทำลายสัญญานฟอนต์ขนาดพิกเซล และรับส่งตัวแปรข้อความปุ่มที่เพิ่มเข้ามาเทียบเท่า Success Button
     const { 
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
       cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
       profileAreaBgColor, profileAreaOpacity,
       inputBgColor, inputBgOpacity, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily, nameFontSize,
-      welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
+      vtuberName, nameColor, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontFamily,
       nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
-      labelColor, labelFontFamily, labelFontSize,
+      labelColor, labelFontFamily,
       placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText,
+      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
+      
+      // ปุ่มโดเนทหลัก (เทียบเท่าปุ่มกลับหน้าหลัก)
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnText,
 
-      // ค่าตกแต่งหน้าชำระสำเร็จที่เพิ่มใหม่ (Success Page Specs)
-      successTitle, successTitleColor, successTitleFontFamily, successTitleFontSize,
-      successMessage, successMessageColor, successMessageFontFamily, successMessageFontSize,
-      successEmoji, successBtnText, successBtnColor, successBtnTextColor, successBtnFontSize,
+      // หน้าโอนสำเร็จ
+      successTitle, successTitleColor, successTitleFontFamily,
+      successMessage, successMessageColor, successMessageFontFamily,
+      successEmoji, successBtnText, successBtnColor, successBtnTextColor,
 
-      // ค่าตกแต่งหน้าชำระล้มเหลวที่เพิ่มใหม่ (Failure Page Specs)
-      failureTitle, failureTitleColor, failureTitleFontFamily, failureTitleFontSize,
-      failureMessage, failureMessageColor, failureMessageFontFamily, failureMessageFontSize,
-      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor, failureBtnFontSize
+      // หน้าโอนล้มเหลว
+      failureTitle, failureTitleColor, failureTitleFontFamily,
+      failureMessage, failureMessageColor, failureMessageFontFamily,
+      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor
     } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
@@ -90,38 +92,35 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       sha = fileData.sha;
     }
 
-    // บรรจุลงเป็นรูปแบบ Base64 เขียนลง theme.json บนคลังโค้ด GitHub
     const updatedContent = Buffer.from(JSON.stringify({
       avatarUrl, bannerUrl,
       bgType, bgColor, bgUrl,
       cardBgColor, cardOpacity, cardBorderColor, cardBorderOpacity, cardBlur,
       profileAreaBgColor, profileAreaOpacity,
       inputBgColor, inputBgOpacity, inputBorderColor,
-      vtuberName, nameColor, nameFontFamily, nameFontSize,
-      welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
+      vtuberName, nameColor, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontFamily,
       nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
-      labelColor, labelFontFamily, labelFontSize,
+      labelColor, labelFontFamily,
       placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
-      presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
-      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText,
+      presetAmounts, presetFontFamily, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnText,
 
-      // เขียนทับค่าเฉพาะ หน้าสำเร็จ
-      successTitle, successTitleColor, successTitleFontFamily, successTitleFontSize,
-      successMessage, successMessageColor, successMessageFontFamily, successMessageFontSize,
-      successEmoji, successBtnText, successBtnColor, successBtnTextColor, successBtnFontSize,
+      successTitle, successTitleColor, successTitleFontFamily,
+      successMessage, successMessageColor, successMessageFontFamily,
+      successEmoji, successBtnText, successBtnColor, successBtnTextColor,
 
-      // เขียนทับค่าเฉพาะ หน้าล้มเหลว
-      failureTitle, failureTitleColor, failureTitleFontFamily, failureTitleFontSize,
-      failureMessage, failureMessageColor, failureMessageFontFamily, failureMessageFontSize,
-      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor, failureBtnFontSize
+      failureTitle, failureTitleColor, failureTitleFontFamily,
+      failureMessage, failureMessageColor, failureMessageFontFamily,
+      failureEmoji, failureBtnText, failureBtnColor, failureBtnTextColor
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Saved personalized styles, labeled components and customized placeholders.',
+        message: '💅 Saved customized text configs, removed absolute font sizes.',
         content: updatedContent,
         sha: sha || undefined,
       }),
