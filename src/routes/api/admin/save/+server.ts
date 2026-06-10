@@ -42,8 +42,16 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     }
 
     const { 
-      vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts,
-      bgType, bgColor, bgUrl, fontUrl, socialLinks, layout 
+      avatarUrl, bannerUrl,
+      bgType, bgColor, bgUrl,
+      cardBgColor, cardBorderColor,
+      inputBgColor, inputBorderColor,
+      vtuberName, nameColor, nameFontUrl, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontUrl, welcomeFontFamily,
+      nicknameLabel, messageLabel, amountLabel, presetLabel,
+      socialLinks, socialColor,
+      presetAmounts, presetFontUrl, presetFontFamily, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontUrl, submitBtnFontFamily
     } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
@@ -69,15 +77,23 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     }
 
     const updatedContent = Buffer.from(JSON.stringify({
-      vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts,
-      bgType, bgColor, bgUrl, fontUrl, socialLinks, layout
+      avatarUrl, bannerUrl,
+      bgType, bgColor, bgUrl,
+      cardBgColor, cardBorderColor,
+      inputBgColor, inputBorderColor,
+      vtuberName, nameColor, nameFontUrl, nameFontFamily,
+      welcomeText, welcomeColor, welcomeFontUrl, welcomeFontFamily,
+      nicknameLabel, messageLabel, amountLabel, presetLabel,
+      socialLinks, socialColor,
+      presetAmounts, presetFontUrl, presetFontFamily, presetBtnColor, presetBorderColor,
+      submitBtnColor, submitBtnTextColor, submitBtnFontUrl, submitBtnFontFamily
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Custom layout coordinates and social properties successfully saved.',
+        message: '💅 Updated customized styling properties securely without layout indices.',
         content: updatedContent,
         sha: sha || undefined,
       }),
