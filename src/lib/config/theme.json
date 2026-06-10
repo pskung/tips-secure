@@ -1,9 +1,9 @@
 {
   "avatarUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
-  "bannerUrl": "",
-  "bgType": "solid",
+  "bannerUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
+  "bgType": "image",
   "bgColor": "#0b0f19",
-  "bgUrl": "",
+  "bgUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
   "cardBgColor": "#0f172a",
   "cardOpacity": 0.6,
   "cardBorderColor": "#1e293b",
@@ -35,13 +35,34 @@
   "placeholderColor": "#64748b",
   "placeholderFontFamily": "Mitr",
   "socialLinks": [
-    { "platform": "youtube", "url": "" },
-    { "platform": "twitch", "url": "" },
-    { "platform": "tiktok", "url": "" },
-    { "platform": "twitter", "url": "" },
-    { "platform": "facebook", "url": "" },
-    { "platform": "discord", "url": "" },
-    { "platform": "instagram", "url": "" }
+    {
+      "platform": "youtube",
+      "url": ""
+    },
+    {
+      "platform": "twitch",
+      "url": ""
+    },
+    {
+      "platform": "tiktok",
+      "url": ""
+    },
+    {
+      "platform": "twitter",
+      "url": ""
+    },
+    {
+      "platform": "facebook",
+      "url": ""
+    },
+    {
+      "platform": "discord",
+      "url": ""
+    },
+    {
+      "platform": "instagram",
+      "url": ""
+    }
   ],
   "socialColor": "#db2777",
   "presetAmounts": [
