@@ -15,9 +15,10 @@
   let clientNonce = $state('');
   let cooldownRemaining = $state(0);
 
-  // ระบบประมวลค่าข้อความเพื่อป้องกันกรณี theme.json เวอร์ชั่นเก่าไม่มีตัวแปรใหม่ (Fallback Config)
+  // ระบบเกราะประมวลสำรองข้อมูล (Nullish Fallback Wrapper)
   const config = {
     ...theme,
+    mainFontFamily: theme.mainFontFamily ?? 'Mitr',
     nicknameLabel: theme.nicknameLabel ?? 'ชื่อเล่นของคุณ',
     nicknamePlaceholder: theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
     messageLabel: theme.messageLabel ?? 'ข้อความสนับสนุน',
@@ -25,6 +26,7 @@
     presetLabel: theme.presetLabel ?? 'ปุ่มสนับสนุนด่วน',
     amountLabel: theme.amountLabel ?? 'ระบุจำนวนเงินเอง (บาท)',
     amountPlaceholder: theme.amountPlaceholder ?? 'ป้อนจำนวนเงิน (10 - 5,000 บาท)...',
+    presetAmounts: theme.presetAmounts && theme.presetAmounts.length === 4 ? theme.presetAmounts : [100, 300, 500, 1000],
     submitBtnText: theme.submitBtnText ?? 'โดเนทสนับสนุน 💖',
     submitBtnColor: theme.submitBtnColor ?? '#db2777',
     submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff'
@@ -32,11 +34,7 @@
 
   const uniqueFonts = $derived([
     ...new Set([
-      config.nameFontFamily,
-      config.welcomeFontFamily,
-      config.labelFontFamily,
-      config.presetFontFamily,
-      config.submitBtnFontFamily,
+      config.mainFontFamily,
       config.placeholderFontFamily
     ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
   ]);
@@ -152,11 +150,13 @@
   {/each}
 </svelte:head>
 
+<!-- 🚨 ประยุกต์ใช้สไตล์ฟอนต์เดี่ยวส่วนกลาง (config.mainFontFamily) ครอบคลุมทั้งเพจ -->
 <main 
-  class="flex min-h-screen flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative transition-all duration-700"
+  class="flex min-h-screen flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative transition-all duration-700 select-none"
   style="
     background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
     background-color: {config.bgType === 'solid' ? config.bgColor : '#0b0f19'};
+    font-family: '{config.mainFontFamily}', sans-serif;
   "
 >
   <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[4px] -z-10"></div>
@@ -169,13 +169,14 @@
       border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
       backdrop-filter: blur({config.cardBlur}px);
       --placeholder-color: {config.placeholderColor || '#64748b'};
-      --placeholder-font: '{config.placeholderFontFamily || config.welcomeFontFamily}', sans-serif;
+      --placeholder-font: '{config.mainFontFamily}', sans-serif;
     "
   >
     <div class="hidden">
       <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
     </div>
 
+    <!-- ส่วนหัวพร้อม Banner โซเชียล และ Avatar เยื้องทับขอบ 10% -->
     <div class="relative rounded-2xl overflow-hidden border border-slate-800/30 pb-5 transition-all duration-500" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)};">
       <div class="relative">
         {#if config.bannerUrl}
@@ -193,14 +194,13 @@
         </div>
 
         <div class="flex-1 pt-1 sm:pt-4 space-y-3">
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wide" style="color: {config.nameColor || '#db2777'}; font-family: '{config.nameFontFamily}', sans-serif;">{config.vtuberName}</h1>
-          <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color: {config.welcomeColor || '#cbd5e1'}; font-family: '{config.welcomeFontFamily}', sans-serif;">{config.welcomeText}</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wide" style="color: {config.nameColor || '#db2777'};">{config.vtuberName}</h1>
+          <p class="text-xs sm:text-sm font-medium leading-relaxed" style="color: {config.welcomeColor || '#cbd5e1'};">{config.welcomeText}</p>
 
           <div class="flex flex-wrap justify-center sm:justify-start gap-3 pt-1">
             {#each config.socialLinks || [] as link}
               {#if link.url}
                 <a href={link.url} target="_blank" rel="noopener noreferrer" class="p-2 rounded-full border transition-all hover:scale-110 flex items-center justify-center bg-slate-950/40" style="border-color: {config.socialColor || '#db2777'}; color: {config.socialColor || '#db2777'};">
-                  <!-- สัญญลักษณ์โซเชียลจะจัดเต็มดึงอัตโนมัติ -->
                   <span class="text-xs font-bold uppercase">{link.platform}</span>
                 </a>
               {/if}
@@ -210,59 +210,58 @@
       </div>
     </div>
 
-    <!-- ช่องกรอกชื่อเล่น (ขนาดฟอนต์คุมด้วย Tailwind คลาส) -->
+    <!-- ช่องกรอกชื่อเล่น -->
     <div class="space-y-1.5 w-full pt-2">
-      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="nickname" style="color: {config.labelColor || '#cbd5e1'}; font-family: '{config.labelFontFamily}', sans-serif;">
+      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="nickname" style="color: {config.labelColor || '#cbd5e1'};">
         {config.nicknameLabel}
       </label>
       <div class="relative group">
-        <input id="nickname" type="text" required placeholder={config.nicknamePlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base tracking-wide transition-all focus:outline-none focus:ring-2 border" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor}; font-family: '{config.welcomeFontFamily}', sans-serif;" bind:value={name} />
+        <input id="nickname" type="text" required placeholder={config.nicknamePlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base tracking-wide transition-all focus:outline-none focus:ring-2 border" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" bind:value={name} />
       </div>
     </div>
 
     <!-- ช่องข้อความ -->
     <div class="space-y-1.5 w-full">
-      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="donor-msg" style="color: {config.labelColor || '#cbd5e1'}; font-family: '{config.labelFontFamily}', sans-serif;">
+      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="donor-msg" style="color: {config.labelColor || '#cbd5e1'};">
         {config.messageLabel}
       </label>
       <div class="relative group">
-        <textarea id="donor-msg" placeholder={config.messagePlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base tracking-wide transition-all focus:outline-none focus:ring-2 border" rows="2" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor}; font-family: '{config.welcomeFontFamily}', sans-serif;" bind:value={message}></textarea>
+        <textarea id="donor-msg" placeholder={config.messagePlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base tracking-wide transition-all focus:outline-none focus:ring-2 border" rows="2" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" bind:value={message}></textarea>
       </div>
     </div>
 
     <!-- ปุ่มยอดเงินด่วน -->
     <div class="space-y-2 w-full">
-      <label class="block text-xs sm:text-sm font-bold tracking-wide" style="color: {config.labelColor || '#cbd5e1'}; font-family: '{config.labelFontFamily}', sans-serif;">
+      <label class="block text-xs sm:text-sm font-bold tracking-wide" style="color: {config.labelColor || '#cbd5e1'};">
         {config.presetLabel}
       </label>
       <div class="grid grid-cols-4 gap-2">
         {#each config.presetAmounts as amt}
-          <button type="button" onclick={() => amount = String(amt)} class="py-2.5 px-1 text-xs sm:text-sm font-extrabold border rounded-xl cursor-pointer tracking-wide transition-all duration-200" style="background-color: {amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; border-color: {amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; color: {amount === String(amt) ? config.submitBtnTextColor : '#e2e8f0'}; font-family: '{config.presetFontFamily}', sans-serif;">{amt}฿</button>
+          <button type="button" onclick={() => amount = String(amt)} class="py-2.5 px-1 text-xs sm:text-sm font-extrabold border rounded-xl cursor-pointer tracking-wide transition-all duration-200" style="background-color: {amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; border-color: {amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; color: {amount === String(amt) ? config.submitBtnTextColor : '#e2e8f0'};">{amt}฿</button>
         {/each}
       </div>
     </div>
 
     <!-- ระบุจำนวนเงินเอง -->
     <div class="space-y-1.5 w-full">
-      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="custom-amount" style="color: {config.labelColor || '#cbd5e1'}; font-family: '{config.labelFontFamily}', sans-serif;">
+      <label class="block text-xs sm:text-sm font-bold tracking-wide" for="custom-amount" style="color: {config.labelColor || '#cbd5e1'};">
         {config.amountLabel}
       </label>
       <div class="relative group">
-        <input id="custom-amount" type="number" required min="10" placeholder={config.amountPlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base font-extrabold tracking-wide transition-all focus:outline-none focus:ring-2 border" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor}; font-family: '{config.welcomeFontFamily}', sans-serif;" bind:value={amount} />
+        <input id="custom-amount" type="number" required min="10" placeholder={config.amountPlaceholder} class="w-full pl-4 pr-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm sm:text-base font-extrabold tracking-wide transition-all focus:outline-none focus:ring-2 border" style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" bind:value={amount} />
       </div>
     </div>
 
-    <!-- ปุ่มโดเนท (ปรับแต่งสีพื้นหลังและตัวอักษรได้เทียบเท่าหน้า Success) -->
+    <!-- ปุ่มโดเนท -->
     <div class="w-full pt-4">
       <button
         type="submit"
         disabled={loading || powLoading || cooldownRemaining > 0}
-        class="w-full py-4 text-sm sm:text-base font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
+        class="w-full py-4 text-sm sm:text-base font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase animate-none"
         style="
           background-color: {cooldownRemaining > 0 ? '#4b5563' : config.submitBtnColor}; 
           color: {config.submitBtnTextColor || '#ffffff'};
           box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-          font-family: '{config.submitBtnFontFamily}', sans-serif;
         "
       >
         {#if cooldownRemaining > 0}
