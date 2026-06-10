@@ -63,7 +63,7 @@
   let labelFontFamily = $state(theme.labelFontFamily || 'Mitr');
   let labelFontSize = $state(parseInt(theme.labelFontSize || '14'));
 
-  // 🌟 (เพิ่มใหม่) ตั้งค่าสี ฟอนต์ และข้อความตัวอย่างในช่องกรอก (Placeholders)
+  // ตั้งค่าสี ฟอนต์ และข้อความตัวอย่างในช่องกรอก (Placeholders)
   let placeholderColor = $state(theme.placeholderColor || '#64748b');
   let placeholderFontFamily = $state(theme.placeholderFontFamily || 'Mitr');
 
@@ -266,7 +266,7 @@
         <p class="text-slate-400 text-sm mt-1">คุมดีไซน์ ความเบลอกระจกฝ้า ขนาดฟอนต์ และเฉดสีโปร่งใสได้อย่างเบ็ดเสร็จค่ะ</p>
       </div>
       <button onclick={handleLogout} class="px-4 py-2 bg-slate-900 hover:bg-red-950/40 border border-slate-800 hover:border-red-500/30 text-xs font-bold text-slate-400 hover:text-red-400 rounded-xl transition-all cursor-pointer">
-        ออกจากระบบผู้รักษาความปลอดภัย 🚪
+        ออกจากระบบหลังบ้าน 🚪
       </button>
     </header>
 
@@ -285,7 +285,7 @@
               </div>
               <div class="flex-1 space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="avatar-img">ลิงก์ภาพอวาตาร์ (Avatar URL)</label>
-                <input id="avatar-img" type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={avatarUrl} />
+                <input id="avatar-img" type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white" bind:value={avatarUrl} />
               </div>
             </div>
           </div>
@@ -395,7 +395,7 @@
           </div>
 
           <!-- [6] สีช่องกรอกข้อมูล -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-3">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-3">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 สีช่องกรอกข้อมูล (Inputs Field Styling)</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="space-y-1">
@@ -424,12 +424,12 @@
           </div>
 
           <!-- [7] ชื่อ, สี + Font ชื่อ + ขนาด Font ชื่อ -->
-          <div class="p-5 bg-slate-950/60 border border-slate-855 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-855 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ชื่อสตรีมเมอร์ สี และฟอนต์ขนาดพิกเซล</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="v-name">ชื่อช่องสตรีมเมอร์</label>
-                <input id="v-name" type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={vtuberName} />
+                <input id="v-name" type="text" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={vtuberName} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">สีของชื่อช่อง</label>
@@ -437,14 +437,14 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={nameColor} />
                   </div>
-                  <input type="text" class="px-2 py-1.5 bg-slate-950 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={nameColor} />
+                  <input type="text" class="px-2 py-1.5 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={nameColor} />
                 </div>
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="v-font">ชื่อฟอนต์กูเกิล (Font Family)</label>
-                <input id="v-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nameFontFamily} />
+                <input id="v-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nameFontFamily} />
               </div>
               <div class="space-y-1.5">
                 <label class="block text-[10px] font-bold text-slate-400">ขนาดตัวอักษรชื่อช่อง (Font Size: {nameFontSize}px)</label>
@@ -454,12 +454,12 @@
           </div>
 
           <!-- [8] คำทักทาย, สี + Font คำทักทาย + ขนาด Font คำทักทาย -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 คำทักทาย สี และฟอนต์ขนาดพิกเซล</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1 col-span-2">
                 <label class="block text-[10px] font-bold text-slate-400" for="wel-text">คำทักทายต้อนรับหลัก</label>
-                <textarea id="wel-text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-medium" rows="2" bind:value={welcomeText}></textarea>
+                <textarea id="wel-text" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-medium" rows="2" bind:value={welcomeText}></textarea>
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">สีคำทักทาย</label>
@@ -467,14 +467,14 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={welcomeColor} />
                   </div>
-                  <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={welcomeColor} />
+                  <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={welcomeColor} />
                 </div>
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="wel-font">ฟอนต์คำทักทาย (Font Family)</label>
-                <input id="wel-font" type="text" placeholder="เช่น Mitr, Sarabun" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={welcomeFontFamily} />
+                <input id="wel-font" type="text" placeholder="เช่น Mitr, Sarabun" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={welcomeFontFamily} />
               </div>
               <div class="space-y-1.5">
                 <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์คำทักทาย (Font Size: {welcomeFontSize}px)</label>
@@ -484,7 +484,7 @@
           </div>
 
           <!-- [9] ชื่อหัวข้อช่องกรอกต่างๆ (Labels), สี + Font หัวข้อ + ขนาด Font หัวข้อ -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ชื่อช่องกรอก และขนาดฟอนต์หัวข้อ Label</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="space-y-1">
@@ -493,12 +493,12 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={labelColor} />
                   </div>
-                  <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={labelColor} />
+                  <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-850 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={labelColor} />
                 </div>
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="lbl-font-f">ฟอนต์หัวข้อ (Font Family)</label>
-                <input id="lbl-font-f" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={labelFontFamily} />
+                <input id="lbl-font-f" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={labelFontFamily} />
               </div>
               <div class="space-y-1.5">
                 <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ (Font Size: {labelFontSize}px)</label>
@@ -509,25 +509,25 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-800/20">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="l-nick">ป้ายช่องชื่อเล่น</label>
-                <input id="l-nick" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknameLabel} />
+                <input id="l-nick" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknameLabel} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="l-msg">ป้ายช่องเขียนข้อความ</label>
-                <input id="l-msg" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messageLabel} />
+                <input id="l-msg" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messageLabel} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="l-preset">ป้ายปุ่มเลือกเงินด่วน</label>
-                <input id="l-preset" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetLabel} />
+                <input id="l-preset" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetLabel} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="l-amt">ป้ายระบุเงินกำหนดเอง</label>
-                <input id="l-amt" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountLabel} />
+                <input id="l-amt" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountLabel} />
               </div>
             </div>
           </div>
 
-          <!-- [🌟 เพิ่มใหม่] แผงปรับข้อความตัวอย่าง Placeholder (ข้อความ, สี, ฟอนต์) -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <!-- แผงปรับข้อความตัวอย่าง Placeholder (ข้อความ, สี, ฟอนต์) -->
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ข้อความตัวอย่างช่องกรอก (Placeholders), สี และฟอนต์</h3>
             <p class="text-[10px] text-slate-400">ตกแต่งเนื้อหาข้อความจางๆ และสไตล์ฟอนต์ที่โชว์เป็นไกด์ไลน์ก่อนกดพิมพ์ได้ตามใจชอบค่ะ:</p>
             
@@ -538,33 +538,33 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={placeholderColor} />
                   </div>
-                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={placeholderColor} />
+                  <input type="text" class="flex-1 px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={placeholderColor} />
                 </div>
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="ph-font-f">ฟอนต์ข้อความตัวอย่าง (Font Family)</label>
-                <input id="ph-font-f" type="text" placeholder="เช่น Mitr, Noto Sans Thai" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={placeholderFontFamily} />
+                <input id="ph-font-f" type="text" placeholder="เช่น Mitr, Noto Sans Thai" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={placeholderFontFamily} />
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/20">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="ph-nick">ตัวอย่างช่องชื่อเล่น</label>
-                <input id="ph-nick" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknamePlaceholder} />
+                <input id="ph-nick" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={nicknamePlaceholder} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="ph-msg">ตัวอย่างช่องข้อความ</label>
-                <input id="ph-msg" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messagePlaceholder} />
+                <input id="ph-msg" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={messagePlaceholder} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="ph-amt">ตัวอย่างช่องจำนวนเงิน</label>
-                <input id="ph-amt" type="text" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountPlaceholder} />
+                <input id="ph-amt" type="text" class="w-full px-3 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={amountPlaceholder} />
               </div>
             </div>
           </div>
 
           <!-- [10] Link social media + สี link social media -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 บัญชีโซเชียลมีเดีย และสีปุ่มทางออก</h3>
             <div class="space-y-1">
               <label class="block text-[10px] font-bold text-slate-400">สีปุ่ม Social Media</label>
@@ -572,12 +572,12 @@
                 <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                   <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={socialColor} />
                 </div>
-                <input type="text" class="px-2 py-1 bg-slate-950 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={socialColor} />
+                <input type="text" class="px-2 py-1 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={socialColor} />
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {#each socialLinks as link}
-                <div class="flex items-center gap-2 bg-slate-950/70 p-2.5 border border-slate-800 rounded-xl">
+                <div class="flex items-center gap-2 bg-slate-955/70 p-2.5 border border-slate-800 rounded-xl">
                   <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 w-20">{link.platform}</span>
                   <input type="text" placeholder="ปล่อยว่างไว้หากยังไม่มี..." class="flex-1 bg-transparent border-b border-slate-800 py-1 text-xs text-white focus:outline-none focus:border-pink-500" bind:value={link.url} />
                 </div>
@@ -586,31 +586,31 @@
           </div>
 
           <!-- [11] แก้ preset ราคา, สี + Font preset ราคา + ขนาด Font preset ราคา -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ตั้งค่าเงินด่วน (Presets) สี ขนาด และฟอนต์ปุ่มด่วน</h3>
             <div class="grid grid-cols-4 gap-2">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 1 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount1} />
+                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount1} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 2 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount2} />
+                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount2} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 3 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount3} />
+                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount3} />
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400">ปุ่ม 4 (฿)</label>
-                <input type="number" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount4} />
+                <input type="number" class="w-full px-2 py-1.5 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-bold" bind:value={presetAmount4} />
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="p-font">ฟอนต์ปุ่มด่วน (Font Family)</label>
-                <input id="p-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetFontFamily} />
+                <input id="p-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={presetFontFamily} />
               </div>
               <div class="space-y-1.5">
                 <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ปุ่มด่วน (Font Size: {presetFontSize}px)</label>
@@ -625,7 +625,7 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={presetBtnColor} />
                   </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBtnColor} />
+                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBtnColor} />
                 </div>
               </div>
               <div class="space-y-1">
@@ -634,18 +634,18 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={presetBorderColor} />
                   </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBorderColor} />
+                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={presetBorderColor} />
                 </div>
               </div>
             </div>
           </div>
 
           <!-- [12] สี + Font ปุ่มโดเนท + ขนาด Font ปุ่มโดเนท, สีปุ่มโดเนท, สีตัวอักษรปุ่มโดเนท, ข้อความปุ่มโดเนท -->
-          <div class="p-5 bg-slate-950/60 border border-slate-850 rounded-2xl space-y-4">
+          <div class="p-5 bg-slate-955/60 border border-slate-850 rounded-2xl space-y-4">
             <h3 class="text-xs uppercase tracking-widest font-black text-pink-400">👉 ดีไซน์ปุ่มส่งสนับสนุนโดเนทหลัก (Submit Button)</h3>
             <div class="space-y-2">
               <label class="block text-[10px] font-bold text-slate-400" for="btn-txt">ข้อความแสดงบนปุ่มโดเนทหลัก</label>
-              <input id="btn-txt" type="text" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-bold" bind:value={submitBtnText} />
+              <input id="btn-txt" type="text" class="w-full px-4 py-2.5 bg-slate-955 border border-slate-800 rounded-xl text-xs text-white font-bold" bind:value={submitBtnText} />
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/30">
               <div class="space-y-1">
@@ -654,7 +654,7 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={submitBtnColor} />
                   </div>
-                  <input type="text" class="px-2 py-1.5 bg-slate-950 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={submitBtnColor} />
+                  <input type="text" class="px-2 py-1.5 bg-slate-955 border border-slate-855 rounded text-xs text-slate-300 w-20 font-mono uppercase" bind:value={submitBtnColor} />
                 </div>
               </div>
               <div class="space-y-1">
@@ -663,7 +663,7 @@
                   <div class="relative w-8 h-8 rounded border border-slate-800 overflow-hidden flex-shrink-0">
                     <input type="color" class="absolute inset-0 w-full h-full cursor-pointer scale-125 border-none p-0" bind:value={submitBtnTextColor} />
                   </div>
-                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={submitBtnTextColor} />
+                  <input type="text" class="flex-1 px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-mono" bind:value={submitBtnTextColor} />
                 </div>
               </div>
             </div>
@@ -671,7 +671,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-800/40">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-400" for="btn-font">ฟอนต์ปุ่มโดเนท (Font Family)</label>
-                <input id="btn-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={submitBtnFontFamily} />
+                <input id="btn-font" type="text" placeholder="เช่น Mitr, Kanit" class="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-white font-semibold" bind:value={submitBtnFontFamily} />
               </div>
               <div class="space-y-1.5">
                 <label class="block text-[10px] font-bold text-slate-400">ขนาดฟอนต์ปุ่มโดเนท (Font Size: {submitBtnFontSize}px)</label>
@@ -697,7 +697,7 @@
           พรีวิวจำลองผลเรียลไทม์ (Live Layout Simulation)
         </h2>
 
-        <!-- หน้าต่างมือถือจำลอง (สัดส่วนตรงกับหน้าหลัก 100% แต่ย่อลงด้วยสไตล์สมส่วน) -->
+        <!-- หน้าต่างมือถือจำลอง -->
         <div 
           class="w-full aspect-[9/13] rounded-3xl border border-slate-800 bg-cover bg-center relative overflow-y-auto shadow-2xl p-4 select-none pointer-events-none"
           style="
@@ -713,8 +713,8 @@
               background-color: {hexToRgba(cardBgColor, cardOpacity)};
               border-color: {hexToRgba(cardBorderColor, cardBorderOpacity)};
               backdrop-filter: blur({cardBlur}px);
-              --ph-color: {placeholderColor};
-              --ph-font: '{placeholderFontFamily}', sans-serif;
+              --placeholder-color: {placeholderColor};
+              --placeholder-font: '{placeholderFontFamily}', sans-serif;
             "
           >
             <!-- ส่วนแบนเนอร์กับพิกเซลโอเวอร์เลย์ 10% และ Gradient Transition Fade -->
@@ -742,7 +742,7 @@
                   <img src={avatarUrl || 'https://placehold.co/150'} alt="Avatar" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-slate-950 object-cover shadow-2xl transition-all duration-300" />
                 </div>
 
-                <!-- ข้อมูลด้านขวาและโซเชียลมีเดียห่างขึ้น (space-y-3 เพื่อความกระชับของหน้าจอจำลอง) -->
+                <!-- ข้อมูลด้านขวาและโซเชียลมีเดียห่างขึ้น -->
                 <div class="flex-1 pt-4 space-y-2 text-left">
                   <h4 
                     class="font-extrabold tracking-wide" 
@@ -778,7 +778,7 @@
               </div>
             </div>
 
-            <!-- ช่องกรอกจำลอง (ผูก CSS Placeholder สี และ ฟอนต์) -->
+            <!-- ช่องกรอกจำลอง -->
             <div class="space-y-1">
               <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{nicknameLabel}</span>
               <div class="relative">
@@ -819,4 +819,49 @@
               <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{presetLabel}</span>
               <div class="grid grid-cols-4 gap-1">
                 <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount1}฿</div>
-                <div c
+                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount2}฿</div>
+                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount3}฿</div>
+                <div class="py-1 text-center font-bold border rounded" style="background-color: {presetBtnColor}; border-color: {presetBorderColor}; color: {nameColor}; font-family: '{presetFontFamily}', sans-serif; font-size: {presetFontSize * 0.7}px;">{presetAmount4}฿</div>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <span class="block font-medium" style="color: {labelColor}; font-family: '{labelFontFamily}', sans-serif; font-size: {labelFontSize * 0.7}px;">{amountLabel}</span>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  disabled
+                  placeholder={amountPlaceholder}
+                  class="w-full px-3 py-1.5 rounded-lg border text-[9px] bg-transparent mock-input"
+                  style="
+                    background-color: {hexToRgba(inputBgColor, inputBgOpacity)}; 
+                    border-color: {inputBorderColor};
+                    --placeholder-color: {placeholderColor};
+                    --placeholder-font: '{placeholderFontFamily}', sans-serif;
+                  "
+                />
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <div class="w-full h-9 rounded-xl flex items-center justify-center font-extrabold shadow" style="background-color: {submitBtnColor}; color: {submitBtnTextColor}; font-family: '{submitBtnFontFamily}', sans-serif; font-size: {submitBtnFontSize * 0.7}px;">
+                {submitBtnText}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+{/if}
+
+<style>
+  /* 🛡️ สไตลิสต์คุม Placeholder จำลองภายในแผงควบคุมหลังบ้านแบบ Native CSS Variables */
+  .mock-input::placeholder {
+    color: var(--placeholder-color) !important;
+    font-family: var(--placeholder-font) !important;
+    opacity: 0.8 !important;
+  }
+</style>
