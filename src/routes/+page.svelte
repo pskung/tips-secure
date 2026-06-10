@@ -15,22 +15,16 @@
   let clientNonce = $state('');
   let cooldownRemaining = $state(0);
 
-  // ฟังก์ชันสกัดชื่อฟอนต์จาก URL ของกูเกิลฟอนต์โดยอัตโนมัติ
-  const getFontFamily = (url: string | undefined): string => {
-    if (!url) return 'sans-serif';
-    const match = url.match(/family=([^:&]+)/);
-    if (match && match[1]) {
-      const rawFont = match[1].split(':')[0];
-      return decodeURIComponent(rawFont.replace(/\+/g, ' '));
-    }
-    return 'sans-serif';
-  };
-
-  // ดึง Font Family แยกกันรายจุด เพื่อนำไปสวมใส่ผ่าน Inline Style ได้ถูกต้องตามเป้าประสงค์
-  const nameFontFamily = $derived(getFontFamily(theme.nameFontUrl));
-  const welcomeFontFamily = $derived(getFontFamily(theme.welcomeFontUrl));
-  const presetFontFamily = $derived(getFontFamily(theme.presetFontUrl));
-  const submitBtnFontFamily = $derived(getFontFamily(theme.submitBtnFontUrl));
+  // 🛡️ ระบบจัดคิวและกรองตระกูล Google Fonts อัตโนมัติเบื้องหลัง
+  const uniqueFonts = $derived([
+    ...new Set([
+      theme.nameFontFamily,
+      theme.welcomeFontFamily,
+      theme.labelFontFamily,
+      theme.presetFontFamily,
+      theme.submitBtnFontFamily
+    ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
+  ]);
 
   const sanitizeUrl = (url: string | undefined): string => {
     if (!url) return '';
@@ -135,21 +129,12 @@
 </script>
 
 <svelte:head>
-  <title>สนับสนุน {theme.vtuberName} 💖 | Secure Tip Gateway</title>
+  <title>สนับสนุน {theme.vtuberName} 💖 | Secure TIP</title>
   
-  <!-- 🛡️ นำเข้า Google Fonts แยกกันรายคีย์ ป้องกันความซ้ำซ้อนของการโหลดแผ่นสไตล์ -->
-  {#if theme.nameFontUrl}
-    <link rel="stylesheet" href={theme.nameFontUrl} />
-  {/if}
-  {#if theme.welcomeFontUrl && theme.welcomeFontUrl !== theme.nameFontUrl}
-    <link rel="stylesheet" href={theme.welcomeFontUrl} />
-  {/if}
-  {#if theme.presetFontUrl && theme.presetFontUrl !== theme.nameFontUrl && theme.presetFontUrl !== theme.welcomeFontUrl}
-    <link rel="stylesheet" href={theme.presetFontUrl} />
-  {/if}
-  {#if theme.submitBtnFontUrl && theme.submitBtnFontUrl !== theme.nameFontUrl && theme.submitBtnFontUrl !== theme.welcomeFontUrl && theme.submitBtnFontUrl !== theme.presetFontUrl}
-    <link rel="stylesheet" href={theme.submitBtnFontUrl} />
-  {/if}
+  <!-- 🛡️ นำส่งสัญญานเรียกสไตล์ชีต Google Fonts โดยคัดกรองตระกูลที่เปิดใช้งานไว้แบบอัตโนมัติ -->
+  {#each uniqueFonts as font}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
+  {/each}
 </svelte:head>
 
 <main 
@@ -164,7 +149,7 @@
   <!-- 📦 ฟอร์มกล่องฟอร์มแบบแก้วตามกำหนดสี background รอง -->
   <form 
     onsubmit={handleDonate} 
-    class="w-full max-w-xl p-6 md:p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border backdrop-blur-xl text-white relative overflow-hidden space-y-6"
+    class="w-full max-w-xl p-6 md:p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border backdrop-blur-xl text-white relative overflow-hidden space-y-6 animate-[fadeIn_0.5s_ease-out]"
     style="
       background-color: {theme.cardBgColor || 'rgba(15, 23, 42, 0.6)'};
       border-color: {theme.cardBorderColor || 'rgba(30, 41, 59, 0.8)'};
@@ -175,43 +160,43 @@
       <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
     </div>
 
-    <!-- 1 & 2. บล็อกโปรไฟล์ + Banner พื้นที่สูงใหญ่ขึ้น 1/3 -->
+    <!-- บล็อกโปรไฟล์ + Banner พื้นที่สูงใหญ่ขึ้น 20% (h-44 sm:h-52) -->
     <div class="relative rounded-2xl overflow-hidden border border-slate-800/30 pb-4 bg-slate-950/30">
       {#if theme.bannerUrl}
-        <div class="w-full h-36 sm:h-44 bg-cover bg-center rounded-t-2xl opacity-50" style="background-image: url({theme.bannerUrl});"></div>
+        <div class="w-full h-44 sm:h-52 bg-cover bg-center rounded-t-2xl opacity-50 transition-all duration-500" style="background-image: url({theme.bannerUrl});"></div>
       {:else}
-        <div class="w-full h-36 sm:h-44 bg-slate-900 rounded-t-2xl opacity-50"></div>
+        <div class="w-full h-44 sm:h-52 bg-slate-900 rounded-t-2xl opacity-50"></div>
       {/if}
 
-      <!-- ย้ายรูปโปรไฟล์อวาตาร์ไปด้านซ้าย ข้อมูลส่วนที่เหลือขยับไปขวามืออย่างสมดุลย์ -->
-      <div class="flex flex-col sm:flex-row items-center sm:items-end text-center sm:text-left gap-4 sm:gap-5 px-5 -mt-12 sm:-mt-16 relative z-10 w-full">
-        <!-- รูป Profile (ด้านซ้าย) -->
+      <!-- ย้ายอวาตาร์ไปซ้าย (ขยายขนาด +30% อยู่ระหว่างข้อมูลและทับแบนเนอร์บางส่วนอย่างอสมมาตร) และขยับชื่อสตรีมเมอร์ คำทักทาย ลิงก์โซเชียล ไปด้านขวามือ -->
+      <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 sm:gap-6 px-6 -mt-14 sm:-mt-16 relative z-10 w-full">
+        <!-- รูป Profile (+30% Larger, Overlapping Banner) -->
         <div class="relative flex-shrink-0">
           <div class="absolute -inset-1 rounded-full opacity-60 blur-md" style="background-color: {theme.nameColor};"></div>
           <img 
             src={sanitizeUrl(theme.avatarUrl) || 'https://placehold.co/150'} 
             alt="Avatar of {theme.vtuberName}" 
-            class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-slate-950 object-cover shadow-2xl" 
+            class="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-slate-950 object-cover shadow-2xl transition-all duration-300" 
           />
         </div>
 
-        <!-- ชื่อช่อง, คำทักทาย และโซเชียลมีเดีย (ด้านขวา) -->
-        <div class="flex-1 space-y-1 pb-1">
+        <!-- ข้อมูลด้านขวา: เพิ่มความห่างเป็นระยะสายตา space-y-4 -->
+        <div class="flex-1 pt-1 sm:pt-4 space-y-4">
           <h1 
             class="text-2xl sm:text-3xl font-extrabold tracking-wide" 
-            style="color: {theme.nameColor || '#db2777'}; font-family: '{nameFontFamily}', sans-serif;"
+            style="color: {theme.nameColor || '#db2777'}; font-family: '{theme.nameFontFamily}', sans-serif;"
           >
             {theme.vtuberName}
           </h1>
           <p 
             class="text-xs sm:text-sm font-medium leading-relaxed" 
-            style="color: {theme.welcomeColor || '#cbd5e1'}; font-family: '{welcomeFontFamily}', sans-serif;"
+            style="color: {theme.welcomeColor || '#cbd5e1'}; font-family: '{theme.welcomeFontFamily}', sans-serif;"
           >
             {theme.welcomeText}
           </p>
 
-          <!-- ลิงก์ Social Media ภายใต้โทนสีประจำแบรนด์ -->
-          <div class="flex flex-wrap justify-center sm:justify-start gap-2 pt-1.5">
+          <!-- ลิงก์ Social Media ภายใต้โทนสีประจำแบรนด์แบบห่างขึ้น (gap-3) -->
+          <div class="flex flex-wrap justify-center sm:justify-start gap-3 pt-1">
             {#each theme.socialLinks || [] as link}
               {#if link.url}
                 <a 
@@ -219,7 +204,7 @@
                   target="_blank" 
                   rel="noopener noreferrer" 
                   aria-label="ติดตามช่องทาง {link.platform}"
-                  class="p-1.5 rounded-full border transition-all duration-300 hover:scale-115 flex items-center justify-center bg-slate-950/40"
+                  class="p-2 rounded-full border transition-all duration-300 hover:scale-115 flex items-center justify-center bg-slate-950/40"
                   style="border-color: {theme.socialColor || '#db2777'}; color: {theme.socialColor || '#db2777'};"
                 >
                   {#if link.platform === 'youtube'}
@@ -245,9 +230,16 @@
       </div>
     </div>
 
-    <!-- 3. ช่องกรอกชื่อเล่น (Nickname Label ปรับตามแรนเดอร์ฟอนต์คำทักทาย) -->
+    <!-- ช่องกรอกชื่อเล่น (ประยุกต์ใช้สี + ฟอนต์หัวข้อ Label) -->
     <div class="space-y-1.5 w-full pt-2">
-      <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="nickname" style="font-family: '{welcomeFontFamily}', sans-serif;">
+      <label 
+        class="block text-sm font-semibold tracking-wide" 
+        for="nickname" 
+        style="
+          color: {theme.labelColor || '#cbd5e1'}; 
+          font-family: '{theme.labelFontFamily}', sans-serif;
+        "
+      >
         {theme.nicknameLabel}
       </label>
       <div class="relative group">
@@ -264,16 +256,23 @@
             background-color: {theme.inputBgColor}; 
             border-color: {theme.inputBorderColor};
             --tw-ring-color: {theme.submitBtnColor};
-            font-family: '{welcomeFontFamily}', sans-serif;
+            font-family: '{theme.welcomeFontFamily}', sans-serif;
           "
           bind:value={name} 
         />
       </div>
     </div>
 
-    <!-- 4. ช่องกรอกข้อความสนับสนุน -->
+    <!-- ช่องกรอกข้อความสนับสนุน -->
     <div class="space-y-1.5 w-full">
-      <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="donor-msg" style="font-family: '{welcomeFontFamily}', sans-serif;">
+      <label 
+        class="block text-sm font-semibold tracking-wide" 
+        for="donor-msg" 
+        style="
+          color: {theme.labelColor || '#cbd5e1'}; 
+          font-family: '{theme.labelFontFamily}', sans-serif;
+        "
+      >
         {theme.messageLabel}
       </label>
       <div class="relative group">
@@ -289,16 +288,23 @@
             background-color: {theme.inputBgColor}; 
             border-color: {theme.inputBorderColor};
             --tw-ring-color: {theme.submitBtnColor};
-            font-family: '{welcomeFontFamily}', sans-serif;
+            font-family: '{theme.welcomeFontFamily}', sans-serif;
           "
           bind:value={message}
         ></textarea>
       </div>
     </div>
 
-    <!-- 5. ปุ่มเลือกยอดเงินสนับสนุนด่วน -->
+    <!-- ปุ่มเลือกยอดเงินสนับสนุนด่วน -->
     <div class="space-y-2 w-full">
-      <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="preset-btn" style="font-family: '{presetFontFamily}', sans-serif;">
+      <label 
+        class="block text-sm font-semibold tracking-wide" 
+        for="preset-btn" 
+        style="
+          color: {theme.labelColor || '#cbd5e1'}; 
+          font-family: '{theme.labelFontFamily}', sans-serif;
+        "
+      >
         {theme.presetLabel}
       </label>
       <div class="grid grid-cols-4 gap-2">
@@ -311,7 +317,7 @@
               background-color: {amount === String(amt) ? theme.submitBtnColor : theme.presetBtnColor}; 
               border-color: {amount === String(amt) ? theme.submitBtnColor : theme.presetBorderColor}; 
               color: {amount === String(amt) ? theme.submitBtnTextColor : '#e2e8f0'};
-              font-family: '{presetFontFamily}', sans-serif;
+              font-family: '{theme.presetFontFamily}', sans-serif;
             "
           >
             {amt}฿
@@ -320,9 +326,16 @@
       </div>
     </div>
 
-    <!-- 6. ระบุจำนวนเงินเอง -->
+    <!-- ระบุจำนวนเงินเอง -->
     <div class="space-y-1.5 w-full">
-      <label class="block text-sm font-semibold text-slate-300 tracking-wide" for="custom-amount" style="font-family: '{welcomeFontFamily}', sans-serif;">
+      <label 
+        class="block text-sm font-semibold tracking-wide" 
+        for="custom-amount" 
+        style="
+          color: {theme.labelColor || '#cbd5e1'}; 
+          font-family: '{theme.labelFontFamily}', sans-serif;
+        "
+      >
         {theme.amountLabel}
       </label>
       <div class="relative group">
@@ -340,14 +353,14 @@
             background-color: {theme.inputBgColor}; 
             border-color: {theme.inputBorderColor};
             --tw-ring-color: {theme.submitBtnColor};
-            font-family: '{welcomeFontFamily}', sans-serif;
+            font-family: '{theme.welcomeFontFamily}', sans-serif;
           "
           bind:value={amount} 
         />
       </div>
     </div>
 
-    <!-- 7. ปุ่มโดเนทสนับสนุน -->
+    <!-- ปุ่มชำระเงินส่งข้อมูล -->
     <div class="w-full pt-4">
       <button
         type="submit"
@@ -359,7 +372,7 @@
           background-color: {cooldownRemaining > 0 ? '#4b5563' : theme.submitBtnColor}; 
           color: {theme.submitBtnTextColor || '#ffffff'};
           box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-          font-family: '{submitBtnFontFamily}', sans-serif;
+          font-family: '{theme.submitBtnFontFamily}', sans-serif;
         "
       >
         {#if cooldownRemaining > 0}
