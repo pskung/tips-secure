@@ -1,14 +1,35 @@
 {
-  "vtuberName": "Vtuber",
+  "vtuberName": "สตรีมเมอร์สุดน่ารัก",
   "avatarUrl": "https://placehold.co/150x150/f472b6/ffffff?text=VTuber",
   "bannerUrl": "",
-  "themeColor": "#0c9258",
-  "themeColorEnd": "#82083d",
+  "themeColor": "#db2777",
   "welcomeText": "ส่งค่าขนมให้กำลังใจและส่งข้อความขึ้นสตรีมได้ที่นี่เลยนะคะ! ✨",
   "presetAmounts": [
     20,
     50,
     100,
     500
+  ],
+  "bgType": "solid",
+  "bgColor": "#0b0f19",
+  "bgUrl": "",
+  "fontUrl": "https://fonts.googleapis.com/css2?family=Mitr:wght@400;700&display=swap",
+  "socialLinks": [
+    { "platform": "youtube", "url": "" },
+    { "platform": "twitch", "url": "" },
+    { "platform": "tiktok", "url": "" },
+    { "platform": "twitter", "url": "" },
+    { "platform": "facebook", "url": "" },
+    { "platform": "discord", "url": "" },
+    { "platform": "instagram", "url": "" }
+  ],
+  "layout": [
+    { "id": "profile", "width": "large", "padding": "medium" },
+    { "id": "nickname", "width": "large", "padding": "medium" },
+    { "id": "message", "width": "large", "padding": "medium" },
+    { "id": "presets", "width": "large", "padding": "medium" },
+    { "id": "amount", "width": "large", "padding": "medium" },
+    { "id": "socials", "width": "large", "padding": "medium" },
+    { "id": "submit", "width": "large", "padding": "medium" }
   ]
 }
