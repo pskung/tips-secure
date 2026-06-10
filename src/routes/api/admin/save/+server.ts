@@ -4,14 +4,12 @@ import { safeLog } from '$lib/utils/logger';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
 
-// 🛡️ หน่วยจำกัดความถี่คำขอทดสอบรหัสผ่านผู้ดูแลระบบ สกัดกั้นพฤทีบุกรุกสวมสิทธิ์แผงแอดมินช่อง
 const adminIpCache = new Map<string, number>();
 
 export const POST: RequestHandler = async ({ request, getClientAddress, url }) => {
   const now = Date.now();
   const clientIp = getClientAddress() || '127.0.0.1';
 
-  // เคลียร์ประวัติแคชการล็อกอินของแอดมินเพื่อถนอมขอบเขตเมมโมรี
   if (adminIpCache.size > 500) {
     const cutoff = now - 60000;
     for (const [key, val] of adminIpCache.entries()) {
@@ -19,14 +17,12 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
     }
   }
 
-  // บังคับหน่วงจำกัดการส่งลองพาสเวิร์ดผิดรัว ๆ ให้อั้นไว้ที่ 10 วินาทีต่อครั้ง
   const lastAttempt = adminIpCache.get(clientIp);
   if (lastAttempt && (now - lastAttempt < 10000)) {
     return json({ error: 'Too many admin attempts. Please wait 10 seconds before retrying.' }, { status: 429 });
   }
   adminIpCache.set(clientIp, now);
 
-  // คัดกรองปฏิเสธความสอดคล้องข้ามโดเมนอย่างสมบูรณ์ ป้องกันการส่งสัญญาน CSRF ปลอมแปลงมาแก้หน้าเว็บ
   const origin = request.headers.get('origin');
   const host = request.headers.get('host') || url.host;
   const protocol = request.headers.get('x-forwarded-proto') || url.protocol;
@@ -45,16 +41,10 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    // 🛡️ [แก้ไขจุดบกพร่อง] เพิ่มการดักรับและประมวลผลตัวแปรสีคู่ปลายทาง (themeColorEnd) เพื่อป้องกันไม่ให้ข้อมูลหาย
-    const { vtuberName, avatarUrl, bannerUrl, themeColor, themeColorEnd, welcomeText, presetAmounts } = config;
-
-    const urlPattern = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
-    if (avatarUrl && !urlPattern.test(avatarUrl)) {
-      return json({ error: 'Validation failed: Invalid Avatar URL protocol' }, { status: 400 });
-    }
-    if (bannerUrl && !urlPattern.test(bannerUrl)) {
-      return json({ error: 'Validation failed: Invalid Banner URL protocol' }, { status: 400 });
-    }
+    const { 
+      vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts,
+      bgType, bgColor, bgUrl, fontUrl, socialLinks, layout 
+    } = config;
 
     const owner = env.VERCEL_GIT_REPO_OWNER || env.GITHUB_OWNER;
     const repo = env.VERCEL_GIT_REPO_SLUG || env.GITHUB_REPO;
@@ -78,16 +68,16 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       sha = fileData.sha;
     }
 
-    // 🛡️ [แก้ไขจุดบกพร่อง] จัดเขียนโครงสร้างคู่สีเริ่มต้นคู่สีปลายทางลงสู่ไฟล์ข้อมูล GitHub โดยตรง
     const updatedContent = Buffer.from(JSON.stringify({
-      vtuberName, avatarUrl, bannerUrl, themeColor, themeColorEnd, welcomeText, presetAmounts
+      vtuberName, avatarUrl, bannerUrl, themeColor, welcomeText, presetAmounts,
+      bgType, bgColor, bgUrl, fontUrl, socialLinks, layout
     }, null, 2)).toString('base64');
 
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Customized donation theme parameters successfully saved.',
+        message: '💅 Custom layout coordinates and social properties successfully saved.',
         content: updatedContent,
         sha: sha || undefined,
       }),
