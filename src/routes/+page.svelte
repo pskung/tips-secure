@@ -150,7 +150,6 @@
   {/each}
 </svelte:head>
 
-<!-- 🚨 ประยุกต์ใช้สไตล์ฟอนต์เดี่ยวส่วนกลาง (config.mainFontFamily) ครอบคลุมทั้งเพจ -->
 <main 
   class="flex min-h-screen flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative transition-all duration-700 select-none"
   style="
@@ -176,7 +175,6 @@
       <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
     </div>
 
-    <!-- ส่วนหัวพร้อม Banner โซเชียล และ Avatar เยื้องทับขอบ 10% -->
     <div class="relative rounded-2xl overflow-hidden border border-slate-800/30 pb-5 transition-all duration-500" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)};">
       <div class="relative">
         {#if config.bannerUrl}
@@ -230,11 +228,11 @@
       </div>
     </div>
 
-    <!-- ปุ่มยอดเงินด่วน -->
+    <!-- ปุ่มยอดเงินด่วน (🛡️ แก้ไขตรงนี้: เปลี่ยนจาก label เป็น span เพื่อแก้ a11y warning) -->
     <div class="space-y-2 w-full">
-      <label class="block text-xs sm:text-sm font-bold tracking-wide" style="color: {config.labelColor || '#cbd5e1'};">
+      <span class="block text-xs sm:text-sm font-bold tracking-wide" style="color: {config.labelColor || '#cbd5e1'};">
         {config.presetLabel}
-      </label>
+      </span>
       <div class="grid grid-cols-4 gap-2">
         {#each config.presetAmounts as amt}
           <button type="button" onclick={() => amount = String(amt)} class="py-2.5 px-1 text-xs sm:text-sm font-extrabold border rounded-xl cursor-pointer tracking-wide transition-all duration-200" style="background-color: {amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; border-color: {amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; color: {amount === String(amt) ? config.submitBtnTextColor : '#e2e8f0'};">{amt}฿</button>
