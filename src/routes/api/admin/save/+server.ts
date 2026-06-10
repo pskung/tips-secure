@@ -49,8 +49,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       inputBgColor, inputBgOpacity, inputBorderColor,
       vtuberName, nameColor, nameFontFamily, nameFontSize,
       welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
-      nicknameLabel, messageLabel, amountLabel, presetLabel,
+      nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
       labelColor, labelFontFamily, labelFontSize,
+      placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
       presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
       submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
@@ -86,8 +87,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       inputBgColor, inputBgOpacity, inputBorderColor,
       vtuberName, nameColor, nameFontFamily, nameFontSize,
       welcomeText, welcomeColor, welcomeFontFamily, welcomeFontSize,
-      nicknameLabel, messageLabel, amountLabel, presetLabel,
+      nicknameLabel, nicknamePlaceholder, messageLabel, messagePlaceholder, amountLabel, amountPlaceholder, presetLabel,
       labelColor, labelFontFamily, labelFontSize,
+      placeholderColor, placeholderFontFamily,
       socialLinks, socialColor,
       presetAmounts, presetFontFamily, presetFontSize, presetBtnColor, presetBorderColor,
       submitBtnColor, submitBtnTextColor, submitBtnFontFamily, submitBtnFontSize, submitBtnText
@@ -97,7 +99,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress, url }) =
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: '💅 Customized styling layouts and customized label properties saved.',
+        message: '💅 Saved personalized styles, labeled components and customized placeholders.',
         content: updatedContent,
         sha: sha || undefined,
       }),
