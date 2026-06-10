@@ -271,4 +271,316 @@
 
               <div>
                 <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความไกด์ในระบุเงินเอง</label>
-                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-sla
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.amountPlaceholder} />
+              </div>
+            </div>
+
+            <!-- จัดตั้งค่าปุ่มโดเนทหลัก -->
+            <div class="border-t border-slate-800 pt-4 space-y-4">
+              <h3 class="text-xs font-black text-pink-400 uppercase tracking-wider">🔘 ตั้งค่าดีไซน์ปุ่มโดเนทส่งเงิน</h3>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความปุ่มสนับสนุนหลัก</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.submitBtnText} />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีปุ่มส่งเงิน</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.submitBtnColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.submitBtnColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีอักษรส่งเงิน</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.submitBtnTextColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.submitBtnTextColor} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- การตั้งสไตล์ Wallpaper -->
+            <div class="border-t border-slate-800 pt-4 space-y-4">
+              <h3 class="text-xs font-black text-slate-300">🖼️ จัดพื้นหลังและแผงกระจก</h3>
+              <div class="grid grid-cols-2 gap-3">
+                <button class="py-2 rounded-lg font-bold text-xs cursor-pointer border {config.bgType === 'solid' ? 'bg-pink-600 border-pink-500' : 'bg-slate-950 border-slate-800'}" onclick={() => config.bgType = 'solid'}>สีทึบพื้นหลัง</button>
+                <button class="py-2 rounded-lg font-bold text-xs cursor-pointer border {config.bgType === 'image' ? 'bg-pink-600 border-pink-500' : 'bg-slate-950 border-slate-800'}" onclick={() => config.bgType = 'image'}> Wallpaper รูปภาพ</button>
+              </div>
+              {#if config.bgType === 'solid'}
+                <div class="flex gap-2">
+                  <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.bgColor} />
+                  <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.bgColor} />
+                </div>
+              {:else}
+                <input type="text" placeholder="https://..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs" bind:value={config.bgUrl} />
+              {/if}
+            </div>
+          </div>
+
+        {:else if activeTab === 'success'}
+          <!-- TAB 2: ปรับแต่งหน้าสำเร็จ -->
+          <h2 class="text-sm font-bold text-white border-b border-slate-800 pb-2">🟢 ปรับแต่งรายละเอียดหน้าสำเร็จ (ใช้ฟอนต์ตัวเดียวกันทั้งหน้า)</h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">ฟอนต์หน้าสำเร็จ (Font Family)</label>
+              <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.successFontFamily} />
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <div class="col-span-1">
+                <label class="block text-xs font-bold text-slate-400 mb-1">Emoji กลาง</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-center text-lg font-bold" bind:value={config.successEmoji} />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-slate-400 mb-1">หัวข้อสำเร็จ</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.successTitle} />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">สีของหัวข้อเด่นสำเร็จ</label>
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successTitleColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successTitleColor} />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">รายละเอียดข้อความขอบคุณ</label>
+              <textarea class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" rows="3" bind:value={config.successMessage}></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">สีตัวอักษรของข้อความคำขอบคุณ</label>
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successMessageColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successMessageColor} />
+              </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 space-y-4">
+              <h3 class="text-xs font-black text-slate-300">🔘 ดีไซน์ปุ่มย้อนกลับหน้าสำเร็จ</h3>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความแสดงบนปุ่มสำเร็จ</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.successBtnText} />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีปุ่มสำเร็จ</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successBtnColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successBtnColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีอักษรปุ่มสำเร็จ</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.successBtnTextColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.successBtnTextColor} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        {:else if activeTab === 'failure'}
+          <!-- TAB 3: ปรับแต่งหน้าล้มเหลว -->
+          <h2 class="text-sm font-bold text-white border-b border-slate-800 pb-2">🔴 ปรับแต่งรายละเอียดหน้าล้มเหลว (ใช้ฟอนต์ตัวเดียวกันทั้งหน้า)</h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">ฟอนต์หน้าล้มเหลว (Font Family)</label>
+              <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white" bind:value={config.failureFontFamily} />
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <div class="col-span-1">
+                <label class="block text-xs font-bold text-slate-400 mb-1">Emoji กลาง</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-center text-lg font-bold" bind:value={config.failureEmoji} />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-slate-400 mb-1">หัวข้อล้มเหลว</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.failureTitle} />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">สีของหัวข้อล้มเหลว</label>
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureTitleColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureTitleColor} />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">รายละเอียดสาเหตุข้อผิดพลาด</label>
+              <textarea class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" rows="3" bind:value={config.failureMessage}></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">สีตัวอักษรสาเหตุ</label>
+              <div class="flex gap-2">
+                <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureMessageColor} />
+                <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureMessageColor} />
+              </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 space-y-4">
+              <h3 class="text-xs font-black text-slate-300">🔘 ดีไซน์ปุ่มย้อนกลับหน้าล้มเหลว</h3>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1">ข้อความแสดงบนปุ่มล้มเหลว</label>
+                <input type="text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-sm" bind:value={config.failureBtnText} />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีปุ่มล้มเหลว</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureBtnColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureBtnColor} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">สีอักษรปุ่มล้มเหลว</label>
+                  <div class="flex gap-2">
+                    <input type="color" class="w-10 h-10 border-0 rounded cursor-pointer" bind:value={config.failureBtnTextColor} />
+                    <input type="text" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs uppercase" bind:value={config.failureBtnTextColor} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
+
+      </div>
+    </div>
+
+    <!-- 📺 ฝั่งขวา: หน้าพรีวิวจำลองแยกอิสระ (Mockup Frame - RIGHT) -->
+    <div class="flex flex-col items-center justify-center p-2 bg-slate-900 border border-slate-800 rounded-3xl min-h-[550px] relative">
+      
+      <!-- โครงสมาร์ทโฟนปิดฉากความเพี้ยนสี (Isolated Canvas Container) -->
+      <div 
+        class="relative w-full max-w-[340px] h-[580px] rounded-[36px] shadow-[0_15px_35px_rgba(0,0,0,0.6)] bg-slate-950 overflow-hidden border border-slate-800 flex flex-col"
+        style="
+          background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
+          background-color: {config.bgType === 'solid' ? config.bgColor : '#0c111d'};
+          background-size: cover;
+          background-position: center;
+        "
+      >
+        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px] -z-10"></div>
+
+        <!-- หน้าจอพรีวิวแบบแก้วใส (Glassmorphism Mockup) -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col justify-center items-center">
+          
+          <div 
+            class="w-full rounded-2xl border text-center p-4 relative overflow-hidden transition-all duration-300"
+            style="
+              background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
+              border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
+              backdrop-filter: blur({config.cardBlur}px);
+              --placeholder-color: {config.placeholderColor || '#64748b'};
+            "
+          >
+            {#if activeTab === 'main'}
+              <!-- 📱 พรีวิวหน้าสนับสนุนหลักแบบละเอียดเท่าหน้าจริง -->
+              <div class="space-y-3 text-left" style="font-family: '{config.mainFontFamily}', sans-serif;">
+                
+                <!-- ส่วนหัว Banner และ อวาตาร์ Overlap 10% และชิดซ้าย -->
+                <div class="relative rounded-xl overflow-hidden pb-3 border border-slate-800/30" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)};">
+                  <div class="relative">
+                    {#if config.bannerUrl}
+                      <div class="w-full h-24 bg-cover bg-center opacity-40" style="background-image: url({config.bannerUrl});"></div>
+                    {:else}
+                      <div class="w-full h-24 bg-slate-900 opacity-40"></div>
+                    {/if} <!-- 🟢 🛡️ แก้ไขจุดนี้เรียบร้อยแล้วค่ะ: เปลี่ยนจาก {#if} เป็น {/if} เพื่อแก้ปัญหา Unexpected end of input -->
+                    <div class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t" style="background-image: linear-gradient(to top, {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}, transparent);"></div>
+                  </div>
+
+                  <div class="flex flex-col items-center sm:items-start text-center sm:text-left px-3 -mt-3 relative z-10 w-full">
+                    <div class="relative flex-shrink-0">
+                      <img src={config.avatarUrl || 'https://placehold.co/150'} alt="Avatar" class="w-14 h-14 rounded-full border-2 border-slate-950 object-cover" />
+                    </div>
+                    <div class="mt-1 w-full">
+                      <h3 class="font-extrabold text-xs" style="color: {config.nameColor};">{config.vtuberName}</h3>
+                      <p class="text-[9px] text-slate-300 leading-tight line-clamp-2">{config.welcomeText}</p>
+                      
+                      <!-- แสดง Social Links เลียนแบบหน้าจริง -->
+                      <div class="flex flex-wrap gap-1 mt-1.5 justify-center sm:justify-start">
+                        {#each config.socialLinks || [] as link}
+                          {#if link.url}
+                            <span class="px-1.5 py-0.5 rounded border text-[8px] uppercase font-black" style="border-color: {config.socialColor || '#db2777'}; color: {config.socialColor || '#db2777'}; bg-slate-950/40">
+                              {link.platform}
+                            </span>
+                          {/if}
+                        {/each}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ช่องกรอกชื่อเล่น (จำลองป้ายกำกับและ Placeholder ตามจริง) -->
+                <div>
+                  <span class="block text-[10px] font-bold text-slate-400 mb-1">{config.nicknameLabel}</span>
+                  <div class="w-full px-3 py-2 rounded-lg bg-slate-950/40 border border-slate-800 text-[10px] text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">{config.nicknamePlaceholder}</div>
+                </div>
+
+                <!-- ช่องข้อความ (จำลองคำกำกับและ Placeholder ตามจริง) -->
+                <div>
+                  <span class="block text-[10px] font-bold text-slate-400 mb-1">{config.messageLabel}</span>
+                  <div class="w-full px-3 py-2 rounded-lg bg-slate-950/40 border border-slate-800 text-[10px] text-slate-500 min-h-[36px]">{config.messagePlaceholder}</div>
+                </div>
+
+                <!-- ยอดเงินด่วน (ดึงค่า PresetAmounts ที่แก้ไขเรียลไทม์มาแสดงผล) -->
+                <div class="space-y-1">
+                  <span class="block text-[10px] font-bold text-slate-400">{config.presetLabel}</span>
+                  <div class="grid grid-cols-4 gap-1">
+                    {#each config.presetAmounts as amt}
+                      <button type="button" class="py-1 text-[10px] font-extrabold rounded-lg bg-slate-950/50 border border-slate-800 text-slate-300 cursor-default">{amt}฿</button>
+                    {/each}
+                  </div>
+                </div>
+
+                <!-- ระบุยอดเงินเอง -->
+                <div>
+                  <span class="block text-[10px] font-bold text-slate-400 mb-1">{config.amountLabel}</span>
+                  <div class="w-full px-3 py-2 rounded-lg bg-slate-950/40 border border-slate-800 text-[10px] text-slate-500 font-extrabold">{config.amountPlaceholder}</div>
+                </div>
+
+                <!-- ปุ่มส่งโดเนทหลัก -->
+                <button type="button" class="w-full py-2.5 rounded-xl text-xs font-black shadow cursor-default" style="background-color: {config.submitBtnColor}; color: {config.submitBtnTextColor};">
+                  {config.submitBtnText || 'โดเนทสนับสนุน 💖'}
+                </button>
+              </div>
+
+            {:else if activeTab === 'success'}
+              <!-- 🟢 พรีวิวหน้าสำเร็จแบบเทียบเท่าจริง -->
+              <div class="space-y-4 py-4" style="font-family: '{config.successFontFamily}', sans-serif;">
+                <div class="text-5xl animate-bounce">{config.successEmoji}</div>
+                <h3 class="text-sm font-black" style="color: {config.successTitleColor};">{config.successTitle}</h3>
+                <p class="text-[10px] text-slate-300 leading-relaxed">{config.successMessage}</p>
+                <button type="button" class="w-full py-2.5 rounded-xl text-xs font-extrabold cursor-default" style="background-color: {config.successBtnColor}; color: {config.successBtnTextColor};">
+                  {config.successBtnText}
+                </button>
+              </div>
+
+            {:else if activeTab === 'failure'}
+              <!-- 🔴 พรีวิวหน้าล้มเหลวแบบเทียบเท่าจริง -->
+              <div class="space-y-4 py-4" style="font-family: '{config.failureFontFamily}', sans-serif;">
+                <div class="text-5xl animate-pulse">{config.failureEmoji}</div>
+                <h3 class="text-sm font-black" style="color: {config.failureTitleColor};">{config.failureTitle}</h3>
+                <p class="text-[10px] text-slate-300 leading-relaxed">{config.failureMessage}</p>
+                <button type="button" class="w-full py-2.5 rounded-xl text-xs font-extrabold cursor-default" style="background-color: {config.failureBtnColor}; color: {config.failureBtnTextColor};">
+                  {config.failureBtnText}
+                </button>
+              </div>
+            {/if}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
