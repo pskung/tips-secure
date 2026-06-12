@@ -200,7 +200,7 @@
         <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-20 h-20 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
       </div>
       
-      <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ (ลบคำบรรยายใต้ชื่อออกเรียบร้อยแล้วค่ะ) -->
+      <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ -->
       <div class="sm:pl-28 text-center sm:text-left flex-1 min-h-[3rem] flex flex-col justify-center">
         <h1 class="text-xl font-extrabold tracking-wide" style="color: {config.nameColor};">
           {config.vtuberName}
@@ -213,7 +213,7 @@
   <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
-      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด -->
+      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด (ไม่มี "Hey" แล้วค่ะ) -->
       <div class="lg:col-span-7 space-y-4">
         <div 
           class="p-5 sm:p-6 rounded-2xl border shadow-sm"
@@ -224,9 +224,6 @@
           "
         >
           <div class="space-y-2">
-            <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-              <span>Hey</span> <span class="animate-bounce">👋</span>
-            </h3>
             <p class="text-xs sm:text-sm leading-relaxed" style="color: {config.welcomeColor};">
               {config.welcomeText}
             </p>
@@ -245,7 +242,7 @@
         </div>
       </div>
 
-      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนสบายตา (Support Card) -->
+      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนไร้ป้ายกำกับ (Support Card - No Labels) -->
       <div class="lg:col-span-5">
         <form 
           onsubmit={handleDonate} 
@@ -263,90 +260,68 @@
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <!-- (นำชื่อหัวข้อการ์ดด้านบนนี้ออกเรียบร้อยแล้วค่ะ) -->
-
-          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล -->
+          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล (ลบป้ายกำกับออกหมดแล้วเพื่อความเบาสบาย) -->
           <div class="space-y-3.5">
             
             <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย -->
-            <div class="space-y-1">
-              <span class="block text-xs font-bold" style="color: {config.labelColor};">
-                {config.presetLabel}
-              </span>
-              <div class="grid grid-cols-4 gap-1.5">
-                {#each config.presetAmounts as amt}
-                  <button 
-                    type="button" 
-                    onclick={() => { amount = String(amt); customActive = false; }} 
-                    class="py-2 text-xs font-extrabold border rounded-lg transition-all duration-200 cursor-pointer shadow-sm" 
-                    style="
-                      background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; 
-                      border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; 
-                      color: {!customActive && amount === String(amt) ? config.submitBtnTextColor : '#475569'};
-                    "
-                  >
-                    {amt}฿
-                  </button>
-                {/each}
-              </div>
+            <div class="grid grid-cols-4 gap-1.5">
+              {#each config.presetAmounts as amt}
+                <button 
+                  type="button" 
+                  onclick={() => { amount = String(amt); customActive = false; }} 
+                  class="py-2 text-xs font-extrabold border rounded-lg transition-all duration-200 cursor-pointer shadow-sm" 
+                  style="
+                    background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; 
+                    border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; 
+                    color: {!customActive && amount === String(amt) ? config.submitBtnTextColor : '#475569'};
+                  "
+                >
+                  {amt}฿
+                </button>
+              {/each}
             </div>
 
-            <!-- ช่องป้อนยอดเงินด้วยตนเองแยกส่วนชัดเจน -->
-            <div class="space-y-1">
-              <label class="block text-xs font-bold" for="custom-amount" style="color: {config.labelColor};">
-                {config.amountLabel}
-              </label>
-              <input 
-                id="custom-amount" 
-                type="number" 
-                min="10"
-                max="5000"
-                placeholder={config.amountPlaceholder}
-                class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-                style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
-                oninput={(e) => { 
-                  customActive = true; 
-                  amount = e.currentTarget.value; 
-                  customAmountVal = e.currentTarget.value;
-                }}
-                bind:value={customAmountVal}
-              />
-            </div>
+            <!-- ช่องป้อนยอดเงินด้วยตนเอง -->
+            <input 
+              id="custom-amount" 
+              type="number" 
+              min="10"
+              max="5000"
+              placeholder={config.amountPlaceholder}
+              class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+              oninput={(e) => { 
+                customActive = true; 
+                amount = e.currentTarget.value; 
+                customAmountVal = e.currentTarget.value;
+              }}
+              bind:value={customAmountVal}
+            />
 
           </div>
 
           <!-- ช่องกรอกชื่อเล่นผู้สนับสนุน -->
-          <div class="space-y-1">
-            <label class="block text-xs font-bold" for="nickname" style="color: {config.labelColor};">
-              {config.nicknameLabel}
-            </label>
-            <input 
-              id="nickname" 
-              type="text" 
-              required 
-              placeholder={config.nicknamePlaceholder} 
-              class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
-              bind:value={name} 
-            />
-          </div>
+          <input 
+            id="nickname" 
+            type="text" 
+            required 
+            placeholder={config.nicknamePlaceholder} 
+            class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+            bind:value={name} 
+          />
 
           <!-- ช่องกรอกข้อความสนับสนุน -->
-          <div class="space-y-1">
-            <label class="block text-xs font-bold" for="donor-msg" style="color: {config.labelColor};">
-              {config.messageLabel}
-            </label>
-            <textarea 
-              id="donor-msg" 
-              placeholder={config.messagePlaceholder} 
-              class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-              rows="2" 
-              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
-              bind:value={message}
-            ></textarea>
-          </div>
+          <textarea 
+            id="donor-msg" 
+            placeholder={config.messagePlaceholder} 
+            class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+            rows="2" 
+            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+            bind:value={message}
+          ></textarea>
 
-          <!-- ปุ่มส่งชำระเงินสนับสนุน (ลบราคาและถ้วยกาแฟออกจากชื่อปุ่มแล้วค่ะ) -->
+          <!-- ปุ่มส่งชำระเงินสนับสนุน (สนับสนุนข้อความมินิมอลแบบไม่มีต่อท้ายราคากาแฟแล้วค่ะ) -->
           <div class="pt-1">
             <button
               type="submit"
