@@ -44,19 +44,15 @@
     
     mainFontFamily: theme.mainFontFamily ?? 'Mitr',
     welcomeText: theme.welcomeText ?? 'ยินดีต้อนรับสู่ช่องสนับสนุนสตรีมเมอร์ค่ะ 💖',
-    nicknameLabel: theme.nicknameLabel ?? 'ชื่อเล่นของคุณ',
     nicknamePlaceholder: theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
-    messageLabel: theme.messageLabel ?? 'ข้อความสนับสนุน',
     messagePlaceholder: theme.messagePlaceholder ?? 'พิมพ์ข้อความให้สตรีมเมอร์ชื่นใจ...',
-    presetLabel: theme.presetLabel ?? 'ปุ่มสนับสนุนด่วน',
-    amountLabel: theme.amountLabel ?? 'ระบุจำนวนเงินเอง (บาท)',
     amountPlaceholder: theme.amountPlaceholder ?? 'ป้อนจำนวนเงิน (10 - 5,000 บาท)...',
     presetAmounts: theme.presetAmounts && theme.presetAmounts.length === 4 ? theme.presetAmounts : [100, 300, 500, 1000],
     presetBtnColor: theme.presetBtnColor ?? '#f8fafc',
     presetBorderColor: theme.presetBorderColor ?? '#cbd5e1',
     submitBtnColor: theme.submitBtnColor ?? '#d89a9e',
     submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff',
-    submitBtnText: theme.submitBtnText ?? 'ส่งการสนับสนุนน้า 💖'
+    submitBtnText: theme.submitBtnText ?? 'ขอบคุณสำหรับการสนับสนุนน้า'
   };
 
   const uniqueFonts = $derived([
