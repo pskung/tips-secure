@@ -12,7 +12,6 @@ const EXTERNAL_API = {
   XENDIT_INVOICES: 'https://api.xendit.co/v2/invoices'
 };
 
-// 🛡️ ฟังก์ชันเข้ารหัสมาตรฐานสากล (Web Crypto API) ของอาคาริ
 async function hmacSha256(secret: string, message: string): Promise<string> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
@@ -37,7 +36,6 @@ async function hmacSha256(secret: string, message: string): Promise<string> {
     .join('');
 }
 
-// 🛡️ สมการดักแฮกเกอร์รันบ็อตความเร็วสูง (Micro-PoW Verification) แบบ Web Crypto
 async function verifyMicroPoW(token: string, nonce: string, difficulty: number): Promise<boolean> {
   const input = `${token}_${nonce}`;
   const encoder = new TextEncoder();
@@ -52,7 +50,7 @@ async function verifyMicroPoW(token: string, nonce: string, difficulty: number):
   return hashHex.startsWith(prefix);
 }
 
-export const POST: RequestHandler = async ({ request, cookies, url, getClientAddress, platform }) => {
+export const POST: RequestHandler = async ({ request, cookies, url, getClientAddress }) => {
   const now = Date.now();
   
   if (ipCache.size > 1500) {
@@ -160,9 +158,9 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
       }, { status: 501 });
     }
 
-    const siteUrl = `${url.protocol}//${url.host}`;
+    // 🎯 เปลี่ยนแปลงสำคัญ: ชี้ทิศทางกลับมาที่หน้าแรกหลักโดยตรง ไม่ต้องผ่าน /success หรือ /failure อีกต่อไปค่ะ
+    const siteUrl = `${url.protocol}//${url.host}/`;
     
-    // 🛡️ ปลดล็อก Buffer.from() ของ Node.js ออก แล้วใช้ btoa() สากลแทนเพื่อให้รันได้ใน Cloudflare Pages
     const authHeader = 'Basic ' + btoa(`${env.XENDIT_SECRET_KEY}:`);
     
     const response = await fetch(EXTERNAL_API.XENDIT_INVOICES, {
@@ -175,9 +173,9 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
         external_id: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
         amount: Number(amount),
         currency,
-        description: `VTuber secure tip by ${name}`,
-        success_redirect_url: `${siteUrl}/success`,
-        failure_redirect_url: `${siteUrl}/failure`,
+        description: `VTuber tip by ${name}`,
+        success_redirect_url: siteUrl, // กลับหน้าแรกหลัก
+        failure_redirect_url: siteUrl, // กลับหน้าแรกหลัก
         metadata: { donor_name: name, donor_message: message || '' },
       }),
     });
