@@ -189,7 +189,7 @@
                   <label class="block text-[10px] font-bold text-slate-400 mb-1">ปุ่มที่ {idx+1}</label>
                   <input type="number" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-center text-xs font-bold" bind:value={config.presetAmounts[idx]} />
                 </div>
-              {"/each"}
+              {/each}
             </div>
           </div>
 
