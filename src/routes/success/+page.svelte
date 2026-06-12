@@ -1,5 +1,8 @@
 <script lang="ts">
-  import theme from '$lib/config/theme.json';
+  import { onMount } from 'svelte';
+  
+  let { data } = $props();
+  const theme = data.theme;
 
   const successTitle = theme.successTitle ?? 'โดเนทสำเร็จแล้วน้า! 🎉';
   const successTitleColor = theme.successTitleColor ?? '#10b981';
