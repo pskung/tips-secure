@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import crypto from 'crypto';
 import { safeLog } from '$lib/utils/logger';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
@@ -13,14 +12,47 @@ const EXTERNAL_API = {
   XENDIT_INVOICES: 'https://api.xendit.co/v2/invoices'
 };
 
-function verifyMicroPoW(token: string, nonce: string, difficulty: number): boolean {
-  const input = `${token}_${nonce}`;
-  const hash = crypto.createHash('sha256').update(input).digest('hex');
-  const prefix = '0'.repeat(difficulty);
-  return hash.startsWith(prefix);
+// 🛡️ ฟังก์ชันเข้ารหัสมาตรฐานสากล (Web Crypto API) ของอาคาริ
+async function hmacSha256(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    messageData
+  );
+
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-export const POST: RequestHandler = async ({ request, cookies, url, getClientAddress }) => {
+// 🛡️ สมการดักแฮกเกอร์รันบ็อตความเร็วสูง (Micro-PoW Verification) แบบ Web Crypto
+async function verifyMicroPoW(token: string, nonce: string, difficulty: number): Promise<boolean> {
+  const input = `${token}_${nonce}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  const prefix = '0'.repeat(difficulty);
+  return hashHex.startsWith(prefix);
+}
+
+export const POST: RequestHandler = async ({ request, cookies, url, getClientAddress, platform }) => {
   const now = Date.now();
   
   if (ipCache.size > 1500) {
@@ -55,9 +87,8 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
 
     const clientIp = getClientAddress() || '127.0.0.1';
 
-    // 🛡️ ผนวกใช้คีย์ลับสำรองที่ตรงกัน เพื่อแก้ปัญหากรณีไม่มี Xendit Secret Key
     const salt = env.XENDIT_SECRET_KEY || 'default-cryptographic-handshake-signing-salt';
-    const hashedIp = crypto.createHmac('sha256', salt).update(clientIp).digest('hex');
+    const hashedIp = await hmacSha256(salt, clientIp);
 
     if (email_confirm) {
       safeLog('Spam Bot Detected: Invisible honeypot trap triggered.', 'WARN', { email_confirm });
@@ -85,14 +116,13 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
       return json({ error: 'Challenge session signature expired' }, { status: 400 });
     }
 
-    // 🛡️ ตรวจความถูกต้องของสิทธิ์ตั๋ว (ตอนนี้รองรับ fallback มั่นคงสมบูรณ์แล้วค่ะ)
-    const expectedSignature = crypto.createHmac('sha256', salt).update(`${fingerprint}.${timestampStr}`).digest('hex');
+    const expectedSignature = await hmacSha256(salt, `${fingerprint}.${timestampStr}`);
     if (!timingSafeCompare(incomingSignature, expectedSignature)) {
       safeLog('Security Hack Attempt: Token signature invalid.', 'ERROR');
       return json({ error: 'Handshake token validation failed' }, { status: 400 });
     }
 
-    const isPoWValid = verifyMicroPoW(token, client_nonce, 3);
+    const isPoWValid = await verifyMicroPoW(token, client_nonce, 3);
     if (!isPoWValid) {
       safeLog('Security Hack Attempt: Mathematical challenge failure.', 'ERROR');
       return json({ error: 'Challenge verification failed' }, { status: 400 });
@@ -131,7 +161,9 @@ export const POST: RequestHandler = async ({ request, cookies, url, getClientAdd
     }
 
     const siteUrl = `${url.protocol}//${url.host}`;
-    const authHeader = 'Basic ' + Buffer.from(`${env.XENDIT_SECRET_KEY}:`).toString('base64');
+    
+    // 🛡️ ปลดล็อก Buffer.from() ของ Node.js ออก แล้วใช้ btoa() สากลแทนเพื่อให้รันได้ใน Cloudflare Pages
+    const authHeader = 'Basic ' + btoa(`${env.XENDIT_SECRET_KEY}:`);
     
     const response = await fetch(EXTERNAL_API.XENDIT_INVOICES, {
       method: 'POST',
