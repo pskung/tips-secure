@@ -18,13 +18,32 @@
   let clientNonce = $state('');
   let cooldownRemaining = $state(0);
 
-  // ควบคุมสถานะการพิมพ์ยอดเงินเองแบบเรียลไทม์ตามภาพตัวอย่าง
+  // ควบคุมสถานะการพิมพ์ยอดเงินเอง
   let customActive = $state(false);
   let customAmountVal = $state('');
 
+  // กำหนดค่าตั้งต้นแบบ Minimal Pastel ผ่อนคลายสบายตา
   const config = {
     ...theme,
+    bgColor: theme.bgColor ?? '#faf9f6', // สีพื้นหลังพาสเทลวอร์มไวต์
+    cardBgColor: theme.cardBgColor ?? '#ffffff', // การ์ดสีขาวบริสุทธิ์
+    cardOpacity: theme.cardOpacity ?? 1.0,
+    cardBorderColor: theme.cardBorderColor ?? '#f1f5f9',
+    cardBorderOpacity: theme.cardBorderOpacity ?? 1.0,
+    profileAreaBgColor: theme.profileAreaBgColor ?? '#ffffff',
+    profileAreaOpacity: theme.profileAreaOpacity ?? 1.0,
+    inputBgColor: theme.inputBgColor ?? '#f8fafc',
+    inputBgOpacity: theme.inputBgOpacity ?? 1.0,
+    inputBorderColor: theme.inputBorderColor ?? '#e2e8f0',
+    
+    vtuberName: theme.vtuberName ?? 'VTuber Channel',
+    nameColor: theme.nameColor ?? '#d89a9e', // สีชมพูตุ่นสไตล์ Pastel-rose
+    welcomeColor: theme.welcomeColor ?? '#475569', // สีตัวหนังสือ Slate 600
+    labelColor: theme.labelColor ?? '#475569',
+    placeholderColor: theme.placeholderColor ?? '#94a3b8',
+    
     mainFontFamily: theme.mainFontFamily ?? 'Mitr',
+    welcomeText: theme.welcomeText ?? 'ยินดีต้อนรับสู่ช่องสนับสนุนสตรีมเมอร์ค่ะ 💖',
     nicknameLabel: theme.nicknameLabel ?? 'ชื่อเล่นของคุณ',
     nicknamePlaceholder: theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
     messageLabel: theme.messageLabel ?? 'ข้อความสนับสนุน',
@@ -33,9 +52,11 @@
     amountLabel: theme.amountLabel ?? 'ระบุจำนวนเงินเอง (บาท)',
     amountPlaceholder: theme.amountPlaceholder ?? 'ป้อนจำนวนเงิน (10 - 5,000 บาท)...',
     presetAmounts: theme.presetAmounts && theme.presetAmounts.length === 4 ? theme.presetAmounts : [100, 300, 500, 1000],
-    submitBtnText: theme.submitBtnText ?? 'โดเนทสนับสนุน 💖',
-    submitBtnColor: theme.submitBtnColor ?? '#db2777',
-    submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff'
+    presetBtnColor: theme.presetBtnColor ?? '#f8fafc',
+    presetBorderColor: theme.presetBorderColor ?? '#cbd5e1',
+    submitBtnColor: theme.submitBtnColor ?? '#d89a9e',
+    submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff',
+    submitBtnText: theme.submitBtnText ?? 'ส่งการสนับสนุนน้า 💖'
   };
 
   const uniqueFonts = $derived([
@@ -46,7 +67,7 @@
   ]);
 
   const hexToRgba = (hex: string, opacity: number): string => {
-    if (!hex) return `rgba(15, 23, 42, ${opacity})`;
+    if (!hex) return `rgba(255, 255, 255, ${opacity})`;
     const cleanHex = hex.replace('#', '');
     if (cleanHex.length !== 6) return hex;
     const r = parseInt(cleanHex.substring(0, 2), 16);
@@ -80,7 +101,7 @@
     if (!browser) return;
     renderTime = Date.now();
     
-    // ตั้งค่าเริ่มต้นยอดเงินเป็นค่า Preset ตัวแรก
+    // กำหนดจำนวนเงินเริ่มต้นเป็นค่า Preset ตัวแรก
     if (config.presetAmounts.length > 0) {
       amount = String(config.presetAmounts[0]);
     }
@@ -155,81 +176,76 @@
 </script>
 
 <svelte:head>
-  <title>สนับสนุน {config.vtuberName} 💖 | Secure Tip Gateway</title>
+  <title>สนับสนุน {config.vtuberName} 💖</title>
   {#each uniqueFonts as font}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
   {/each}
 </svelte:head>
 
 <main 
-  class="flex min-h-screen flex-col bg-cover bg-center bg-no-repeat relative transition-all duration-700 select-none pb-12"
+  class="flex min-h-screen flex-col relative transition-all duration-700 select-none overflow-x-hidden"
   style="
     background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
-    background-color: {config.bgType === 'solid' ? config.bgColor : '#0b0f19'};
+    background-color: {config.bgColor};
     font-family: '{config.mainFontFamily}', sans-serif;
   "
 >
-  <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[4px] -z-10"></div>
-
-  <!-- 1. ส่วนแบนเนอร์กว้างเต็มพิกัด (Top Wide Banner) -->
-  <div class="w-full h-44 sm:h-60 md:h-72 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x400'});">
-    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent"></div>
+  <!-- 1. ส่วนแบนเนอร์ด้านบนสุดแบบเรียบง่าย ไม่กินพื้นที่สายตา (Compact Banner) -->
+  <div class="w-full h-24 sm:h-28 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
+    <div class="absolute inset-0 bg-black/5"></div>
   </div>
 
-  <!-- 2. แถบโปรไฟล์และชื่อ VTuber เหลื่อมขอบ (Profile Overlap Header) -->
+  <!-- 2. แถบโปรไฟล์และชื่อ VTuber ยกระดับความเรียบง่าย (Minimal Profile Strip) -->
   <div class="w-full border-b" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center sm:items-end gap-5 relative">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center sm:items-center gap-4 relative">
       
-      <!-- รูปภาพโปรไฟล์วงกลมเหลื่อมขอบขึ้นไปบนแบนเนอร์ -->
-      <div class="sm:absolute sm:-top-16 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
-        <div class="relative">
-          <div class="absolute -inset-1 rounded-full opacity-60 blur-md" style="background-color: {config.nameColor};"></div>
-          <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-slate-950 object-cover shadow-2xl" />
-        </div>
+      <!-- อวาตาร์โปรไฟล์วงกลมแบบคลีน ไร้แสงเบลอ มีเพียงเงาจางและขอบบาง -->
+      <div class="sm:absolute sm:-top-12 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
+        <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-20 h-20 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
       </div>
       
       <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ -->
-      <div class="sm:pl-40 text-center sm:text-left flex-1 min-h-[4rem] pb-1 space-y-1">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wide" style="color: {config.nameColor || '#db2777'};">
+      <div class="sm:pl-28 text-center sm:text-left flex-1 min-h-[3rem] flex flex-col justify-center">
+        <h1 class="text-xl font-extrabold tracking-wide" style="color: {config.nameColor};">
           {config.vtuberName}
         </h1>
-        <p class="text-xs sm:text-sm font-semibold leading-relaxed" style="color: {config.welcomeColor || '#cbd5e1'};">
+        <p class="text-xs font-semibold" style="color: {config.welcomeColor};">
           is creating animations & illustrations 💖
         </p>
       </div>
     </div>
   </div>
 
-  <!-- 3. ส่วนเนื้อหาหลักแบบแบ่งคอลัมน์ตอบสนอง (Responsive Grid Container) -->
-  <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
-    <!-- lg: ใช้สำหรับการตั้งค่าแสดงผลเป็น 2 ฝั่งบนจอคอมพิวเตอร์และแท็บเล็ตแนวนอน ส่วนจอมือถือจะพังเลย์เอาต์กลับมาแนวตั้งปกติ -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+  <!-- 3. ส่วนกล่องแสดงผลหลักแบ่งเป็น 2 คอลัมน์แบบรัดกุม (Compact 2-Columns Layout) -->
+  <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
+    <!-- lg:grid-cols-12 จะช่วยแยกฝั่งซ้ายขวาบนคอม และหดยุบลงบนมือถืออย่างถูกระเบียบ -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
-      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดต้อนรับและโซเชียลเน็ตเวิร์ก -->
-      <div class="lg:col-span-7 space-y-6">
+      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด -->
+      <div class="lg:col-span-7 space-y-4">
         <div 
-          class="p-6 sm:p-8 rounded-3xl border shadow-lg"
+          class="p-5 sm:p-6 rounded-2xl border shadow-sm"
           style="
             background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
             border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
             backdrop-filter: blur({config.cardBlur}px);
           "
         >
-          <div class="space-y-4">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <div class="space-y-2">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
               <span>Hey</span> <span class="animate-bounce">👋</span>
             </h3>
-            <p class="text-sm sm:text-base leading-relaxed" style="color: {config.welcomeColor || '#cbd5e1'};">
+            <p class="text-xs sm:text-sm leading-relaxed" style="color: {config.welcomeColor};">
               {config.welcomeText}
             </p>
           </div>
         </div>
 
         <!-- ปุ่มโซเชียลมีเดีย -->
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-2">
           {#each config.socialLinks || [] as link}
             {#if link.url}
-              <a href={link.url} target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-full border transition-all hover:scale-105 flex items-center gap-2 bg-slate-950/40 text-xs font-bold uppercase" style="border-color: {config.socialColor || '#db2777'}; color: {config.socialColor || '#db2777'};">
+              <a href={link.url} target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-full border transition-all hover:scale-105 flex items-center gap-2 bg-white/40 text-[10px] font-bold uppercase shadow-sm" style="border-color: {config.socialColor}; color: {config.socialColor};">
                 <span>{link.platform}</span>
               </a>
             {/if}
@@ -237,64 +253,67 @@
         </div>
       </div>
 
-      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดชำระเงินสนับสนุน (Coffee Form Card) -->
+      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนสบายตา (Support Card) -->
       <div class="lg:col-span-5">
         <form 
           onsubmit={handleDonate} 
-          class="p-6 sm:p-8 rounded-3xl border shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-5 relative overflow-hidden"
+          class="p-5 sm:p-6 rounded-2xl border shadow-md space-y-3.5 relative overflow-hidden"
           style="
             background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
             border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
             backdrop-filter: blur({config.cardBlur}px);
-            --placeholder-color: {config.placeholderColor || '#64748b'};
+            --placeholder-color: {config.placeholderColor};
             --placeholder-font: '{config.mainFontFamily}', sans-serif;
           "
         >
-          <!-- Honeypot ดักจับสแปมบอท -->
+          <!-- Honeypot -->
           <div class="hidden">
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <h2 class="text-lg sm:text-xl font-extrabold tracking-wide text-white">
+          <h2 class="text-base font-extrabold tracking-wide text-slate-800">
             Buy {config.vtuberName} a Coffee
           </h2>
 
-          <!-- แถวสลับยอดเงินแบบกล่องกาแฟ (Coffee Selector Row) -->
-          <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/40 border border-slate-800/60 justify-between">
-            <div class="flex items-center gap-1.5 flex-shrink-0 pl-1">
-              <span class="text-3xl">☕</span>
-              <span class="text-sm font-bold text-slate-500">x</span>
-            </div>
+          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล -->
+          <div class="space-y-3.5">
             
-            <div class="flex items-center gap-1.5 flex-wrap justify-end">
-              <!-- ดึง 3 ค่าแรกจาก presetAmounts มาสร้างปุ่มวงกลมสีสันสดใส -->
-              {#each config.presetAmounts.slice(0, 3) as amt}
-                <button 
-                  type="button" 
-                  onclick={() => { amount = String(amt); customActive = false; }} 
-                  class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full border text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer" 
-                  style="
-                    background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; 
-                    border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; 
-                    color: {!customActive && amount === String(amt) ? config.submitBtnTextColor : '#cbd5e1'};
-                  "
-                >
-                  {amt}
-                </button>
-              {/each}
-              
-              <!-- กล่องรับจำนวนเงินออกแบบกำหนดเอง (Custom Input Box) -->
+            <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย ไร้สัญลักษณ์หรือรูปถ้วยกาแฟรกสายตา -->
+            <div class="space-y-1">
+              <span class="block text-xs font-bold" style="color: {config.labelColor};">
+                {config.presetLabel}
+              </span>
+              <div class="grid grid-cols-4 gap-1.5">
+                {#each config.presetAmounts as amt}
+                  <button 
+                    type="button" 
+                    onclick={() => { amount = String(amt); customActive = false; }} 
+                    class="py-2 text-xs font-extrabold border rounded-lg transition-all duration-200 cursor-pointer shadow-sm" 
+                    style="
+                      background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; 
+                      border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; 
+                      color: {!customActive && amount === String(amt) ? config.submitBtnTextColor : '#475569'};
+                    "
+                  >
+                    {amt}฿
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+            <!-- ช่องป้อนยอดเงินด้วยตนเองแยกส่วนชัดเจน -->
+            <div class="space-y-1">
+              <label class="block text-xs font-bold" for="custom-amount" style="color: {config.labelColor};">
+                {config.amountLabel}
+              </label>
               <input 
+                id="custom-amount" 
                 type="number" 
-                placeholder="ระบุเงิน" 
                 min="10"
                 max="5000"
-                class="w-16 h-9 sm:h-10 text-center rounded-lg border text-xs font-black text-white focus:outline-none focus:ring-2" 
-                style="
-                  background-color: {customActive ? config.submitBtnColor : config.inputBgColor}; 
-                  border-color: {customActive ? config.submitBtnColor : config.inputBorderColor}; 
-                  --tw-ring-color: {config.submitBtnColor};
-                "
+                placeholder={config.amountPlaceholder}
+                class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+                style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
                 oninput={(e) => { 
                   customActive = true; 
                   amount = e.currentTarget.value; 
@@ -303,11 +322,12 @@
                 bind:value={customAmountVal}
               />
             </div>
+
           </div>
 
           <!-- ช่องกรอกชื่อเล่นผู้สนับสนุน -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold tracking-wide" for="nickname" style="color: {config.labelColor || '#cbd5e1'};">
+          <div class="space-y-1">
+            <label class="block text-xs font-bold" for="nickname" style="color: {config.labelColor};">
               {config.nicknameLabel}
             </label>
             <input 
@@ -315,37 +335,36 @@
               type="text" 
               required 
               placeholder={config.nicknamePlaceholder} 
-              class="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm tracking-wide transition-all focus:outline-none focus:ring-2 border" 
-              style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+              class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
               bind:value={name} 
             />
           </div>
 
-          <!-- ช่องกรอกข้อความแนบใบเสร็จ -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold tracking-wide" for="donor-msg" style="color: {config.labelColor || '#cbd5e1'};">
+          <!-- ช่องกรอกข้อความสนับสนุน (ย่นย่อเหลือ 2 แถวเพื่อรักษาระยะความสูง) -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold" for="donor-msg" style="color: {config.labelColor};">
               {config.messageLabel}
             </label>
             <textarea 
               id="donor-msg" 
               placeholder={config.messagePlaceholder} 
-              class="w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 text-sm tracking-wide transition-all focus:outline-none focus:ring-2 border" 
-              rows="3" 
-              style="background-color: {hexToRgba(config.inputBgColor, config.inputBgOpacity)}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+              class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
+              rows="2" 
+              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
               bind:value={message}
             ></textarea>
           </div>
 
-          <!-- ปุ่มส่งโดเนทยิงขึ้นหน้าจอ (Support Button) -->
-          <div class="pt-2">
+          <!-- ปุ่มส่งชำระเงินสนับสนุน (Support Button) ดีไซน์มนพาสเทลสวยงาม -->
+          <div class="pt-1">
             <button
               type="submit"
               disabled={loading || powLoading || cooldownRemaining > 0}
-              class="w-full py-3.5 text-sm sm:text-base font-black rounded-full cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-lg disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
+              class="w-full py-3 text-xs sm:text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
               style="
-                background-color: {cooldownRemaining > 0 ? '#4b5563' : config.submitBtnColor}; 
+                background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor}; 
                 color: {config.submitBtnTextColor || '#ffffff'};
-                box-shadow: 0 8px 24px rgba(0,0,0,0.3);
               "
             >
               {#if cooldownRemaining > 0}
