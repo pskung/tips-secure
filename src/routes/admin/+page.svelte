@@ -1,45 +1,47 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import theme from '$lib/config/theme.json';
-
+  
+  // 🛡️ ดึงข้อมูลธีมที่โหลดมาจาก Cloudflare KV หน้า Server Load ล่าสุด
+  let { data } = $props();
+  
   let config = $state({
-    ...theme,
-    presetAmounts: theme.presetAmounts && theme.presetAmounts.length === 4 
-      ? [...theme.presetAmounts] 
+    ...data.theme,
+    presetAmounts: data.theme.presetAmounts && data.theme.presetAmounts.length === 4 
+      ? [...data.theme.presetAmounts] 
       : [100, 300, 500, 1000],
-    mainFontFamily: theme.mainFontFamily ?? 'Mitr',
-    nicknameLabel: theme.nicknameLabel ?? 'ชื่อเล่นของคุณ',
-    nicknamePlaceholder: theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
-    messageLabel: theme.messageLabel ?? 'ข้อความสนับสนุน',
-    messagePlaceholder: theme.messagePlaceholder ?? 'พิมพ์ข้อความให้สตรีมเมอร์ชื่นใจ...',
-    presetLabel: theme.presetLabel ?? 'ปุ่มสนับสนุนด่วน',
-    amountLabel: theme.amountLabel ?? 'ระบุจำนวนเงินเอง (บาท)',
-    amountPlaceholder: theme.amountPlaceholder ?? 'ป้อนจำนวนเงิน (10 - 5,000 บาท)...',
+    mainFontFamily: data.theme.mainFontFamily ?? 'Mitr',
+    nicknameLabel: data.theme.nicknameLabel ?? 'ชื่อเล่นของคุณ',
+    nicknamePlaceholder: data.theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
+    messageLabel: data.theme.messageLabel ?? 'ข้อความสนับสนุน',
+    messagePlaceholder: data.theme.messagePlaceholder ?? 'พิมพ์ข้อความให้สตรีมเมอร์ชื่นใจ...',
+    presetLabel: data.theme.presetLabel ?? 'ปุ่มสนับสนุนด่วน',
+    amountLabel: data.theme.amountLabel ?? 'ระบุจำนวนเงินเอง (บาท)',
+    amountPlaceholder: data.theme.amountPlaceholder ?? 'ป้อนจำนวนเงิน (10 - 5,000 บาท)...',
     
-    submitBtnText: theme.submitBtnText ?? 'โดเนทสนับสนุน 💖',
-    submitBtnColor: theme.submitBtnColor ?? '#db2777',
-    submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff',
+    submitBtnText: data.theme.submitBtnText ?? 'โดเนทสนับสนุน 💖',
+    submitBtnColor: data.theme.submitBtnColor ?? '#db2777',
+    submitBtnTextColor: data.theme.submitBtnTextColor ?? '#ffffff',
 
-    successTitle: theme.successTitle ?? 'โดเนทสำเร็จแล้วน้า! 🎉',
-    successTitleColor: theme.successTitleColor ?? '#10b981',
-    successFontFamily: theme.successFontFamily ?? 'Mitr',
-    successMessage: theme.successMessage ?? 'ขอบคุณสำหรับการสนับสนุนนะคะ ระบบส่งข้อความและยอดเงินของคุณขึ้นจอ OBS ของสตรีมเมอร์เรียบร้อยแล้วค่ะ 💕',
-    successMessageColor: theme.successMessageColor ?? '#cbd5e1',
-    successEmoji: theme.successEmoji ?? '🎉',
-    successBtnText: theme.successBtnText ?? 'กลับหน้าหลัก',
-    successBtnColor: theme.successBtnColor ?? '#10b981',
-    successBtnTextColor: theme.successBtnTextColor ?? '#ffffff',
+    successTitle: data.theme.successTitle ?? 'โดเนทสำเร็จแล้วน้า! 🎉',
+    successTitleColor: data.theme.successTitleColor ?? '#10b981',
+    successFontFamily: data.theme.successFontFamily ?? 'Mitr',
+    successMessage: data.theme.successMessage ?? 'ขอบคุณสำหรับการสนับสนุนนะคะ ระบบส่งข้อความและยอดเงินของคุณขึ้นจอ OBS ของสตรีมเมอร์เรียบร้อยแล้วค่ะ 💕',
+    successMessageColor: data.theme.successMessageColor ?? '#cbd5e1',
+    successEmoji: data.theme.successEmoji ?? '🎉',
+    successBtnText: data.theme.successBtnText ?? 'กลับหน้าหลัก',
+    successBtnColor: data.theme.successBtnColor ?? '#10b981',
+    successBtnTextColor: data.theme.successBtnTextColor ?? '#ffffff',
 
-    failureTitle: theme.failureTitle ?? 'ทำรายการไม่สำเร็จ',
-    failureTitleColor: theme.failureTitleColor ?? '#ef4444',
-    failureFontFamily: theme.failureFontFamily ?? 'Mitr',
-    failureMessage: theme.failureMessage ?? 'รายการชำระเงินถูกยกเลิก หรือหมดอายุการสแกน QR Code ค่ะ',
-    failureMessageColor: theme.failureMessageColor ?? '#cbd5e1',
-    failureEmoji: theme.failureEmoji ?? '❌',
-    failureBtnText: theme.failureBtnText ?? 'กลับหน้าหลัก/ลองอีกครั้ง',
-    failureBtnColor: theme.failureBtnColor ?? '#ef4444',
-    failureBtnTextColor: theme.failureBtnTextColor ?? '#ffffff'
+    failureTitle: data.theme.failureTitle ?? 'ทำรายการไม่สำเร็จ',
+    failureTitleColor: data.theme.failureTitleColor ?? '#ef4444',
+    failureFontFamily: data.theme.failureFontFamily ?? 'Mitr',
+    failureMessage: data.theme.failureMessage ?? 'รายการชำระเงินถูกยกเลิก หรือหมดอายุการสแกน QR Code ค่ะ',
+    failureMessageColor: data.theme.failureMessageColor ?? '#cbd5e1',
+    failureEmoji: data.theme.failureEmoji ?? '❌',
+    failureBtnText: data.theme.failureBtnText ?? 'กลับหน้าหลัก/ลองอีกครั้ง',
+    failureBtnColor: data.theme.failureBtnColor ?? '#ef4444',
+    failureBtnTextColor: data.theme.failureBtnTextColor ?? '#ffffff'
   });
 
   let activeTab = $state<'main' | 'success' | 'failure'>('main');
@@ -113,7 +115,7 @@
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert('🎉 อัปเดตสไตล์และบันทึกขึ้น GitHub Content API สำเร็จแล้วค่ะ!');
+        alert('🎉 อัปเดตสไตล์และบันทึกขึ้น Cloudflare KV สำเร็จเรียบร้อยแล้วค่ะ!');
       } else {
         alert(data.error || 'บันทึกไม่สำเร็จเนื่องจากพารามิเตอร์ไม่ผ่านด่านตรวจความปลอดภัยค่ะ');
       }
@@ -494,7 +496,7 @@
                       <div class="w-full h-24 bg-cover bg-center opacity-40" style="background-image: url({config.bannerUrl});"></div>
                     {:else}
                       <div class="w-full h-24 bg-slate-900 opacity-40"></div>
-                    {/if} <!-- 🟢 🛡️ แก้ไขจุดนี้เรียบร้อยแล้วค่ะ: เปลี่ยนจาก {#if} เป็น {/if} เพื่อแก้ปัญหา Unexpected end of input -->
+                    {/if}
                     <div class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t" style="background-image: linear-gradient(to top, {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}, transparent);"></div>
                   </div>
 
