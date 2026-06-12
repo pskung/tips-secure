@@ -37,7 +37,7 @@
     inputBorderColor: theme.inputBorderColor ?? '#e2e8f0',
     
     vtuberName: theme.vtuberName ?? 'VTuber Channel',
-    nameColor: theme.nameColor ?? '#d89a9e', // สีชมพูตุ่นสไตล์ Pastel-rose
+    nameColor: theme.nameColor ?? '#d89a9e', // สีชมพูตู่นสไตล์ Pastel-rose
     welcomeColor: theme.welcomeColor ?? '#475569', // สีตัวหนังสือ Slate 600
     labelColor: theme.labelColor ?? '#475569',
     placeholderColor: theme.placeholderColor ?? '#94a3b8',
@@ -204,21 +204,17 @@
         <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-20 h-20 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
       </div>
       
-      <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ -->
+      <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ (ลบคำบรรยายใต้ชื่อออกเรียบร้อยแล้วค่ะ) -->
       <div class="sm:pl-28 text-center sm:text-left flex-1 min-h-[3rem] flex flex-col justify-center">
         <h1 class="text-xl font-extrabold tracking-wide" style="color: {config.nameColor};">
           {config.vtuberName}
         </h1>
-        <p class="text-xs font-semibold" style="color: {config.welcomeColor};">
-          is creating animations & illustrations 💖
-        </p>
       </div>
     </div>
   </div>
 
   <!-- 3. ส่วนกล่องแสดงผลหลักแบ่งเป็น 2 คอลัมน์แบบรัดกุม (Compact 2-Columns Layout) -->
   <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
-    <!-- lg:grid-cols-12 จะช่วยแยกฝั่งซ้ายขวาบนคอม และหดยุบลงบนมือถืออย่างถูกระเบียบ -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
       <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด -->
@@ -271,14 +267,12 @@
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <h2 class="text-base font-extrabold tracking-wide text-slate-800">
-            Buy {config.vtuberName} a Coffee
-          </h2>
+          <!-- (นำชื่อหัวข้อการ์ดด้านบนนี้ออกเรียบร้อยแล้วค่ะ) -->
 
           <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล -->
           <div class="space-y-3.5">
             
-            <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย ไร้สัญลักษณ์หรือรูปถ้วยกาแฟรกสายตา -->
+            <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย -->
             <div class="space-y-1">
               <span class="block text-xs font-bold" style="color: {config.labelColor};">
                 {config.presetLabel}
@@ -341,7 +335,7 @@
             />
           </div>
 
-          <!-- ช่องกรอกข้อความสนับสนุน (ย่นย่อเหลือ 2 แถวเพื่อรักษาระยะความสูง) -->
+          <!-- ช่องกรอกข้อความสนับสนุน -->
           <div class="space-y-1">
             <label class="block text-xs font-bold" for="donor-msg" style="color: {config.labelColor};">
               {config.messageLabel}
@@ -356,7 +350,7 @@
             ></textarea>
           </div>
 
-          <!-- ปุ่มส่งชำระเงินสนับสนุน (Support Button) ดีไซน์มนพาสเทลสวยงาม -->
+          <!-- ปุ่มส่งชำระเงินสนับสนุน (ลบราคาและถ้วยกาแฟออกจากชื่อปุ่มแล้วค่ะ) -->
           <div class="pt-1">
             <button
               type="submit"
@@ -374,7 +368,7 @@
               {:else if loading}
                 กำลังขอคิวอาร์พร้อมเพย์...
               {:else}
-                Support {amount ? `${amount}฿` : ''} ☕
+                {config.submitBtnText}
               {/if}
             </button>
           </div>
