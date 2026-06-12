@@ -1,5 +1,6 @@
 <script lang="ts">
-  import theme from '$lib/config/theme.json';
+  let { data } = $props();
+  const theme = data.theme;
 
   const failureTitle = theme.failureTitle ?? 'ทำรายการไม่สำเร็จ';
   const failureTitleColor = theme.failureTitleColor ?? '#ef4444';
