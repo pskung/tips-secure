@@ -3,8 +3,10 @@
   import { browser } from '$app/environment';
   
   let { data } = $props();
-  const theme = data.theme;
-  const turnstileSiteKey = data.turnstileSiteKey;
+  
+  // 🔮 [Svelte 5 Runes Refactor] ปรับปรุงมารับค่าแบบ $derived ทั้งหมดตามมาตรฐานยุคใหม่ [3]
+  const theme = $derived(data.theme);
+  const turnstileSiteKey = $derived(data.turnstileSiteKey);
 
   let name = $state('');
   let amount = $state('');
@@ -19,12 +21,11 @@
   let customAmountVal = $state('');
 
   let turnstileToken = $state('');
-  
-  // 📜 [Finding 4] ประกาศสถานะความยินยอมหน้าบ้าน และการยืดหดของรายละเอียดนโยบาย [3]
   let isConsented = $state(false);
   let isTosExpanded = $state(false);
 
-  const config = {
+  // 🔮 [Svelte 5 Runes Refactor] คำนวณค่า config แบบ reactive ผ่าน $derived [3]
+  const config = $derived({
     ...theme,
     bgColor: theme.bgColor ?? '#faf9f6',
     cardBgColor: theme.cardBgColor ?? '#ffffff',
@@ -52,7 +53,7 @@
     submitBtnColor: theme.submitBtnColor ?? '#d89a9e',
     submitBtnTextColor: theme.submitBtnTextColor ?? '#ffffff',
     submitBtnText: theme.submitBtnText ?? 'ขอบคุณสำหรับการสนับสนุนน้า'
-  };
+  });
 
   const uniqueFonts = $derived([
     ...new Set([config.mainFontFamily, config.placeholderFontFamily].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
@@ -284,14 +285,12 @@
             bind:value={message}
           ></textarea>
 
-          <!-- 📢 [Finding 4] กล่องยืนยันข้อตกลงและนโยบายความเป็นส่วนตัวแบบพับขยายได้ (TOS & PDPA Collapsible) [3] -->
           <div class="p-3.5 rounded-lg border text-[10px] space-y-1.5 transition-all duration-300" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
             <p class="font-extrabold" style="color: {config.welcomeColor};">📢 ข้อตกลงการสนับสนุน (Terms of Service)</p>
             <p class="leading-relaxed opacity-85" style="color: {config.welcomeColor};">
               การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ในทุกกรณี (Non-Refundable)** และยินยอมให้ระบบประมวลผลข้อมูลตามนโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
             </p>
             
-            <!-- ปุ่มกดพับขยายข้อความกฎหมายอย่างเป็นมิตรต่อคนดูและคนเขียนโค้ด -->
             <button 
               type="button" 
               onclick={() => isTosExpanded = !isTosExpanded} 
