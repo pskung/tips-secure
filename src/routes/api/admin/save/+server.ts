@@ -5,34 +5,17 @@ import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 
-const adminIpCache = new Map<string, number>();
-
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const now = Date.now();
-  const clientIp = getClientAddress() || '127.0.0.1';
-
-  if (adminIpCache.size > 500) {
-    const cutoff = now - 60000;
-    for (const [key, val] of adminIpCache.entries()) {
-      if (val < cutoff) adminIpCache.delete(key);
-    }
-  }
-
-  const lastAttempt = adminIpCache.get(clientIp);
-  if (lastAttempt && (now - lastAttempt < 10000)) {
-    return json({ error: 'Too many attempts. Please wait.' }, { status: 429 });
-  }
-  adminIpCache.set(clientIp, now);
-
+export const POST: RequestHandler = async ({ request }) => {
   try {
     const { password, config } = await request.json();
     const expectedPassword = env.ADMIN_PASSWORD || '';
     
+    // 🛡️ ป้องกันการโจมตีตรวจจับเวลา (Timing Attack) ด้วย Pure JS
     if (!password || !expectedPassword || !timingSafeCompare(password, expectedPassword)) {
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    // เขียนไฟล์ปรับแต่งค่ารูปแบบแผงควบคุมลง Netlify Blobs
+    // 💾 บันทึกรูปแบบแผงจัดการหน้าบ้านลง Netlify Blobs Store แบบถาวร
     const store = getStore('donation_store');
     await store.setJSON('vtuber_personalized_theme', config);
 
