@@ -1,10 +1,12 @@
 import type { PageServerLoad } from './$types';
 import defaultTheme from '$lib/config/theme.json';
 import { env } from '$env/dynamic/private';
-import { getStore } from '@netlify/blobs';
+import * as blobs from '@netlify/blobs';
+
+const getStore = blobs.getStore;
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
-  // บังคับแคชหน้าแรกที่ Edge CDN 5 วินาทีเพื่อจำกัดการยิงดึงข้อมูลสะสม
+  // บังคับแคชหน้าแรกที่ Edge CDN 5 วินาที
   setHeaders({
     'cache-control': 'public, max-age=0, s-maxage=5'
   });
