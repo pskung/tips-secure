@@ -4,6 +4,7 @@
   
   let { data } = $props();
   const theme = data.theme;
+  const turnstileSiteKey = data.turnstileSiteKey; // รับคีย์สาธารณะ
 
   let name = $state('');
   let amount = $state('');
@@ -16,6 +17,9 @@
 
   let customActive = $state(false);
   let customAmountVal = $state('');
+
+  // บันทึก Token ที่ได้จากการผ่านด่าน Turnstile ของคนดูจริง
+  let turnstileToken = $state('');
 
   const config = {
     ...theme,
@@ -81,6 +85,11 @@
       const elapsed = Date.now() - Number(lastRequest);
       if (elapsed < 30000) cooldownRemaining = Math.ceil((30000 - elapsed) / 1000);
     }
+
+    // ผูกคำสั่ง Callback รับโทเค็นความปลอดภัยของคนดูจริงเข้ากับ Window ของหน้าจอ
+    (window as any).onTurnstileSuccess = (token: string) => {
+      turnstileToken = token;
+    };
   });
 
   $effect(() => {
@@ -93,6 +102,13 @@
   const handleDonate = async (e: Event) => {
     e.preventDefault();
     if (cooldownRemaining > 0) return;
+    
+    // บังคับสแกน Turnstile ก่อนผ่านด่านหลังบ้าน
+    if (turnstileSiteKey && !turnstileToken) {
+      alert('กรุณารอระบบตรวจสอบความเป็นมนุษย์สักครู่น้า 🔒');
+      return;
+    }
+    
     loading = true;
 
     try {
@@ -104,7 +120,8 @@
           amount: Number(amount),
           message,
           email_confirm: honeypot,
-          render_time: renderTime
+          render_time: renderTime,
+          turnstile_token: turnstileToken // ส่งตั๋วสแกนเข้าหลังบ้าน
         }),
       });
 
@@ -115,6 +132,11 @@
       } else {
         alert(data.error || 'เกิดข้อขัดข้องชั่วคราวในการขอชำระเงินค่ะ');
         loading = false;
+        // รีเซ็ตรหัสผ่านสแกนหากทำรายการไม่สำเร็จ
+        if (typeof (window as any).turnstile !== 'undefined') {
+          (window as any).turnstile.reset();
+          turnstileToken = '';
+        }
       }
     } catch (err) {
       alert('ระบบชำระเงินขัดข้องชั่วคราวค่ะ');
@@ -128,6 +150,8 @@
   {#each uniqueFonts as font}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
   {/each}
+  <!-- ดึงสคริปต์สแกนตรวจสอบสากลจาก Cloudflare (ฟรี 100% บนทุกซับโดเมน) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </svelte:head>
 
 <main 
@@ -140,12 +164,12 @@
 >
   <div class="absolute inset-0 bg-black/5 -z-10"></div>
 
-  <!-- 1. ส่วนแบนเนอร์กะทัดรัด (Compact Banner) -->
+  <!-- 1. ส่วนแบนเนอร์ด้านบนสุด -->
   <div class="w-full h-24 sm:h-28 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
     <div class="absolute inset-0 bg-black/5"></div>
   </div>
 
-  <!-- 2. แถบโปรไฟล์และชื่อ VTuber ยกระดับความเรียบง่าย (Minimal Profile Strip) -->
+  <!-- 2. แถบโปรไฟล์และชื่อ VTuber -->
   <div class="w-full border-b" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center sm:items-center gap-4 relative">
       <div class="sm:absolute sm:-top-12 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
@@ -159,11 +183,11 @@
     </div>
   </div>
 
-  <!-- 3. ส่วนกล่องแสดงผลหลักแบ่งเป็น 2 คอลัมน์แบบรัดกุม (Compact 2-Columns Layout) -->
+  <!-- 3. ส่วนกล่องแสดงผลหลักแบ่งเป็น 2 คอลัมน์ -->
   <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
-      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด -->
+      <!-- ฝั่งซ้าย: แสดงรายละเอียดทักทาย -->
       <div class="lg:col-span-7 space-y-4">
         <div 
           class="p-5 sm:p-6 rounded-2xl border shadow-sm"
@@ -192,7 +216,7 @@
         </div>
       </div>
 
-      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนไร้ป้ายกำกับ -->
+      <!-- ฝั่งขวา: การ์ดชำระเงินมินิมอลพาสเทล -->
       <div class="lg:col-span-5">
         <form 
           onsubmit={handleDonate} 
@@ -205,15 +229,11 @@
             --placeholder-font: '{config.mainFontFamily}', sans-serif;
           "
         >
-          <!-- Honeypot -->
           <div class="hidden">
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล -->
           <div class="space-y-3.5">
-            
-            <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย -->
             <div class="grid grid-cols-4 gap-1.5">
               {#each config.presetAmounts as amt}
                 <button 
@@ -231,7 +251,6 @@
               {/each}
             </div>
 
-            <!-- ช่องป้อนยอดเงินด้วยตนเอง -->
             <input 
               id="custom-amount" 
               type="number" 
@@ -247,10 +266,8 @@
               }}
               bind:value={customAmountVal}
             />
-
           </div>
 
-          <!-- ช่องกรอกชื่อเล่นผู้สนับสนุน -->
           <input 
             id="nickname" 
             type="text" 
@@ -261,7 +278,6 @@
             bind:value={name} 
           />
 
-          <!-- ช่องกรอกข้อความสนับสนุน -->
           <textarea 
             id="donor-msg" 
             placeholder={config.messagePlaceholder} 
@@ -271,11 +287,23 @@
             bind:value={message}
           ></textarea>
 
-          <!-- ปุ่มส่งชำระเงินสนับสนุน -->
+          <!-- 🔒 กล่อง Turnstile แบบมินิมอลไร้ภาพกวนใจ (ทำงานฟรี 100% บน .pages.dev) -->
+          {#if turnstileSiteKey}
+            <div class="flex justify-center py-1">
+              <div 
+                class="cf-turnstile" 
+                data-sitekey={turnstileSiteKey}
+                data-callback="onTurnstileSuccess"
+                data-theme="light"
+                data-size="compact"
+              ></div>
+            </div>
+          {/if}
+
           <div class="pt-1">
             <button
               type="submit"
-              disabled={loading || cooldownRemaining > 0}
+              disabled={loading || cooldownRemaining > 0 || (turnstileSiteKey !== '' && !turnstileToken)}
               class="w-full py-3 text-xs sm:text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
               style="
                 background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor}; 
