@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
-  // 🎯 บังคับแคชหน้าแรกที่ Edge CDN 5 วินาทีเพื่อความเสถียรและสกัดการดึง GET เปลืองคิวตาทรัพยากร
+  // บังคับแคชหน้าแรกที่ Edge CDN 5 วินาทีเพื่อจำกัดการยิงดึงข้อมูลสะสม
   setHeaders({
     'cache-control': 'public, max-age=0, s-maxage=5'
   });
