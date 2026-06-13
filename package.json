@@ -1,5 +1,5 @@
 {
-  "name": "vtuber-secure-donation-cloudflare",
+  "name": "vtuber-secure-donation-netlify",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@netlify/blobs": "^1.1.4",
     "@sveltejs/kit": "^2.16.1",
     "svelte": "^5.19.1"
   },
   "devDependencies": {
-    "@sveltejs/adapter-cloudflare": "^3.0.0",
+    "@sveltejs/adapter-netlify": "^3.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "tailwindcss": "^4.0.0",
     "@tailwindcss/vite": "^4.0.0",
