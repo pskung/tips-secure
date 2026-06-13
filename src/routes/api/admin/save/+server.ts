@@ -3,9 +3,15 @@ import type { RequestHandler } from './$types';
 import { safeLog } from '$lib/utils/logger';
 import { getStore } from '@netlify/blobs';
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
+export const POST: RequestHandler = async ({ request, cookies, url }) => {
   try {
-    // 🛡️ ยืนยันสิทธิ์ด้วย Secure Cookie แทนการใช้รหัสผ่านหลักดิบ [3]
+    // 🛡️ [Finding 1] ป้องกันการโจมตีประเภท CSRF โดยตรวจสอบ Origin ของคำขอให้ตรงกับ Domain เว็บจริง
+    const origin = request.headers.get('origin');
+    if (origin && origin !== url.origin) {
+      return json({ error: 'เข้าใช้งานข้ามเว็บไซต์ถูกปฏิเสธ (CSRF Protected)' }, { status: 403 });
+    }
+
+    // 🛡️ ยืนยันสิทธิ์ด้วย Secure Cookie แทนการใช้รหัสผ่านหลักดิบ
     const sessionToken = cookies.get('admin_session_token');
     if (!sessionToken) {
       return json({ error: 'เข้าสู่ระบบหมดอายุแล้ว กรุณารีเฟรชเพื่อเข้าสู่ระบบใหม่อีกครั้งค่ะ' }, { status: 401 });
