@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   
-  // 🛡️ ดึงข้อมูลธีมที่โหลดมาจาก Cloudflare KV
   let { data } = $props();
   const theme = data.theme;
 
@@ -13,20 +12,15 @@
   
   let honeypot = $state(''); 
   let renderTime = $state(0);
-  let powLoading = $state(true);
-  let challengeToken = $state('');
-  let clientNonce = $state('');
   let cooldownRemaining = $state(0);
 
-  // ควบคุมสถานะการพิมพ์ยอดเงินเอง
   let customActive = $state(false);
   let customAmountVal = $state('');
 
-  // กำหนดค่าตั้งต้นแบบ Minimal Pastel ผ่อนคลายสบายตา
   const config = {
     ...theme,
-    bgColor: theme.bgColor ?? '#faf9f6', // สีพื้นหลังพาสเทลวอร์มไวต์
-    cardBgColor: theme.cardBgColor ?? '#ffffff', // การ์ดสีขาวบริสุทธิ์
+    bgColor: theme.bgColor ?? '#faf9f6',
+    cardBgColor: theme.cardBgColor ?? '#ffffff',
     cardOpacity: theme.cardOpacity ?? 1.0,
     cardBorderColor: theme.cardBorderColor ?? '#f1f5f9',
     cardBorderOpacity: theme.cardBorderOpacity ?? 1.0,
@@ -35,13 +29,11 @@
     inputBgColor: theme.inputBgColor ?? '#f8fafc',
     inputBgOpacity: theme.inputBgOpacity ?? 1.0,
     inputBorderColor: theme.inputBorderColor ?? '#e2e8f0',
-    
     vtuberName: theme.vtuberName ?? 'VTuber Channel',
-    nameColor: theme.nameColor ?? '#d89a9e', // สีชมพูตู่นสไตล์ Pastel-rose
-    welcomeColor: theme.welcomeColor ?? '#475569', // สีตัวหนังสือ Slate 600
+    nameColor: theme.nameColor ?? '#d89a9e',
+    welcomeColor: theme.welcomeColor ?? '#475569',
     labelColor: theme.labelColor ?? '#475569',
     placeholderColor: theme.placeholderColor ?? '#94a3b8',
-    
     mainFontFamily: theme.mainFontFamily ?? 'Mitr',
     welcomeText: theme.welcomeText ?? 'ยินดีต้อนรับสู่ช่องสนับสนุนสตรีมเมอร์ค่ะ 💖',
     nicknamePlaceholder: theme.nicknamePlaceholder ?? 'พิมพ์ชื่อเล่นที่นี่...',
@@ -56,10 +48,7 @@
   };
 
   const uniqueFonts = $derived([
-    ...new Set([
-      config.mainFontFamily,
-      config.placeholderFontFamily
-    ].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
+    ...new Set([config.mainFontFamily, config.placeholderFontFamily].filter(f => f && f.trim() !== '' && f.toLowerCase() !== 'sans-serif'))
   ]);
 
   const hexToRgba = (hex: string, opacity: number): string => {
@@ -79,25 +68,10 @@
     return '';
   };
 
-  async function solveMicroPoW(token: string, difficulty: number): Promise<string> {
-    let nonce = 0;
-    const prefix = '0'.repeat(difficulty);
-    const encoder = new TextEncoder();
-    while (true) {
-      const data = encoder.encode(`${token}_${nonce}`);
-      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      if (hashHex.startsWith(prefix)) return String(nonce);
-      nonce++;
-    }
-  }
-
-  onMount(async () => {
+  onMount(() => {
     if (!browser) return;
     renderTime = Date.now();
     
-    // กำหนดจำนวนเงินเริ่มต้นเป็นค่า Preset ตัวแรก
     if (config.presetAmounts.length > 0) {
       amount = String(config.presetAmounts[0]);
     }
@@ -106,26 +80,6 @@
     if (lastRequest) {
       const elapsed = Date.now() - Number(lastRequest);
       if (elapsed < 30000) cooldownRemaining = Math.ceil((30000 - elapsed) / 1000);
-    }
-
-    const array = new Uint8Array(8);
-    window.crypto.getRandomValues(array);
-    const clientFp = 'fp_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    
-    try {
-      const res = await fetch('/api/handshake', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint: clientFp })
-      });
-      const data = await res.json();
-      if (data.token) {
-        challengeToken = data.token;
-        clientNonce = await solveMicroPoW(data.token, 3);
-        powLoading = false;
-      }
-    } catch (err) {
-      console.error('Secure initialization protocol error', err);
     }
   });
 
@@ -138,7 +92,7 @@
 
   const handleDonate = async (e: Event) => {
     e.preventDefault();
-    if (powLoading || !challengeToken || cooldownRemaining > 0) return;
+    if (cooldownRemaining > 0) return;
     loading = true;
 
     try {
@@ -150,9 +104,7 @@
           amount: Number(amount),
           message,
           email_confirm: honeypot,
-          render_time: renderTime,
-          token: challengeToken,
-          client_nonce: clientNonce
+          render_time: renderTime
         }),
       });
 
@@ -161,7 +113,7 @@
         localStorage.setItem('last_donate_request', String(Date.now()));
         window.location.href = data.invoice_url;
       } else {
-        alert(data.error || 'เกิดข้อขัดข้องชั่วคราวในการขอรับคิวอาร์สำหรับการโดเนทค่ะ');
+        alert(data.error || 'เกิดข้อขัดข้องชั่วคราวในการขอชำระเงินค่ะ');
         loading = false;
       }
     } catch (err) {
@@ -179,14 +131,16 @@
 </svelte:head>
 
 <main 
-  class="flex min-h-screen flex-col relative transition-all duration-700 select-none overflow-x-hidden"
+  class="flex min-h-screen flex-col relative transition-all duration-700 select-none overflow-x-hidden pb-8"
   style="
     background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
     background-color: {config.bgColor};
     font-family: '{config.mainFontFamily}', sans-serif;
   "
 >
-  <!-- 1. ส่วนแบนเนอร์ด้านบนสุดแบบเรียบง่าย ไม่กินพื้นที่สายตา (Compact Banner) -->
+  <div class="absolute inset-0 bg-black/5 -z-10"></div>
+
+  <!-- 1. ส่วนแบนเนอร์กะทัดรัด (Compact Banner) -->
   <div class="w-full h-24 sm:h-28 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
     <div class="absolute inset-0 bg-black/5"></div>
   </div>
@@ -194,13 +148,9 @@
   <!-- 2. แถบโปรไฟล์และชื่อ VTuber ยกระดับความเรียบง่าย (Minimal Profile Strip) -->
   <div class="w-full border-b" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center sm:items-center gap-4 relative">
-      
-      <!-- อวาตาร์โปรไฟล์วงกลมแบบคลีน ไร้แสงเบลอ มีเพียงเงาจางและขอบบาง -->
       <div class="sm:absolute sm:-top-12 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
         <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-20 h-20 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
       </div>
-      
-      <!-- ข้อมูลผู้ใช้ถัดจากอวาตาร์ -->
       <div class="sm:pl-28 text-center sm:text-left flex-1 min-h-[3rem] flex flex-col justify-center">
         <h1 class="text-xl font-extrabold tracking-wide" style="color: {config.nameColor};">
           {config.vtuberName}
@@ -213,7 +163,7 @@
   <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
-      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด (ไม่มี "Hey" แล้วค่ะ) -->
+      <!-- 📱 ฝั่งซ้าย (7/12 ส่วนบนคอม): แสดงรายละเอียดทักทายแบบน่ารักกะทัดรัด -->
       <div class="lg:col-span-7 space-y-4">
         <div 
           class="p-5 sm:p-6 rounded-2xl border shadow-sm"
@@ -242,7 +192,7 @@
         </div>
       </div>
 
-      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนไร้ป้ายกำกับ (Support Card - No Labels) -->
+      <!-- 💳 ฝั่งขวา (5/12 ส่วนบนคอม): การ์ดสนับสนุนดีไซน์คลีนไร้ป้ายกำกับ -->
       <div class="lg:col-span-5">
         <form 
           onsubmit={handleDonate} 
@@ -260,7 +210,7 @@
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล (ลบป้ายกำกับออกหมดแล้วเพื่อความเบาสบาย) -->
+          <!-- กล่องปุ่มด่วนและระบุจำนวนเงินสไตล์พาสเทล -->
           <div class="space-y-3.5">
             
             <!-- แสดง Preset 4 ปุ่มด่วนเรียบง่าย -->
@@ -321,11 +271,11 @@
             bind:value={message}
           ></textarea>
 
-          <!-- ปุ่มส่งชำระเงินสนับสนุน (สนับสนุนข้อความมินิมอลแบบไม่มีต่อท้ายราคากาแฟแล้วค่ะ) -->
+          <!-- ปุ่มส่งชำระเงินสนับสนุน -->
           <div class="pt-1">
             <button
               type="submit"
-              disabled={loading || powLoading || cooldownRemaining > 0}
+              disabled={loading || cooldownRemaining > 0}
               class="w-full py-3 text-xs sm:text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
               style="
                 background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor}; 
@@ -334,8 +284,6 @@
             >
               {#if cooldownRemaining > 0}
                 กรุณารออีก {cooldownRemaining} วินาทีน้า ⏳
-              {:else if powLoading}
-                กำลังเตรียมเส้นทางปลอดภัย...
               {:else if loading}
                 กำลังขอคิวอาร์พร้อมเพย์...
               {:else}
