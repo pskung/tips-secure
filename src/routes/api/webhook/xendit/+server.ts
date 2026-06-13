@@ -33,7 +33,6 @@ export const POST: RequestHandler = async ({ request }) => {
       const metadata = body.metadata || {};
       const donorName = metadata.donor_name || 'Anonymous';
       const donorMessage = metadata.donor_message || '';
-      const externalId = body.external_id || `xendit_${body.id}`;
       
       const alertPromises: Promise<any>[] = [];
 
@@ -51,6 +50,7 @@ export const POST: RequestHandler = async ({ request }) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: params.toString(),
+              signal: AbortSignal.timeout(2500) // ⚡ ดึงสายหลุดใน 2.5 วินาทีหาก Streamlabs ล่าช้า [3]
             })
             .then(async (slRes) => {
               if (!slRes.ok) {
@@ -83,7 +83,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${env.STREAMELEMENTS_JWT}`
               },
-              body: JSON.stringify(sePayload)
+              body: JSON.stringify(sePayload),
+              signal: AbortSignal.timeout(2500) // ⚡ จำกัดสายสัญญาณ 2.5 วินาที [3]
             })
             .then(async (seRes) => {
               if (!seRes.ok) {
@@ -100,7 +101,7 @@ export const POST: RequestHandler = async ({ request }) => {
         }
       }
 
-      // บังคับให้เซิร์ฟเวอร์รอยิงสำเร็จทั้งหมดขนานกัน ป้องกันเซิร์ฟเวอร์หลับ (Serverless Call Freezing)
+      // บังคับให้เซิร์ฟเวอร์รอยิงสำเร็จทั้งหมดขนานกันเพื่อป้องกันเซิร์ฟเวอร์หลับ (Serverless Call Freezing) [3]
       if (alertPromises.length > 0) {
         await Promise.all(alertPromises);
       }
