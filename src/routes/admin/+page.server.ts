@@ -1,9 +1,11 @@
 import type { PageServerLoad } from './$types';
 import defaultTheme from '$lib/config/theme.json';
+import { getStore } from '@netlify/blobs';
 
-export const load: PageServerLoad = async ({ platform }) => {
+export const load: PageServerLoad = async () => {
   try {
-    const theme = await platform?.env?.DONATION_KV.get('vtuber_personalized_theme', { type: 'json' });
+    const store = getStore('donation_store');
+    const theme = await store.get('vtuber_personalized_theme', { type: 'json' });
     return {
       theme: theme || defaultTheme
     };
