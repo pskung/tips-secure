@@ -23,26 +23,48 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
     }
 
     const body = await request.json();
-    const { name, amount, message, currency = 'THB', email_confirm, render_time } = body;
+    const { name, amount, message, currency = 'THB', email_confirm, render_time, turnstile_token } = body;
 
-    // 1. ตรวจจับ Honeypot สแปมบอท
+    // 1. ตรวจจับ Honeypot
     if (email_confirm) {
       safeLog('Spam Bot Detected: Invisible honeypot trap triggered.', 'WARN', { email_confirm });
       return json({ error: 'Operation rejected' }, { status: 400 });
     }
 
-    // 2. ตรวจจับเวลาปุ่มความเร็วสูง (ยิงแบบไม่โหลดหน้าจอจริง)
+    // 2. ตรวจจับสแปมด้วยเวลา
     if (render_time && (now - Number(render_time) < 1000)) {
       safeLog('Spam Bot Detected: Trigger speed abnormal.', 'WARN');
       return json({ error: 'Operation rate limit exceeded' }, { status: 400 });
     }
 
-    // 3. ตรวจสอบคุกกี้สกัดกันการกดรัวๆ ฝั่ง Client
+    // 3. ตรวจสอบตั๋วความปลอดภัยจาก Cloudflare Turnstile หลังบ้าน
+    if (env.TURNSTILE_SECRET_KEY) {
+      if (!turnstile_token) {
+        return json({ error: 'กรุณารอระบบยืนยันตัวตนสักครู่น้า 🔒' }, { status: 400 });
+      }
+
+      // ยิงสอยตรวจสอบสิทธิ์ตรงหาเครื่องเซิร์ฟเวอร์หลักของ Cloudflare
+      const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: env.TURNSTILE_SECRET_KEY,
+          response: turnstile_token
+        })
+      });
+
+      const verifyData = await verifyResponse.json();
+      if (!verifyData.success) {
+        return json({ error: 'ด่านตรวจพบว่ามีพฤติกรรมเป็นบอท กรุณาลองใหม่อีกครั้งค่ะ' }, { status: 400 });
+      }
+    }
+
+    // 4. ตรวจสอบคุกกี้สกัดรัวฝั่ง Client
     if (cookies.get('cooldown_active') === 'true') {
       return json({ error: 'กรุณารอ 1 นาทีก่อนทำรายการถัดไปน้า' }, { status: 429 });
     }
 
-    // 4. ตรวจสอบเงื่อนไขข้อมูลรับเงินพื้นฐาน
+    // 5. ตรวจสอบความถูกต้องข้อมูลพื้นฐาน
     if (!name || typeof name !== 'string' || !/^[a-zA-Z0-9\u0e00-\u0e7f\s._-]+$/.test(name) || name.length < 2 || name.length > 25) {
       return json({ error: 'กรุณาตรวจสอบความถูกต้องของชื่อเล่นค่ะ' }, { status: 400 });
     }
@@ -55,7 +77,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 
     if (!env.XENDIT_SECRET_KEY) {
       return json({ 
-        error: 'ระบบสตรีมเมอร์ขัดข้องเนื่องจากยังไม่ได้ป้อนคีย์รับเงินลับหลังบ้านค่ะ' 
+        error: 'ระบบยังไม่ได้ตั้งค่าคีย์รับเงินลับหลังบ้านค่ะ' 
       }, { status: 501 });
     }
 
