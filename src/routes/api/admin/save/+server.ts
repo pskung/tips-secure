@@ -1,11 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { safeLog } from '$lib/utils/logger';
-import { getStore } from '@netlify/blobs';
+import * as blobs from '@netlify/blobs';
+
+const getStore = blobs.getStore;
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
   try {
-    // 🛡️ [Finding 1] ป้องกันการโจมตีประเภท CSRF โดยตรวจสอบ Origin ของคำขอให้ตรงกับ Domain เว็บจริง
+    // 🛡️ ป้องกันการโจมตีประเภท CSRF โดยตรวจสอบ Origin ของคำขอให้ตรงกับ Host จริง
     const origin = request.headers.get('origin');
     if (origin && origin !== url.origin) {
       return json({ error: 'เข้าใช้งานข้ามเว็บไซต์ถูกปฏิเสธ (CSRF Protected)' }, { status: 403 });

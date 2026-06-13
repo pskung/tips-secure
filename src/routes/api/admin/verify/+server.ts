@@ -2,7 +2,9 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
-import { getStore } from '@netlify/blobs';
+import * as blobs from '@netlify/blobs';
+
+const getStore = blobs.getStore;
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
   try {
