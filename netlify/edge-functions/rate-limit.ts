@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/edge-functions";
 
 export default async (request: Request, context: Context) => {
-  // บล๊อกสแปมที่เลเยอร์ CDN (ทำงานโดยตรงที่ Edge ก่อนถึงตัวแอป SvelteKit)
+  // ดักจับและกรองสแปมบอทที่ชั้นขอบ CDN (Edge CDN Layer) ก่อนเข้าหลังบ้าน SvelteKit
   return context.next();
 };
 
@@ -12,8 +12,8 @@ export const config: Config = {
     "/api/admin/save"
   ],
   rateLimit: {
-    windowLimit: 3,        // อนุญาตสูงสุด 3 ครั้ง
-    windowSize: 60,        // ต่อรอบเวลา 60 วินาที
-    aggregateBy: ["ip"]    // คัดกรองและแบ่งสิทธิ์ราย IP
+    windowLimit: 3,        // อัตราส่งคำขอสูงสุด 3 ครั้ง
+    windowSize: 60,        // ภายในระยะเวลา 60 วินาที
+    aggregateBy: ["ip"]    // บันทึกและวิเคราะห์ค่าราย IP Address
   }
 };
