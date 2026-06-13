@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/edge-functions";
 
 export default async (request: Request, context: Context) => {
-  // ดักจับและกรองสแปมบอทที่ชั้นขอบ CDN (Edge CDN Layer) ก่อนเข้าหลังบ้าน SvelteKit
+  // กรองและบล็อกผู้ไม่ประสงค์ดีที่ส่งสแปมถี่เกินไปโดยตรงจากขอบเครือข่าย CDN
   return context.next();
 };
 
@@ -12,8 +12,8 @@ export const config: Config = {
     "/api/admin/save"
   ],
   rateLimit: {
-    windowLimit: 3,        // อัตราส่งคำขอสูงสุด 3 ครั้ง
-    windowSize: 60,        // ภายในระยะเวลา 60 วินาที
-    aggregateBy: ["ip"]    // บันทึกและวิเคราะห์ค่าราย IP Address
+    windowLimit: 3,        // ยิงปุ่มส่งข้อมูลได้ไม่เกิน 3 ครั้ง
+    windowSize: 60,        // ภายในระยะเวลา 60 วินาทีต่อหนึ่งไอพี
+    aggregateBy: ["ip"]
   }
 };
