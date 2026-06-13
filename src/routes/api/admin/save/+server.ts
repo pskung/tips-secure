@@ -3,10 +3,11 @@ import type { RequestHandler } from './$types';
 import { safeLog } from '$lib/utils/logger';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
+import { getStore } from '@netlify/blobs';
 
 const adminIpCache = new Map<string, number>();
 
-export const POST: RequestHandler = async ({ request, getClientAddress, platform }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const now = Date.now();
   const clientIp = getClientAddress() || '127.0.0.1';
 
@@ -31,15 +32,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress, platform
       return json({ error: 'Unauthenticated administration attempt' }, { status: 401 });
     }
 
-    // 🛡️ ตรวจความปลอดภัยในการเชื่อมโยงฐานข้อมูล Cloudflare KV
-    if (!platform?.env?.DONATION_KV) {
-      return json({ error: 'Database connection failed' }, { status: 500 });
-    }
+    // เขียนไฟล์ปรับแต่งค่ารูปแบบแผงควบคุมลง Netlify Blobs
+    const store = getStore('donation_store');
+    await store.setJSON('vtuber_personalized_theme', config);
 
-    // บันทึกลง Cloudflare KV ในรูปแบบ String (สิทธิ์การเขียนฟรี 1,000 ครั้ง/วัน)
-    await platform.env.DONATION_KV.put('vtuber_personalized_theme', JSON.stringify(config));
-
-    safeLog('Admin successfully updated theme styles via Cloudflare KV storage', 'INFO');
+    safeLog('Admin successfully updated theme styles via Netlify Blobs storage', 'INFO');
     return json({ success: true });
   } catch (err) {
     safeLog('Admin Save Exception', 'ERROR', err);
