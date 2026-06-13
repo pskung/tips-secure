@@ -3,27 +3,7 @@ import type { RequestHandler } from './$types';
 import { timingSafeCompare } from '$lib/utils/crypto';
 import { env } from '$env/dynamic/private';
 
-const verifyIpCache = new Map<string, number>();
-
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const now = Date.now();
-  const clientIp = getClientAddress() || '127.0.0.1';
-
-  // เคลียร์ประวัติ IP เก่าหากแคชมีขนาดใหญ่เกินความจำเป็น
-  if (verifyIpCache.size > 500) {
-    const cutoff = now - 60000;
-    for (const [key, val] of verifyIpCache.entries()) {
-      if (val < cutoff) verifyIpCache.delete(key);
-    }
-  }
-
-  // ดักสกัดแอดมินปลอมขยันยิงสุ่มรหัสผ่านบ่อยเกินไป (จำกัด 5 วินาทีต่อครั้ง)
-  const lastAttempt = verifyIpCache.get(clientIp);
-  if (lastAttempt && (now - lastAttempt < 5000)) {
-    return json({ success: false, error: 'ส่งคำขอถี่เกินไป กรุณารอ 5 วินาทีก่อนลองอีกครั้งค่ะ' }, { status: 429 });
-  }
-  verifyIpCache.set(clientIp, now);
-
+export const POST: RequestHandler = async ({ request }) => {
   try {
     const { password } = await request.json();
     const expectedPassword = env.ADMIN_PASSWORD || '';
