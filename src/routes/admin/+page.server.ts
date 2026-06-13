@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import defaultTheme from '$lib/config/theme.json';
-import { getStore } from '@netlify/blobs';
+import * as blobs from '@netlify/blobs';
+
+const getStore = blobs.getStore;
 
 export const load: PageServerLoad = async () => {
   try {
