@@ -19,8 +19,10 @@
   let customAmountVal = $state('');
 
   let turnstileToken = $state('');
-  // 📜 ตัวแปรสถานะความยินยอมหน้าบ้าน
+  
+  // 📜 [Finding 4] ประกาศสถานะความยินยอมหน้าบ้าน และการยืดหดของรายละเอียดนโยบาย [3]
   let isConsented = $state(false);
+  let isTosExpanded = $state(false);
 
   const config = {
     ...theme,
@@ -124,7 +126,7 @@
           email_confirm: honeypot,
           render_time: renderTime,
           turnstile_token: turnstileToken,
-          is_consented: isConsented // ส่งข้อมูลความยินยอมเข้าหลังบ้าน
+          is_consented: isConsented
         }),
       });
 
@@ -282,15 +284,39 @@
             bind:value={message}
           ></textarea>
 
-          <!-- 📢 ข้อตกลงการโดเนทและการยินยอมข้อมูลตาม PDPA หน้าบ้าน -->
-          <div class="p-3.5 rounded-lg border text-[10px] space-y-1.5" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
+          <!-- 📢 [Finding 4] กล่องยืนยันข้อตกลงและนโยบายความเป็นส่วนตัวแบบพับขยายได้ (TOS & PDPA Collapsible) [3] -->
+          <div class="p-3.5 rounded-lg border text-[10px] space-y-1.5 transition-all duration-300" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
             <p class="font-extrabold" style="color: {config.welcomeColor};">📢 ข้อตกลงการสนับสนุน (Terms of Service)</p>
             <p class="leading-relaxed opacity-85" style="color: {config.welcomeColor};">
-              การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ในทุกกรณี (Non-Refundable)** และยินยอมให้ระบบประมวลผลข้อมูลชื่อเล่นและข้อความสตรีมเมอร์เพื่อแสดงผลบนหน้าจอไลฟ์ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
+              การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ในทุกกรณี (Non-Refundable)** และยินยอมให้ระบบประมวลผลข้อมูลตามนโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
             </p>
-            <label class="flex items-center gap-2 cursor-pointer mt-1 font-bold" style="color: {config.welcomeColor};">
+            
+            <!-- ปุ่มกดพับขยายข้อความกฎหมายอย่างเป็นมิตรต่อคนดูและคนเขียนโค้ด -->
+            <button 
+              type="button" 
+              onclick={() => isTosExpanded = !isTosExpanded} 
+              class="text-left font-bold underline cursor-pointer focus:outline-none flex items-center gap-1 py-1" 
+              style="color: {config.submitBtnColor};"
+            >
+              <span>{isTosExpanded ? '🔼 ซ่อนรายละเอียดนโยบายความเป็นส่วนตัว' : '🔽 อ่านข้อตกลงและนโยบายความเป็นส่วนตัวเพิ่มเติม'}</span>
+            </button>
+
+            {#if isTosExpanded}
+              <div class="mt-1.5 p-2.5 rounded border border-slate-200 bg-white/60 space-y-2 leading-relaxed text-slate-600 transition-all duration-300">
+                <p><strong>1. นโยบายการไม่คืนเงิน (Non-Refundable Policy)</strong><br />
+                ยอดเงินสนับสนุนทั้งหมดถือเป็นการเสน่หาเพื่อเป็นกำลังใจและสนับสนุนการสตรีมของ {config.vtuberName} เท่านั้น จะไม่สามารถเปลี่ยน ยกเลิก หรือขอคืนเงิน (Chargeback) ได้ไม่ว่าในกรณีใด ๆ</p>
+                
+                <p><strong>2. การคุ้มครองข้อมูลส่วนบุคคล (PDPA Consent)</strong><br />
+                เราจะจัดเก็บข้อมูล "ชื่อเล่น" และ "ข้อความของท่าน" เพื่อส่งผ่านไปยังตัวรับสัญญาณแจ้งเตือน (Streamlabs / StreamElements) เพื่อแสดงขึ้นหน้าไลฟ์สตรีมแบบสาธารณะ โดยไม่มีการนำข้อมูลส่วนตัวอื่น ๆ ไปแสวงหากำไรเชิงพาณิชย์</p>
+                
+                <p><strong>3. ความปลอดภัยของข้อมูลธุรกรรม</strong><br />
+                ข้อมูลธุรกรรมการชำระเงินของท่านได้รับการประมวลผลผ่านผู้ให้บริการทางการเงินมาตรฐานสากล (Xendit) โดยตรง โดยจะไม่มีการเก็บบันทึกข้อมูลรหัสผ่าน บัตรเครดิต หรือข้อมูลบัญชีของท่านไว้ในระบบของเรา</p>
+              </div>
+            {/if}
+
+            <label class="flex items-center gap-2 cursor-pointer mt-2 font-bold" style="color: {config.welcomeColor};">
               <input type="checkbox" bind:checked={isConsented} required class="rounded accent-[var(--theme-accent)]" style="--theme-accent: {config.submitBtnColor}" />
-              <span>ฉันยอมรับข้อตกลงและเงื่อนไขนี้ 🔒</span>
+              <span>ฉันยอมรับข้อตกลงและนโยบายนี้ 🔒</span>
             </label>
           </div>
 
