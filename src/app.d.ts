@@ -1,6 +1,6 @@
 declare global {
   namespace App {
-    // โครงสร้างฝั่ง Netlify จะถูกจัดการโดยระบบอัตโนมัติผ่าน SDK
+    // ประเภทโมดูลของ Netlify ได้รับการจัดการผ่าน SDK สำเร็จรูปโดยตรง
   }
 }
 export {};
