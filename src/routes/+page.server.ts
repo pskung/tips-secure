@@ -1,21 +1,22 @@
 import type { PageServerLoad } from './$types';
 import defaultTheme from '$lib/config/theme.json';
 import { env } from '$env/dynamic/private';
+import { getStore } from '@netlify/blobs';
 
-export const load: PageServerLoad = async ({ platform, setHeaders }) => {
-  // 🎯 บังคับแคชหน้าแรกที่ Edge CDN 5 วินาทีอย่างเข้มงวด ช่วยสกัดการยิง GET Flood
+export const load: PageServerLoad = async ({ setHeaders }) => {
+  // 🎯 บังคับแคชหน้าแรกที่ Edge CDN 5 วินาที ช่วยสกัดการยิง GET Flood
   setHeaders({
     'cache-control': 'public, max-age=0, s-maxage=5'
   });
 
   try {
-    const theme = await platform?.env?.DONATION_KV.get('vtuber_personalized_theme', { 
-      type: 'json',
-      cacheTtl: 60 
-    });
+    const store = getStore('donation_store');
+    // ดึงค่าสไตล์แบบระบุรูปแบบข้อมูล JSON
+    const theme = await store.get('vtuber_personalized_theme', { type: 'json' });
+    
     return {
       theme: theme || defaultTheme,
-      turnstileSiteKey: env.TURNSTILE_SITE_KEY || '' // ส่งคีย์สาธารณะไปหน้าบ้าน
+      turnstileSiteKey: env.TURNSTILE_SITE_KEY || ''
     };
   } catch {
     return {
