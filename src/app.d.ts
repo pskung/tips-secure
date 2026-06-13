@@ -1,10 +1,6 @@
 declare global {
   namespace App {
-    interface Platform {
-      env: {
-        DONATION_KV: KVNamespace;
-      };
-    }
+    // โครงสร้างฝั่ง Netlify จะถูกจัดการโดยระบบอัตโนมัติผ่าน SDK
   }
 }
 export {};
