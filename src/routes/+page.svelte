@@ -4,7 +4,7 @@
   
   let { data } = $props();
   const theme = data.theme;
-  const turnstileSiteKey = data.turnstileSiteKey; // รับคีย์สาธารณะ
+  const turnstileSiteKey = data.turnstileSiteKey;
 
   let name = $state('');
   let amount = $state('');
@@ -18,8 +18,9 @@
   let customActive = $state(false);
   let customAmountVal = $state('');
 
-  // บันทึก Token ที่ได้จากการผ่านด่าน Turnstile ของคนดูจริง
   let turnstileToken = $state('');
+  // 📜 ตัวแปรสถานะความยินยอมหน้าบ้าน
+  let isConsented = $state(false);
 
   const config = {
     ...theme,
@@ -57,7 +58,10 @@
 
   const hexToRgba = (hex: string, opacity: number): string => {
     if (!hex) return `rgba(255, 255, 255, ${opacity})`;
-    const cleanHex = hex.replace('#', '');
+    let cleanHex = hex.trim().replace('#', '');
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex.split('').map(char => char + char).join('');
+    }
     if (cleanHex.length !== 6) return hex;
     const r = parseInt(cleanHex.substring(0, 2), 16);
     const g = parseInt(cleanHex.substring(2, 4), 16);
@@ -86,7 +90,6 @@
       if (elapsed < 30000) cooldownRemaining = Math.ceil((30000 - elapsed) / 1000);
     }
 
-    // ผูกคำสั่ง Callback รับโทเค็นความปลอดภัยของคนดูจริงเข้ากับ Window ของหน้าจอ
     (window as any).onTurnstileSuccess = (token: string) => {
       turnstileToken = token;
     };
@@ -101,9 +104,8 @@
 
   const handleDonate = async (e: Event) => {
     e.preventDefault();
-    if (cooldownRemaining > 0) return;
+    if (cooldownRemaining > 0 || !isConsented) return;
     
-    // บังคับสแกน Turnstile ก่อนผ่านด่านหลังบ้าน
     if (turnstileSiteKey && !turnstileToken) {
       alert('กรุณารอระบบตรวจสอบความเป็นมนุษย์สักครู่น้า 🔒');
       return;
@@ -121,7 +123,8 @@
           message,
           email_confirm: honeypot,
           render_time: renderTime,
-          turnstile_token: turnstileToken // ส่งตั๋วสแกนเข้าหลังบ้าน
+          turnstile_token: turnstileToken,
+          is_consented: isConsented // ส่งข้อมูลความยินยอมเข้าหลังบ้าน
         }),
       });
 
@@ -132,7 +135,6 @@
       } else {
         alert(data.error || 'เกิดข้อขัดข้องชั่วคราวในการขอชำระเงินค่ะ');
         loading = false;
-        // รีเซ็ตรหัสผ่านสแกนหากทำรายการไม่สำเร็จ
         if (typeof (window as any).turnstile !== 'undefined') {
           (window as any).turnstile.reset();
           turnstileToken = '';
@@ -150,7 +152,6 @@
   {#each uniqueFonts as font}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
   {/each}
-  <!-- ดึงสคริปต์สแกนตรวจสอบสากลจาก Cloudflare (ฟรี 100% บนทุกซับโดเมน) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </svelte:head>
 
@@ -164,12 +165,10 @@
 >
   <div class="absolute inset-0 bg-black/5 -z-10"></div>
 
-  <!-- 1. ส่วนแบนเนอร์ด้านบนสุด -->
   <div class="w-full h-24 sm:h-28 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
     <div class="absolute inset-0 bg-black/5"></div>
   </div>
 
-  <!-- 2. แถบโปรไฟล์และชื่อ VTuber -->
   <div class="w-full border-b" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center sm:items-center gap-4 relative">
       <div class="sm:absolute sm:-top-12 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
@@ -183,11 +182,9 @@
     </div>
   </div>
 
-  <!-- 3. ส่วนกล่องแสดงผลหลักแบ่งเป็น 2 คอลัมน์ -->
   <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       
-      <!-- ฝั่งซ้าย: แสดงรายละเอียดทักทาย -->
       <div class="lg:col-span-7 space-y-4">
         <div 
           class="p-5 sm:p-6 rounded-2xl border shadow-sm"
@@ -204,7 +201,6 @@
           </div>
         </div>
 
-        <!-- ปุ่มโซเชียลมีเดีย -->
         <div class="flex flex-wrap gap-2">
           {#each config.socialLinks || [] as link}
             {#if link.url}
@@ -216,7 +212,6 @@
         </div>
       </div>
 
-      <!-- ฝั่งขวา: การ์ดชำระเงินมินิมอลพาสเทล -->
       <div class="lg:col-span-5">
         <form 
           onsubmit={handleDonate} 
@@ -287,7 +282,18 @@
             bind:value={message}
           ></textarea>
 
-          <!-- 🔒 กล่อง Turnstile แบบมินิมอลไร้ภาพกวนใจ (ทำงานฟรี 100% บน .pages.dev) -->
+          <!-- 📢 ข้อตกลงการโดเนทและการยินยอมข้อมูลตาม PDPA หน้าบ้าน -->
+          <div class="p-3.5 rounded-lg border text-[10px] space-y-1.5" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
+            <p class="font-extrabold" style="color: {config.welcomeColor};">📢 ข้อตกลงการสนับสนุน (Terms of Service)</p>
+            <p class="leading-relaxed opacity-85" style="color: {config.welcomeColor};">
+              การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ในทุกกรณี (Non-Refundable)** และยินยอมให้ระบบประมวลผลข้อมูลชื่อเล่นและข้อความสตรีมเมอร์เพื่อแสดงผลบนหน้าจอไลฟ์ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
+            </p>
+            <label class="flex items-center gap-2 cursor-pointer mt-1 font-bold" style="color: {config.welcomeColor};">
+              <input type="checkbox" bind:checked={isConsented} required class="rounded accent-[var(--theme-accent)]" style="--theme-accent: {config.submitBtnColor}" />
+              <span>ฉันยอมรับข้อตกลงและเงื่อนไขนี้ 🔒</span>
+            </label>
+          </div>
+
           {#if turnstileSiteKey}
             <div class="flex justify-center py-1">
               <div 
@@ -303,7 +309,7 @@
           <div class="pt-1">
             <button
               type="submit"
-              disabled={loading || cooldownRemaining > 0 || (turnstileSiteKey !== '' && !turnstileToken)}
+              disabled={loading || cooldownRemaining > 0 || (turnstileSiteKey !== '' && !turnstileToken) || !isConsented}
               class="w-full py-3 text-xs sm:text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
               style="
                 background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor}; 
