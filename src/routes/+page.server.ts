@@ -4,16 +4,14 @@ import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
-  // 🎯 บังคับแคชหน้าแรกที่ Edge CDN 5 วินาที ช่วยสกัดการยิง GET Flood
+  // 🎯 บังคับแคชหน้าแรกที่ Edge CDN 5 วินาทีเพื่อความเสถียรและสกัดการดึง GET เปลืองคิวตาทรัพยากร
   setHeaders({
     'cache-control': 'public, max-age=0, s-maxage=5'
   });
 
   try {
     const store = getStore('donation_store');
-    // ดึงค่าสไตล์แบบระบุรูปแบบข้อมูล JSON
     const theme = await store.get('vtuber_personalized_theme', { type: 'json' });
-    
     return {
       theme: theme || defaultTheme,
       turnstileSiteKey: env.TURNSTILE_SITE_KEY || ''
