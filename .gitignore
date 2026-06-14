@@ -1,0 +1,51 @@
+# 💻 1. OS System Files (ไฟล์ขยะของระบบปฏิบัติการที่ไม่มีส่วนเกี่ยวข้องกับโค้ด)
+.DS_Store
+Thumbs.db
+db.json
+desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# 📦 2. Dependency Directories (ไฟล์ไลบรารีภายนอกที่โหลดมาใช้งาน)
+# การใช้ **/node_modules/ ป้องกันข้อผิดพลาดในการทำงานของ Netlify Build Plugins
+**/node_modules/
+
+# ⚡ 3. SvelteKit & Vite Build Outputs (โฟลเดอร์รวบรวมไฟล์และแคชประมวลผล)
+# ห้ามเอาขึ้น Git เด็ดขาดเพราะเป็นแคชชั่วคราวและประเภทข้อมูลที่คอมไพล์แล้ว
+/.svelte-kit/
+/build/
+/dist/
+/package/
+.turbo/
+
+# 🛠️ 4. Vite Temporary Files (ไฟล์ชั่วคราวตอน Vite เริ่มทำงาน)
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ☁️ 5. Netlify CLI Cache & State (ข้อมูลหลังบ้านและฐานข้อมูล Blobs ในเครื่อง)
+# ห้ามนำขึ้น Git เพราะมีประวัติเซสชันแอดมินจำลองและประวัติการ Deploy
+.netlify/
+
+# 🛡️ 6. Environment Variables & Secrets (⚠️ ข้อมูลส่วนนี้สำคัญที่สุด ห้ามหลุดขึ้น Git เด็ดขาด!)
+# บล็อกไฟล์เก็บคีย์ธุรกรรม (Xendit, Streamlabs JWT, Passwords)
+.env
+.env.*
+
+# ยกเว้น .env.example (ยอมให้อัปขึ้น Git ได้ เพื่อใช้เป็นต้นแบบให้ผู้ใช้อื่นก๊อปปี้ไปตั้งค่า)
+!.env.example
+
+# 📝 7. Log Files (ไฟล์บันทึกประวัติการรันโปรแกรมข้อผิดพลาดในเครื่องตนเอง)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# บล็อกไฟล์ที่ถูกสร้างจาก Easy Whole Project to Single Text File
+*-output.txt
+*-output.md
+*-export.txt
+*-export.md
