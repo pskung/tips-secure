@@ -1,40 +1,51 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { safeLog } from '$lib/utils/logger';
-import * as blobs from '@netlify/blobs';
-
-const getStore = blobs.getStore;
+// ✅ แก้ไข Error 2307: นำเข้า RequestHandler จาก Core ของ SvelteKit โดยตรงโดยไม่ต้องพึ่งพาโฟลเดอร์ชั่วคราว
+import type { RequestHandler } from '@sveltejs/kit';
+// ✅ แก้ไข Error 2307: ใช้ Relative Path แทนการใช้ Path Alias ป้องกันการแฮงก์ของ VS Code TS Server
+import { safeLog } from '../../../../lib/utils/logger';
+// ✅ แก้ไข Error 2339: เปลี่ยนไปใช้ Named Import จาก @netlify/blobs แทนการดึงผ่าน Property Namespace
+import { getStore } from '@netlify/blobs';
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
   try {
-    // 🛡️ ป้องกันการโจมตีประเภท CSRF โดยตรวจสอบ Origin ของคำขอให้ตรงกับ Host จริง
+    // 🛡️ 1. CSRF Protection - ตรวจสอบความถูกต้องของขอบเขตเครือข่ายต้นทาง
     const origin = request.headers.get('origin');
-    if (origin && origin !== url.origin) {
-      return json({ error: 'เข้าใช้งานข้ามเว็บไซต์ถูกปฏิเสธ (CSRF Protected)' }, { status: 403 });
+    const host = request.headers.get('host') || url.host;
+    const protocol = request.headers.get('x-forwarded-proto') || url.protocol;
+    const expectedOrigin = `${protocol}://${host}`;
+
+    if (origin && origin !== expectedOrigin) {
+      safeLog(`Security Alert: CSRF Blocked on Admin Save from ${origin}`, 'WARN');
+      return json({ error: 'Rejected Cross-Origin action' }, { status: 403 });
     }
 
-    // 🛡️ ยืนยันสิทธิ์ด้วย Secure Cookie แทนการใช้รหัสผ่านหลักดิบ
+    // 🛡️ 2. Secure Cookie Check - ตรวจสอบเซสชันผู้ใช้อย่างแน่นหนา
     const sessionToken = cookies.get('admin_session_token');
     if (!sessionToken) {
-      return json({ error: 'เข้าสู่ระบบหมดอายุแล้ว กรุณารีเฟรชเพื่อเข้าสู่ระบบใหม่อีกครั้งค่ะ' }, { status: 401 });
+      return json({ error: 'กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ' }, { status: 401 });
     }
 
     const store = getStore('donation_store');
-    const activeSession = await store.get(`session:${sessionToken}`, { type: 'json' }) as { expiresAt: number } | null;
+    const sessionData = await store.get(`session:${sessionToken}`, { type: 'json' }) as { expiresAt: number } | null;
 
-    if (!activeSession || activeSession.expiresAt < Date.now()) {
-      return json({ error: 'เข้าสู่ระบบหมดอายุแล้ว กรุณารีเฟรชเพื่อเข้าสู่ระบบใหม่อีกครั้งค่ะ' }, { status: 401 });
+    if (!sessionData || Date.now() > sessionData.expiresAt) {
+      safeLog(`Admin session rejected or expired for token: ${sessionToken}`, 'WARN');
+      // เคลียร์คุกกี้เสียทิ้ง
+      cookies.delete('admin_session_token', { path: '/' });
+      return json({ error: 'หมดอายุการเข้าใช้งานระบบกรุณาล็อกอินใหม่อีกครั้งค่ะ' }, { status: 401 });
     }
 
-    const { config } = await request.json();
-
-    // บันทึกสไตล์ลง Netlify Blobs อย่างถาวรบนคลาวด์ [3]
-    await store.setJSON('vtuber_personalized_theme', config);
-
-    safeLog('Admin successfully updated theme styles via Netlify Blobs storage', 'INFO');
+    // 📥 3. รับและประมวลข้อมูลธีมใหม่
+    const newTheme = await request.json();
+    
+    // บันทึกค่าธีมใหม่ลงไปยัง Netlify Blob Storage
+    await store.setJSON('vtuber_personalized_theme', newTheme);
+    
+    safeLog('Admin settings saved successfully.', 'INFO');
     return json({ success: true });
+
   } catch (err) {
-    safeLog('Admin Save Exception', 'ERROR', err);
-    return json({ error: 'Internal Server Error' }, { status: 500 });
+    safeLog('Exception occurred during admin settings storage save', 'ERROR', err);
+    return json({ error: 'เกิดปัญหาขัดข้องทางเทคนิคขณะจัดเก็บข้อมูลธีม' }, { status: 500 });
   }
 };
