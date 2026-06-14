@@ -90,19 +90,19 @@
       if (turnstileWidgetId) {
         (window as any).turnstile.remove(turnstileWidgetId);
       }
-      
+
       turnstileWidgetId = (window as any).turnstile.render('#turnstile-container', {
         sitekey: turnstileSiteKey,
         theme: 'light',
-        size: 'compact',
+        size: 'flexible', // 🎉 ปรับจาก 'compact' เป็น 'flexible' เพื่อความแบนและยืดหยุ่นเต็มกรอบฟอร์ม
         callback: (token: string) => {
           turnstileToken = token;
         },
         'expired-callback': () => {
-          turnstileToken = '';
+          turnstileToken = "[REDACTED]";
         },
         'error-callback': () => {
-          turnstileToken = '';
+          turnstileToken = "[REDACTED]";
         }
       });
     } catch (err) {
@@ -121,7 +121,7 @@
     const lastRequest = localStorage.getItem('last_donate_request');
     if (lastRequest) {
       const elapsed = Date.now() - Number(lastRequest);
-      if (elapsed < 30000) cooldownRemaining = Math.ceil((30000 - elapsed) / 1000);
+      if (elapsed < 60000) cooldownRemaining = Math.ceil((60000 - elapsed) / 1000);
     }
 
     // 🤖 [จุดที่ 2.3] เฝ้าตรวจเช็กสคริปต์ Cloudflare จนกว่าจะพร้อม แล้วค่อยรันกล่องบอท
@@ -200,39 +200,45 @@
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </svelte:head>
 
-<main 
-  class="flex min-h-screen flex-col relative transition-all duration-700 select-none overflow-x-hidden pb-8"
+<main
+  class="flex min-h-screen flex-col relative transition-all duration-700 select-none overflow-x-hidden pb-8 lg:h-screen lg:pb-0 lg:overflow-hidden"
   style="
-    background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'}; 
+    background-image: {config.bgType === 'image' && config.bgUrl ? `url(${config.bgUrl})` : 'none'};
     background-color: {config.bgColor};
     font-family: '{config.mainFontFamily}', sans-serif;
   "
 >
   <div class="absolute inset-0 bg-black/5 -z-10"></div>
 
-  <div class="w-full h-24 sm:h-28 bg-cover bg-center relative" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
+  <!-- 1. ปรับลดความสูง Banner บนหน้าจอแนวนอนเพื่อให้ไม่ดันฟอร์มตกขอบจอ (lg:h-16) -->
+  <div class="w-full h-20 sm:h-24 lg:h-16 bg-cover bg-center relative flex-shrink-0" style="background-image: url({config.bannerUrl || 'https://placehold.co/1200x200'});">
     <div class="absolute inset-0 bg-black/5"></div>
   </div>
 
-  <div class="w-full border-b" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center sm:items-center gap-4 relative">
-      <div class="sm:absolute sm:-top-12 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
-        <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-20 h-20 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
+  <!-- 2. ปรับความสูงสัดส่วนโปรไฟล์ให้บางและกระชับขึ้นเมื่อเปิดในเดสก์ท็อป (lg:py-1.5) -->
+  <div class="w-full border-b flex-shrink-0" style="background-color: {hexToRgba(config.profileAreaBgColor, config.profileAreaOpacity)}; border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 lg:py-1.5 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 relative">
+      <div class="sm:absolute sm:-top-10 left-4 sm:left-6 lg:left-8 flex-shrink-0 z-20">
+        <!-- ปรับลดขนาดอวาตาร์กลมบนจอแนวนอนเพื่อประหยัดพื้นที่แนวตั้ง (lg:w-14 lg:h-14) -->
+        <img src={sanitizeUrl(config.avatarUrl) || 'https://placehold.co/150'} alt="Avatar" class="w-16 h-16 lg:w-14 lg:h-14 rounded-full border-4 object-cover shadow-md" style="border-color: {config.profileAreaBgColor};" />
       </div>
-      <div class="sm:pl-28 text-center sm:text-left flex-1 min-h-[3rem] flex flex-col justify-center">
-        <h1 class="text-xl font-extrabold tracking-wide" style="color: {config.nameColor};">
+      <div class="sm:pl-24 lg:pl-20 text-center sm:text-left flex-1 min-h-[2.5rem] flex flex-col justify-center">
+        <h1 class="text-lg lg:text-base font-extrabold tracking-wide" style="color: {config.nameColor};">
           {config.vtuberName}
         </h1>
       </div>
     </div>
   </div>
 
-  <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col justify-center">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-      
-      <div class="lg:col-span-7 space-y-4">
-        <div 
-          class="p-5 sm:p-6 rounded-2xl border shadow-sm"
+  <!-- 3. พื้นที่เนื้อหาหลักจัดสเปซแบบยืดหยุ่น ยุบ padding แนวตั้งบนจอใหญ่ (lg:py-2) -->
+  <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-2 flex-1 flex flex-col justify-center overflow-hidden">
+    <!-- แบ่ง Grid เป็น 50/50 สมดุลแนวนอน (lg:grid-cols-12 โดยครอบคลุม col-span-6 เท่ากัน) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center lg:h-full">
+
+      <!-- บล็อกข้อมูลซ้าย: สรุปข้อความต้อนรับและลิงก์สังคมออนไลน์ -->
+      <div class="lg:col-span-6 space-y-3 lg:space-y-2">
+        <div
+          class="p-4 lg:p-5 rounded-2xl border shadow-sm"
           style="
             background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
             border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
@@ -246,10 +252,10 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-1.5">
           {#each config.socialLinks || [] as link}
             {#if link.url}
-              <a href={link.url} target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-full border transition-all hover:scale-105 flex items-center gap-2 bg-white/40 text-[10px] font-bold uppercase shadow-sm" style="border-color: {config.socialColor}; color: {config.socialColor};">
+              <a href={link.url} target="_blank" rel="noopener noreferrer" class="px-3 py-1 rounded-full border transition-all hover:scale-105 flex items-center gap-1.5 bg-white/40 text-[10px] font-bold uppercase shadow-sm" style="border-color: {config.socialColor}; color: {config.socialColor};">
                 <span>{link.platform}</span>
               </a>
             {/if}
@@ -257,10 +263,11 @@
         </div>
       </div>
 
-      <div class="lg:col-span-5">
-        <form 
-          onsubmit={handleDonate} 
-          class="p-5 sm:p-6 rounded-2xl border shadow-md space-y-3.5 relative overflow-hidden"
+      <!-- บล็อกฟอร์มชวา: รวบรวมองค์ประกอบส่งโดเนทและช่อง Turnstile -->
+      <div class="lg:col-span-6 lg:max-h-full lg:overflow-y-auto">
+        <form
+          onsubmit={handleDonate}
+          class="p-4 lg:p-4.5 rounded-2xl border shadow-md space-y-2.5 lg:space-y-2 relative overflow-hidden"
           style="
             background-color: {hexToRgba(config.cardBgColor, config.cardOpacity)};
             border-color: {hexToRgba(config.cardBorderColor, config.cardBorderOpacity)};
@@ -273,16 +280,16 @@
             <input type="text" name="email_confirm" bind:value={honeypot} tabindex="-1" autocomplete="off" />
           </div>
 
-          <div class="space-y-3.5">
+          <div class="space-y-2">
             <div class="grid grid-cols-4 gap-1.5">
               {#each config.presetAmounts as amt}
-                <button 
-                  type="button" 
-                  onclick={() => { amount = String(amt); customActive = false; }} 
-                  class="py-2 text-xs font-extrabold border rounded-lg transition-all duration-200 cursor-pointer shadow-sm" 
+                <button
+                  type="button"
+                  onclick={() => { amount = String(amt); customActive = false; }}
+                  class="py-1.5 text-xs font-extrabold border rounded-lg transition-all duration-200 cursor-pointer shadow-sm"
                   style="
-                    background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor}; 
-                    border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor}; 
+                    background-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBtnColor};
+                    border-color: {!customActive && amount === String(amt) ? config.submitBtnColor : config.presetBorderColor};
                     color: {!customActive && amount === String(amt) ? config.submitBtnTextColor : '#475569'};
                   "
                 >
@@ -291,92 +298,85 @@
               {/each}
             </div>
 
-            <input 
-              id="custom-amount" 
-              type="number" 
+            <input
+              id="custom-amount"
+              type="number"
               min="10"
               max="5000"
               placeholder={config.amountPlaceholder}
-              class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
-              oninput={(e) => { 
-                customActive = true; 
-                amount = e.currentTarget.value; 
+              class="w-full px-3 py-1.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-sm"
+              style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};"
+              oninput={(e) => {
+                customActive = true;
+                amount = e.currentTarget.value;
                 customAmountVal = e.currentTarget.value;
               }}
               bind:value={customAmountVal}
             />
           </div>
 
-          <input 
-            id="nickname" 
-            type="text" 
-            required 
-            placeholder={config.nicknamePlaceholder} 
-            class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
-            bind:value={name} 
+          <input
+            id="nickname"
+            type="text"
+            required
+            placeholder={config.nicknamePlaceholder}
+            class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm"
+            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};"
+            bind:value={name}
           />
 
-          <textarea 
-            id="donor-msg" 
-            placeholder={config.messagePlaceholder} 
-            class="w-full px-3 py-2.5 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm" 
-            rows="2" 
-            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};" 
+          <textarea
+            id="donor-msg"
+            placeholder={config.messagePlaceholder}
+            class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-sm"
+            rows="1"
+            style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor}; --tw-ring-color: {config.submitBtnColor};"
             bind:value={message}
           ></textarea>
 
-          <!-- 📢 [Finding 4] กล่องยืนยันข้อตกลงและนโยบายความเป็นส่วนตัวแบบพับขยายได้ (TOS & PDPA Collapsible) [3] -->
-          <div class="p-3.5 rounded-lg border text-[10px] space-y-1.5 transition-all duration-300" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
+          <!-- นโยบายความเป็นส่วนตัวสไตล์กระชับสำหรับการแสดงผลในพื้นที่จำกัด -->
+          <div class="p-2.5 rounded-lg border text-[10px] space-y-1 transition-all duration-300" style="background-color: {config.inputBgColor}; border-color: {config.inputBorderColor};">
             <p class="font-extrabold" style="color: {config.welcomeColor};">📢 ข้อตกลงการสนับสนุน (Terms of Service)</p>
-            <p class="leading-relaxed opacity-85" style="color: {config.welcomeColor};">
-              การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ในทุกกรณี (Non-Refundable)** และยินยอมให้ระบบประมวลผลข้อมูลตามนโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
+            <p class="leading-normal opacity-85" style="color: {config.welcomeColor};">
+              การสนับสนุนนี้เป็นการให้โดยเสน่หา **ไม่สามารถขอคืนเงินได้ทุกกรณี (Non-Refundable)**
             </p>
-            
-            <!-- ปุ่มกดพับขยายข้อความกฎหมายอย่างเป็นมิตรต่อคนดูและคนเขียนโค้ด -->
-            <button 
-              type="button" 
-              onclick={() => isTosExpanded = !isTosExpanded} 
-              class="text-left font-bold underline cursor-pointer focus:outline-none flex items-center gap-1 py-1" 
+
+            <button
+              type="button"
+              onclick={() => isTosExpanded = !isTosExpanded}
+              class="text-left font-bold underline cursor-pointer focus:outline-none flex items-center gap-1 py-0.5"
               style="color: {config.submitBtnColor};"
             >
-              <span>{isTosExpanded ? '🔼 ซ่อนรายละเอียดนโยบายความเป็นส่วนตัว' : '🔽 อ่านข้อตกลงและนโยบายความเป็นส่วนตัวเพิ่มเติม'}</span>
+              <span>{isTosExpanded ? '🔼 ซ่อนรายละเอียดกฎหมาย' : '🔽 อ่านข้อตกลงและนโยบายความเป็นส่วนตัวเพิ่มเติม'}</span>
             </button>
 
             {#if isTosExpanded}
-              <div class="mt-1.5 p-2.5 rounded border border-slate-200 bg-white/60 space-y-2 leading-relaxed text-slate-600 transition-all duration-300">
-                <p><strong>1. นโยบายการไม่คืนเงิน (Non-Refundable Policy)</strong><br />
-                ยอดเงินสนับสนุนทั้งหมดถือเป็นการเสน่หาเพื่อเป็นกำลังใจและสนับสนุนการสตรีมของ {config.vtuberName} เท่านั้น จะไม่สามารถเปลี่ยน ยกเลิก หรือขอคืนเงิน (Chargeback) ได้ไม่ว่าในกรณีใด ๆ</p>
-                
-                <p><strong>2. การคุ้มครองข้อมูลส่วนบุคคล (PDPA Consent)</strong><br />
-                เราจะจัดเก็บข้อมูล "ชื่อเล่น" และ "ข้อความของท่าน" เพื่อส่งผ่านไปยังตัวรับสัญญาณแจ้งเตือน (Streamlabs / StreamElements) เพื่อแสดงขึ้นหน้าไลฟ์สตรีมแบบสาธารณะ โดยไม่มีการนำข้อมูลส่วนตัวอื่น ๆ ไปแสวงหากำไรเชิงพาณิชย์</p>
-                
-                <p><strong>3. ความปลอดภัยของข้อมูลธุรกรรม</strong><br />
-                ข้อมูลธุรกรรมการชำระเงินของท่านได้รับการประมวลผลผ่านผู้ให้บริการทางการเงินมาตรฐานสากล (Xendit) โดยตรง โดยจะไม่มีการเก็บบันทึกข้อมูลรหัสผ่าน บัตรเครดิต หรือข้อมูลบัญชีของท่านไว้ในระบบของเรา</p>
+              <div class="mt-1 p-2 rounded border border-slate-200 bg-white/60 space-y-1.5 max-h-[80px] overflow-y-auto leading-normal text-slate-600 transition-all duration-300">
+                <p><strong>1. นโยบายการไม่คืนเงิน</strong><br />ยอดเงินสนับสนุนทั้งหมดไม่สามารถขอคืนเงินหรือปฏิเสธจ่ายคืน (Chargeback) ได้ภายหลัง</p>
+                <p><strong>2. การคุ้มครองข้อมูล (PDPA)</strong><br />เราจัดเก็บและเผยแพร่ชื่อเล่นรวมถึงข้อความสนับสนุนของท่านตามความยินยอมเพื่อแสดงขึ้นจอไลฟ์สตรีมเท่านั้น</p>
               </div>
             {/if}
 
-            <label class="flex items-center gap-2 cursor-pointer mt-2 font-bold" style="color: {config.welcomeColor};">
+            <label class="flex items-center gap-2 cursor-pointer mt-1 font-bold" style="color: {config.welcomeColor};">
               <input type="checkbox" bind:checked={isConsented} required class="rounded accent-[var(--theme-accent)]" style="--theme-accent: {config.submitBtnColor}" />
               <span>ฉันยอมรับข้อตกลงและนโยบายนี้ 🔒</span>
             </label>
           </div>
 
+          <!-- ช่องวาง Turnstile จัดวางกึ่งกลางให้ยืดเต็มกรอบฟอร์มแบบแนวนอนแบนราบ -->
           {#if turnstileSiteKey}
-            <div class="flex justify-center py-1">
-              <!-- ✅ เปลี่ยนเป็นกล่องเป้าหมายเปล่า เพื่อให้ตรรกะใน Svelte ทำการหยอดเนื้อหาลงไปใน DOM ทีหลังอย่างปลอดภัย -->
-              <div id="turnstile-container"></div>
+            <div class="flex justify-center w-full min-h-[65px] transition-all">
+              <div id="turnstile-container" class="w-full flex justify-center"></div>
             </div>
           {/if}
 
-          <div class="pt-1">
+          <div class="pt-0.5">
             <button
               type="submit"
               disabled={loading || cooldownRemaining > 0 || (turnstileSiteKey !== '' && !turnstileToken) || !isConsented}
-              class="w-full py-3 text-xs sm:text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
+              class="w-full py-2.5 text-xs font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
               style="
-                background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor}; 
+                background-color: {cooldownRemaining > 0 ? '#64748b' : config.submitBtnColor};
                 color: {config.submitBtnTextColor || '#ffffff'};
               "
             >
