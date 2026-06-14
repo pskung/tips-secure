@@ -20,9 +20,12 @@
 
   let turnstileToken = $state('');
   
-  // 📜 [Finding 4] ประกาศสถานะความยินยอมหน้าบ้าน และการยืดหดของรายละเอียดนโยบาย [3]
+  // 📜 ประกาศสถานะความยินยอมหน้าบ้าน และการยืดหดของรายละเอียดนโยบาย [3]
   let isConsented = $state(false);
   let isTosExpanded = $state(false);
+
+  // 🤖 [จุดที่ 2.1] เพิ่มตัวแปรเก็บรหัส Widget ID สำหรับ Turnstile
+  let turnstileWidgetId = $state<string | null>(null);
 
   const config = {
     ...theme,
@@ -78,6 +81,35 @@
     return '';
   };
 
+  // 🤖 [จุดที่ 2.2] ฟังก์ชันสั่งเรนเดอร์กล่องตรวจบอทด้วยรหัสโปรแกรม
+  const initTurnstile = () => {
+    if (typeof window === 'undefined' || !(window as any).turnstile || !turnstileSiteKey) return;
+    if (!document.getElementById('turnstile-container')) return;
+
+    try {
+      if (turnstileWidgetId) {
+        (window as any).turnstile.remove(turnstileWidgetId);
+      }
+      
+      turnstileWidgetId = (window as any).turnstile.render('#turnstile-container', {
+        sitekey: turnstileSiteKey,
+        theme: 'light',
+        size: 'compact',
+        callback: (token: string) => {
+          turnstileToken = token;
+        },
+        'expired-callback': () => {
+          turnstileToken = '';
+        },
+        'error-callback': () => {
+          turnstileToken = '';
+        }
+      });
+    } catch (err) {
+      console.error('Failed to initialize Turnstile:', err);
+    }
+  };
+
   onMount(() => {
     if (!browser) return;
     renderTime = Date.now();
@@ -92,8 +124,16 @@
       if (elapsed < 30000) cooldownRemaining = Math.ceil((30000 - elapsed) / 1000);
     }
 
-    (window as any).onTurnstileSuccess = (token: string) => {
-      turnstileToken = token;
+    // 🤖 [จุดที่ 2.3] เฝ้าตรวจเช็กสคริปต์ Cloudflare จนกว่าจะพร้อม แล้วค่อยรันกล่องบอท
+    const checkInterval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(checkInterval);
+        initTurnstile();
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(checkInterval);
     };
   });
 
@@ -137,8 +177,10 @@
       } else {
         alert(data.error || 'เกิดข้อขัดข้องชั่วคราวในการขอชำระเงินค่ะ');
         loading = false;
-        if (typeof (window as any).turnstile !== 'undefined') {
-          (window as any).turnstile.reset();
+        
+        // 🤖 [จุดที่ 2.4] อัปเกรดให้สั่งรีเซ็ตเฉพาะ Widget ตัวที่มีปัญหา
+        if (typeof (window as any).turnstile !== 'undefined' && turnstileWidgetId) {
+          (window as any).turnstile.reset(turnstileWidgetId);
           turnstileToken = '';
         }
       }
@@ -154,7 +196,8 @@
   {#each uniqueFonts as font}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={font.trim().replace(/\s+/g, '+')}:wght@400;500;700&display=swap" />
   {/each}
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <!-- 🔄 แก้ไขจุดที่ 1: บังคับให้โหลดสคริปต์แบบ Explicit -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </svelte:head>
 
 <main 
@@ -322,13 +365,8 @@
 
           {#if turnstileSiteKey}
             <div class="flex justify-center py-1">
-              <div 
-                class="cf-turnstile" 
-                data-sitekey={turnstileSiteKey}
-                data-callback="onTurnstileSuccess"
-                data-theme="light"
-                data-size="compact"
-              ></div>
+              <!-- ✅ เปลี่ยนเป็นกล่องเป้าหมายเปล่า เพื่อให้ตรรกะใน Svelte ทำการหยอดเนื้อหาลงไปใน DOM ทีหลังอย่างปลอดภัย -->
+              <div id="turnstile-container"></div>
             </div>
           {/if}
 
