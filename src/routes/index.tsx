@@ -269,8 +269,9 @@ export default function Home() {
         defer
       ></script>
 
+      {/* 🟢 Main Responsive Container: ลบระบบจำกัด scroll แนวตั้งออกเพื่อเปิดการยืดหยุ่นที่เลื่อนลื่นตามธรรมชาติของเว็บบราวเซอร์หลัก */}
       <main
-        class="flex min-h-screen flex-col relative select-none overflow-x-hidden lg:h-screen lg:overflow-hidden pb-6 lg:pb-0"
+        class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
         style={{
           "background-image":
             config().bgType === "image" && config().bgUrl
@@ -282,9 +283,9 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* 🟢 Banner Zone: สัดส่วนสมมาตร 4:1 (1600x400) ปรับความสูงให้เหมาะสมในการซ้อนทับภาพเชิงมิติ */}
+        {/* 🟢 Banner Zone: เปลี่ยนเป็น z-0 เพื่อบังคับให้อยู่เลเยอร์หลังสุดขององค์ประกอบหน้าจอทั้งหมด */}
         <div
-          class="w-full h-32 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs"
+          class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
             "background-image": `url(${config().bannerUrl || "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"})`,
             "border-color": config().cardBorderColor,
@@ -293,19 +294,19 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* 🟢 Content Area Wrapper: จัดสรร Grid ให้พาดทับเหนือแบนเนอร์เพื่อขจัด scrollbar บนเดสก์ท็อป */}
-        <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 lg:overflow-hidden flex flex-col justify-start">
-          {/* 🟢 lg:-mt-20 และ md:-mt-14 ช่วยยกเนื้อหาขึ้นไปทับขอบล่างของแบนเนอร์ ทำให้ไม่ต้องเลื่อนหน้าจอเลยค่ะ */}
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start lg:h-full lg:overflow-hidden -mt-10 md:-mt-14 lg:-mt-20 relative z-10">
-            {/* 🟢 COLUMN 1 (ฝั่งซ้าย): โซนข้อมูลสตรีมเมอร์พาดทับแบนเนอร์ (About Zone) */}
-            <div class="lg:col-span-5 space-y-4 lg:h-full lg:overflow-y-auto pb-4 pr-1 scrollbar-thin flex flex-col">
-              {/* 🟢 การ์ดข้อมูลโปรไฟล์แบบรวบตึง: รูปภาพ Avatar กับชื่อช่องอยู่ระดับระนาบเดียวกันเป็นสัดส่วน */}
+        {/* 🟢 Content Area Wrapper: ใช้ z-10 ดันให้เลเยอร์หลักขึ้นมาพาดทับขอบล่างแบนเนอร์ผ่านลบ Margin */}
+        <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
+          {/* 🟢 ขยับกริดพาดทับแบนเนอร์อย่างสวยงามด้วยลบ margin: -mt-10 ถึง lg:-mt-24 */}
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24">
+            {/* 🟢 COLUMN 1 (ฝั่งซ้าย): โซนเกี่ยวกับสตรีมเมอร์ (ขยายให้กว้างขวางขึ้นเป็น lg:col-span-7 เพื่อสมดุลการมองเห็น) */}
+            <div class="lg:col-span-7 space-y-4 flex flex-col w-full">
+              {/* การ์ดประวัติหลัก: ลอยทับแบนเนอร์อย่างสง่างาม */}
               <div
-                class="p-5 rounded-3xl border shadow-md bg-white flex flex-col space-y-4"
+                class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
                 style={{ "border-color": config().cardBorderColor }}
               >
-                {/* Flex แถวระดับเดียวกันของ Avatar + VTuber Name */}
-                <div class="flex items-center gap-4 text-left w-full">
+                {/* จัดกลุ่มโปรไฟล์: รูปภาพกับชื่อช่องอยู่แนวนอนเดียวกันอย่างเรียบร้อย */}
+                <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
                     <img
                       src={
@@ -329,16 +330,15 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* เส้นแบ่งรายละเอียด */}
                 <div
                   class="border-t w-full"
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
-                {/* ส่วนข้อมูลคำต้อนรับ (About Section) อยู่ถัดมาภายในการ์ดใบเดียวกัน */}
-                <div class="text-left">
+                {/* กล่องข้อความต้อนรับ */}
+                <div>
                   <h2
-                    class="text-xs font-black uppercase tracking-widest mb-1.5"
+                    class="text-xs font-black uppercase tracking-widest mb-2"
                     style={{ color: config().nameColor }}
                   >
                     เกี่ยวกับ {config().vtuberName}
@@ -352,7 +352,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ปุ่ม Social Links นอกการ์ด เพื่อประหยัดพื้นที่ */}
+              {/* ปุ่ม Social Links เพื่อเสริมแบรนด์ดิ้ง */}
               <div class="flex flex-wrap gap-1.5 justify-center lg:justify-start w-full">
                 <For each={config().socialLinks || []}>
                   {(link) => (
@@ -375,11 +375,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🟢 COLUMN 2 (ฝั่งขวา): โซนกรอกเงินสนับสนุนโดเนท (Donation Form Zone) พาดทับแบนเนอร์ */}
-            <div class="lg:col-span-7 lg:h-full lg:overflow-y-auto pb-4 pr-1 scrollbar-thin">
+            {/* 🟢 COLUMN 2 (ฝั่งขวา): โซนกรอกเงินสนับสนุน (บีบความกว้างให้กระทัดรัด lg:col-span-5 และคุมขอบเขตที่ max-w-[340px]) */}
+            <div class="lg:col-span-5 w-full">
               <form
                 onSubmit={handleDonate}
-                class="p-5 sm:p-6 rounded-3xl border shadow-md space-y-4 bg-white relative overflow-hidden"
+                class="max-w-[340px] w-full mx-auto lg:mr-0 lg:ml-auto p-5 sm:p-6 rounded-3xl border shadow-md space-y-4 bg-white relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
                   "--placeholder-color": config().placeholderColor,
@@ -494,58 +494,44 @@ export default function Home() {
                   value={message()}
                 ></textarea>
 
-                {/* 🟢 ส่วนข้อตกลงและคำยินยอมกระชับแบบพิเศษ: ตรึงความยาวไม่เกิน 3 บรรทัดเมื่อหดตัว */}
-                <div
-                  class="p-3 rounded-2xl border text-[10px] leading-relaxed transition-all duration-300"
-                  style={{
-                    "background-color": config().inputBgColor,
-                    "border-color": config().inputBorderColor,
-                  }}
-                >
-                  {/* บรรทัดที่ 1: หัวข้อรวมศูนย์การเตือนใจไม่คืนเงิน */}
-                  <p
-                    class="font-bold flex items-center gap-1"
-                    style={{ color: config().welcomeColor }}
+                {/* 🟢 แถบ TOS & คำยินยอมแบบมินิมอล: ประกอบด้วยแถบกดเลื่อนเพื่ออ่าน และ แถบยอมรับ อย่างกระชับตามเกณฑ์ */}
+                <div class="space-y-2">
+                  {/* แถบเลื่อนอ่านนโยบาย */}
+                  <button
+                    type="button"
+                    onClick={() => setIsTosExpanded(!isTosExpanded())}
+                    class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:bg-slate-50"
+                    style={{
+                      "background-color": config().inputBgColor,
+                      "border-color": config().inputBorderColor,
+                      color: config().nameColor,
+                    }}
                   >
-                    📢 ข้อตกลง:{" "}
-                    <span class="font-medium opacity-90">
-                      การสนับสนุนนี้เป็นแบบเสน่หาและไม่รับคืนเงินทุกกรณี
+                    <span>
+                      📜 อ่านข้อตกลงและนโยบายความเป็นส่วนตัว (TOS & PDPA)
                     </span>
-                  </p>
-
-                  {/* บรรทัดที่ 2: ปุ่มขยายความคุ้มครองข้อมูลอย่างมีสไตล์ */}
-                  <div class="flex items-center justify-between mt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setIsTosExpanded(!isTosExpanded())}
-                      class="font-black underline cursor-pointer focus:outline-none text-[9px] hover:opacity-80"
-                      style={{ color: "#111111" }}
-                    >
-                      {isTosExpanded()
-                        ? "🔼 ซ่อนรายละเอียดกฎหมาย"
-                        : "🔽 อ่านนโยบายความคุ้มครองข้อมูล (PDPA) เพิ่มเติม"}
-                    </button>
-                  </div>
+                    <span class="text-[8px]">
+                      {isTosExpanded() ? "▲" : "▼"}
+                    </span>
+                  </button>
 
                   <Show when={isTosExpanded()}>
-                    <div class="mt-1.5 p-2 rounded-lg border border-slate-200 bg-white/80 space-y-1 max-h-[60px] overflow-y-auto leading-normal text-slate-600 transition-all duration-300">
+                    <div class="p-2.5 rounded-xl border bg-white space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] text-slate-600 transition-all duration-300">
                       <p>
-                        <strong>1. นโยบายการไม่คืนเงิน</strong>
-                        <br />
-                        ยอดเงินสนับสนุนทั้งหมดไม่สามารถปฏิเสธจ่ายคืน
+                        <strong>1. นโยบายการไม่คืนเงิน:</strong>{" "}
+                        ยอดสนับสนุนทั้งหมดให้โดยเสน่หาและไม่สามารถปฏิเสธจ่ายคืน
                         (Chargeback) ได้ภายหลัง
                       </p>
                       <p>
-                        <strong>2. การคุ้มครองข้อมูล (PDPA)</strong>
-                        <br />
-                        เราประมวลผลข้อมูลของท่านตามความยินยอมเพื่อแสดงขึ้นจอไลฟ์สตรีมเท่านั้น
+                        <strong>2. การคุ้มครองข้อมูล:</strong>{" "}
+                        จัดเก็บข้อมูลชื่อและข้อความสนับสนุนของท่านเพื่อนำไปแสดงบนระฆังจอไลฟ์ตามความยินยอม
                       </p>
                     </div>
                   </Show>
 
-                  {/* บรรทัดที่ 3: ปุ่มกดยอมรับติ๊กถูกแบบเรียบง่ายและปลอดภัยสูงสุด */}
+                  {/* แถบกดยอมรับเงื่อนไข */}
                   <label
-                    class="flex items-start gap-1.5 cursor-pointer mt-1 font-bold"
+                    class="flex items-start gap-1.5 cursor-pointer font-bold leading-tight"
                     style={{ color: config().welcomeColor }}
                   >
                     <input
@@ -556,7 +542,7 @@ export default function Home() {
                       class="rounded mt-0.5 flex-shrink-0"
                       style={{ "accent-color": config().submitBtnColor }}
                     />
-                    <span class="text-[9px] leading-tight font-medium opacity-95">
+                    <span class="text-[9px] leading-tight font-medium opacity-90">
                       ฉันยอมรับตามข้อกำหนดและยินยอมส่งข้อมูลขึ้นระฆังแจ้งเตือน
                       🔒
                     </span>
