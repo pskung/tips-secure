@@ -17,7 +17,6 @@ export async function POST(event: APIEvent) {
       event.request.headers.get("x-forwarded-proto") || url.protocol;
     const expectedOrigin = `${protocol}://${host}`;
 
-    // 🟢 CSRF Fail-Closed: ตรวจสอบความถูกต้องของ Origin ทุกกรณีสำหรับการขอสร้างบิลธุรกรรมเงิน
     if (!origin) {
       return new Response(
         JSON.stringify({
@@ -76,7 +75,6 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // 🟢 ปรับเปลี่ยนกระบวนการตรวจสอบคีย์ Turnstile ให้เป็นระบบแบบ Fail-Closed ป้องกันบอทยิงถล่มช่องโหว่
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
       safeLog(
@@ -141,12 +139,15 @@ export async function POST(event: APIEvent) {
         { status: 400 },
       );
     }
-    if (message && (typeof message !== "string" || message.length > 100)) {
+
+    // 🟢 ปรับเปลี่ยนขีดจำกัดความยาวหลังบ้านเป็น 255 ตัวอักษร เพื่อให้สอดคล้องกับหน้าบ้านค่ะ
+    if (message && (typeof message !== "string" || message.length > 255)) {
       return new Response(
-        JSON.stringify({ error: "ข้อความยาวเกิน 100 ตัวอักษรค่ะ" }),
+        JSON.stringify({ error: "ข้อความยาวเกิน 255 ตัวอักษรค่ะ" }),
         { status: 400 },
       );
     }
+
     if (isNaN(amount) || amount < 10.0 || amount > 5000.0) {
       return new Response(
         JSON.stringify({

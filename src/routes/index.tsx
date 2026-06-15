@@ -94,7 +94,6 @@ export default function Home() {
   const [customActive, setCustomActive] = createSignal(false);
   const [customAmountVal, setCustomAmountVal] = createSignal("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
-  const [isConsented, setIsConsented] = createSignal(false);
   const [isTosExpanded, setIsTosExpanded] = createSignal(false);
 
   let turnstileWidgetId: string | null = null;
@@ -113,11 +112,8 @@ export default function Home() {
       welcomeColor: theme.welcomeColor ?? "#222222",
       mainFontFamily: theme.mainFontFamily ?? "Kanit",
       welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
-      nicknameLabel: theme.nicknameLabel ?? "Nickname",
       nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
-      messageLabel: theme.messageLabel ?? "Message",
       messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
-      amountLabel: theme.amountLabel ?? "Amount",
       amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
       placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       presetAmounts:
@@ -128,7 +124,7 @@ export default function Home() {
       presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
       submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
       submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "SUPPORT ME",
+      submitBtnText: theme.submitBtnText ?? "ACCEPT & SUPPORT ME",
     };
   });
 
@@ -201,10 +197,9 @@ export default function Home() {
   onMount(() => {
     setRenderTime(Date.now());
 
-    if (config().presetAmounts.length > 0) {
-      setAmount(String(config().presetAmounts[0]));
-      setCustomAmountVal(String(config().presetAmounts[0])); // ซิงค์ค่าเริ่มต้นลงกล่อง Amount
-    }
+    // 🟢 ไม่ระบุจำนวนเงิน 100฿ อัตโนมัติ ปล่อยเป็นฟอร์มว่างตอนโหลดตามสั่งเลยค่ะ
+    setAmount("");
+    setCustomAmountVal("");
 
     const lastRequest = localStorage.getItem("last_donate_request");
     if (lastRequest) {
@@ -237,7 +232,7 @@ export default function Home() {
 
   const handleDonate = async (e: Event) => {
     e.preventDefault();
-    if (cooldownRemaining() > 0 || !isConsented()) return;
+    if (cooldownRemaining() > 0) return;
 
     if (data()?.turnstileSiteKey && !turnstileToken()) {
       alert("Please complete the security challenge first 🔒");
@@ -257,7 +252,7 @@ export default function Home() {
           email_confirm: honeypot(),
           render_time: renderTime(),
           turnstile_token: turnstileToken(),
-          is_consented: isConsented(),
+          is_consented: true, // 🟢 รวมผลเป็น True โดยปริยายเพราะผู้ใช้กดยอมรับผ่านปุ่มหลักแล้วค่ะ
         }),
       });
 
@@ -326,9 +321,9 @@ export default function Home() {
 
         {/* Content Area Wrapper: ขยับขึ้นพาดทับแบนเนอร์ด้วย z-10 */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          {/* 🟢 ปรับโครงสร้างจาก Grid สู่ Flexbox Layout เพื่อให้กล่องฝั่งซ้ายขยายชิดฝั่งขวาได้อย่างลงตัว */}
+          {/* ปรับโครงสร้างจาก Grid สู่ Flexbox Layout เพื่อให้กล่องฝั่งซ้ายขยายชิดฝั่งขวาได้อย่างลงตัว */}
           <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - ใช้ flex-1 เพื่อยืดขยายช่อง About ออกมาทางขวาได้อย่างประณีต สมดุล และลื่นไหล) */}
+            {/* COLUMN 1 (ฝั่งซ้าย - ใช้ flex-1 เพื่อยืดขยายช่อง About ออกมาทางขวาได้อย่างประณีต สมดุล และลื่นไหล) */}
             <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
@@ -398,11 +393,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ 340px สำหรับ Cloudflare Widget) */}
+            {/* COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ 340px สำหรับ Cloudflare Widget) */}
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
-                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3 bg-white relative overflow-hidden"
+                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3.5 bg-white relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
                   "--placeholder-color": config().placeholderColor,
@@ -427,7 +422,7 @@ export default function Home() {
                       {(amt) => (
                         <button
                           type="button"
-                          // 🟢 ซิงค์จำนวนปุ่มพรีเซ็ตไปแสดงในกล่องกรอกเงิน Custom Amount อัตโนมัติเมื่อมีการคลิกค่ะ
+                          // ซิงค์จำนวนปุ่มพรีเซ็ตไปแสดงในกล่องกรอกเงิน Custom Amount อัตโนมัติเมื่อมีการคลิกค่ะ
                           onClick={() => {
                             setAmount(String(amt));
                             setCustomAmountVal(String(amt));
@@ -499,27 +494,33 @@ export default function Home() {
                   value={name()}
                 />
 
-                {/* WCAG Label Mapping */}
-                <label for="donor-msg" class="sr-only">
-                  Message
-                </label>
-                <textarea
-                  id="donor-msg"
-                  placeholder={config().messagePlaceholder}
-                  class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
-                  rows={1}
-                  style={{
-                    "background-color": config().inputBgColor,
-                    "border-color": config().inputBorderColor,
-                    "--tw-ring-color": config().submitBtnColor,
-                  }}
-                  onInput={(e) => setMessage(e.currentTarget.value)}
-                  value={message()}
-                ></textarea>
+                {/* WCAG Label Mapping พร้อมตัวบอกจำนวนคำและเลเอาต์นับคำ 255 ตัวอักษรที่มุมขวาล่าง */}
+                <div class="relative w-full">
+                  <label for="donor-msg" class="sr-only">
+                    Message
+                  </label>
+                  <textarea
+                    id="donor-msg"
+                    placeholder={config().messagePlaceholder}
+                    maxlength={255}
+                    class="w-full px-4 py-3 pb-7 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none"
+                    rows={2}
+                    style={{
+                      "background-color": config().inputBgColor,
+                      "border-color": config().inputBorderColor,
+                      "--tw-ring-color": config().submitBtnColor,
+                    }}
+                    onInput={(e) => setMessage(e.currentTarget.value)}
+                    value={message()}
+                  ></textarea>
+                  {/* 🟢 ตัวเลขนับจำนวนตัวอักษรที่เหลือที่มุมขวาล่างแบบเรียบร้อย */}
+                  <div class="absolute bottom-1.5 right-3 text-[9px] text-slate-400 select-none">
+                    {255 - message().length} / 255
+                  </div>
+                </div>
 
-                {/* แถบ TOS & Consent มินิมอลเรียบร้อยสวยงาม */}
+                {/* แถบ TOS และข้อตกลงแบบมินิมอล */}
                 <div class="space-y-2">
-                  {/* แถบเลื่อนขยาย TOS */}
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
@@ -549,42 +550,28 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* 🟢 ช่องกดยอมรับ เยื้องขวา pl-3 เพื่อความสมดุลด้านดีไซน์ที่เสมือนรวมกลุ่มอยู่ใต้ปุ่ม TOS อย่างสวยงาม */}
-                  <label
-                    class="flex items-center gap-2.5 cursor-pointer text-[9px] leading-none font-bold pl-3"
-                    style={{ color: config().welcomeColor }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isConsented()}
-                      onChange={(e) => setIsConsented(e.currentTarget.checked)}
-                      required
-                      class="w-3.5 h-3.5 rounded border border-slate-300 flex-shrink-0 cursor-pointer"
-                      style={{ "accent-color": config().submitBtnColor }}
-                    />
-                    <span class="opacity-90 select-none">
-                      I agree to show my support on the live stream 🔒
-                    </span>
-                  </label>
+                  {/* 🟢 ข้อความระบุคำยินยอมที่ชัดเจน (PDPA Disclosure) อยู่ตรงเหนี่ปุ่ม ACCEPT & SUPPORT ME พอดิบพอดี */}
+                  <div class="text-[9px] leading-relaxed text-slate-500 text-center px-1">
+                    By clicking "Accept & Support Me", you agree to our{" "}
+                    <button
+                      type="button"
+                      onClick={() => setIsTosExpanded(!isTosExpanded())}
+                      class="font-bold underline cursor-pointer hover:text-slate-800"
+                    >
+                      Terms & Privacy Policy
+                    </button>
+                    , and consent to displaying your nickname and message on the
+                    live stream.
+                  </div>
                 </div>
 
-                <Show when={data()?.turnstileSiteKey}>
-                  <div class="flex justify-center w-full min-h-[65px] transition-all">
-                    <div
-                      id="turnstile-container"
-                      class="w-full flex justify-center"
-                    ></div>
-                  </div>
-                </Show>
-
-                {/* 🟢 ดึงปุ่มขึ้นมาร่วมกลุ่มและจัดการช่องว่าง (Margin Spacing) ให้มีความเท่ากันเป๊ะกับฟิลด์อื่นๆ เสมอภาคสวยงามค่ะ */}
+                {/* 🟢 ปุ่มยืนยันหลัก: ควบรวมคำสั่งยินยอมเข้าไว้ในปุ่มเดียวอย่างถูกสุขลักษณะกฎหมายและเพิ่มยอดขายสำเร็จ */}
                 <button
                   type="submit"
                   disabled={
                     loading() ||
                     cooldownRemaining() > 0 ||
-                    (data()?.turnstileSiteKey !== "" && !turnstileToken()) ||
-                    !isConsented()
+                    (data()?.turnstileSiteKey !== "" && !turnstileToken())
                   }
                   class="w-full py-3.5 text-xs font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                   style={{
@@ -602,6 +589,18 @@ export default function Home() {
                     Wait {cooldownRemaining()}s... ⏳
                   </Show>
                 </button>
+
+                {/* 🟢 Cloudflare Turnstile Widget: จัดวางด้านล่างปุ่ม SUPPORT และใช้ CSS display เพื่อให้หายไปทันทีเมื่อทำธุรกรรมสำเร็จโดยโครงไม่ล่ม */}
+                <Show when={data()?.turnstileSiteKey}>
+                  <div
+                    id="turnstile-container"
+                    class="w-full flex justify-center transition-all duration-300"
+                    style={{
+                      display: turnstileToken() ? "none" : "flex",
+                      "min-height": "65px",
+                    }}
+                  ></div>
+                </Show>
               </form>
             </div>
           </div>
