@@ -43,6 +43,45 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
+// 🟢 ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
+function getSocialIcon(platform: string) {
+  const p = platform.toLowerCase();
+  if (p.includes("youtube")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    );
+  }
+  if (p.includes("twitch")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+      </svg>
+    );
+  }
+  if (p.includes("twitter") || p === "x") {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    );
+  }
+  // ไอคอนลิงก์ทั่วไป (Generic URL Icon)
+  return (
+    <svg
+      class="w-5 h-5 stroke-current fill-none"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const data = createAsync(() => getInitialData());
 
@@ -82,14 +121,11 @@ export default function Home() {
       labelColor: theme.labelColor ?? "#111111",
       placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       mainFontFamily: theme.mainFontFamily ?? "Kanit",
-      welcomeText:
-        theme.welcomeText ?? "ยินดีต้อนรับสู่ช่องสนับสนุนสตรีมเมอร์ค่ะ 💖",
-      nicknamePlaceholder:
-        theme.nicknamePlaceholder ?? "พิมพ์ชื่อเล่นที่นี่...",
-      messagePlaceholder:
-        theme.messagePlaceholder ?? "พิมพ์ข้อความให้สตรีมเมอร์ชื่นใจ...",
+      welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
+      nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
+      messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
       amountPlaceholder:
-        theme.amountPlaceholder ?? "ป้อนจำนวนเงิน (10 - 5,000 บาท)...",
+        theme.amountPlaceholder ?? "Amount (10 - 5,000 THB)...",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
@@ -98,7 +134,7 @@ export default function Home() {
       presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
       submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
       submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "Buy me a coffee ☕",
+      submitBtnText: theme.submitBtnText ?? "SUPPORT ME",
     };
   });
 
@@ -209,7 +245,7 @@ export default function Home() {
     if (cooldownRemaining() > 0 || !isConsented()) return;
 
     if (data()?.turnstileSiteKey && !turnstileToken()) {
-      alert("กรุณารอระบบตรวจสอบความเป็นมนุษย์สักครู่น้า 🔒");
+      alert("Please complete the security challenge first 🔒");
       return;
     }
 
@@ -235,7 +271,7 @@ export default function Home() {
         localStorage.setItem("last_donate_request", String(Date.now()));
         window.location.href = resData.invoice_url;
       } else {
-        alert(resData.error || "เกิดข้อขัดข้องชั่วคราวในการขอชำระเงินค่ะ");
+        alert(resData.error || "A temporary payment error occurred.");
         setLoading(false);
 
         if (
@@ -247,14 +283,14 @@ export default function Home() {
         }
       }
     } catch (err) {
-      alert("ระบบชำระเงินขัดข้องชั่วคราวค่ะ");
+      alert("Payment system is temporarily unavailable.");
       setLoading(false);
     }
   };
 
   return (
     <>
-      <Title>สนับสนุน {config().vtuberName} 💖</Title>
+      <Title>Support {config().vtuberName} 💖</Title>
       <For each={uniqueFonts()}>
         {(font) => (
           <Link
@@ -269,7 +305,6 @@ export default function Home() {
         defer
       ></script>
 
-      {/* 🟢 Main Responsive Container: ลบระบบจำกัด scroll แนวตั้งออกเพื่อเปิดการยืดหยุ่นที่เลื่อนลื่นตามธรรมชาติของเว็บบราวเซอร์หลัก */}
       <main
         class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
         style={{
@@ -283,7 +318,7 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* 🟢 Banner Zone: เปลี่ยนเป็น z-0 เพื่อบังคับให้อยู่เลเยอร์หลังสุดขององค์ประกอบหน้าจอทั้งหมด */}
+        {/* 🟢 Banner Zone: z-0 และความสูงสอดรับกันอย่างลงตัว */}
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
@@ -294,18 +329,16 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* 🟢 Content Area Wrapper: ใช้ z-10 ดันให้เลเยอร์หลักขึ้นมาพาดทับขอบล่างแบนเนอร์ผ่านลบ Margin */}
+        {/* 🟢 Content Area Wrapper: ยกกล่องหลักพาดทับแบนเนอร์เชิงมิติอย่างชัดเจนด้วย z-10 */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          {/* 🟢 ขยับกริดพาดทับแบนเนอร์อย่างสวยงามด้วยลบ margin: -mt-10 ถึง lg:-mt-24 */}
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24">
-            {/* 🟢 COLUMN 1 (ฝั่งซ้าย): โซนเกี่ยวกับสตรีมเมอร์ (ขยายให้กว้างขวางขึ้นเป็น lg:col-span-7 เพื่อสมดุลการมองเห็น) */}
+            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - โซน About กว้างกว่าเดิมเป็น col-span-7) */}
             <div class="lg:col-span-7 space-y-4 flex flex-col w-full">
-              {/* การ์ดประวัติหลัก: ลอยทับแบนเนอร์อย่างสง่างาม */}
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
                 style={{ "border-color": config().cardBorderColor }}
               >
-                {/* จัดกลุ่มโปรไฟล์: รูปภาพกับชื่อช่องอยู่แนวนอนเดียวกันอย่างเรียบร้อย */}
+                {/* 🟢 โปรไฟล์หลัก: ปรับรูป Avatar ให้ขยายใหญ่ขึ้น 10-25% (w-16 h-16 ขยายเป็น sm:w-20 sm:h-20) */}
                 <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
                     <img
@@ -314,19 +347,35 @@ export default function Home() {
                         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
                       }
                       alt="Avatar"
-                      class="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white shadow-xs object-cover"
+                      class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
                     />
                   </div>
-                  <div class="space-y-0.5 min-w-0 flex-1">
+                  <div class="space-y-1.5 min-w-0 flex-1">
                     <h1
                       class="text-xl sm:text-2xl font-black tracking-tight truncate"
                       style={{ color: config().nameColor }}
                     >
                       {config().vtuberName}
                     </h1>
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                      นักสร้างสรรค์คอนเทนต์ ☕
-                    </p>
+
+                    {/* 🟢 ย้าย Youtube / Twitch มาอยู่ใต้ชื่อช่องเป็นรูป Inline SVG Icons ที่หรูหรากระชับ */}
+                    <div class="flex items-center gap-2 pt-0.5">
+                      <For each={config().socialLinks || []}>
+                        {(link) => (
+                          <Show when={link.url}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="p-1 rounded-lg transition-colors hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900"
+                              title={link.platform}
+                            >
+                              {getSocialIcon(link.platform)}
+                            </a>
+                          </Show>
+                        )}
+                      </For>
+                    </div>
                   </div>
                 </div>
 
@@ -335,13 +384,13 @@ export default function Home() {
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
-                {/* กล่องข้อความต้อนรับ */}
+                {/* กล่องประวัติ About */}
                 <div>
                   <h2
                     class="text-xs font-black uppercase tracking-widest mb-2"
                     style={{ color: config().nameColor }}
                   >
-                    เกี่ยวกับ {config().vtuberName}
+                    About {config().vtuberName}
                   </h2>
                   <p
                     class="text-xs sm:text-sm leading-relaxed whitespace-pre-line"
@@ -351,31 +400,9 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-
-              {/* ปุ่ม Social Links เพื่อเสริมแบรนด์ดิ้ง */}
-              <div class="flex flex-wrap gap-1.5 justify-center lg:justify-start w-full">
-                <For each={config().socialLinks || []}>
-                  {(link) => (
-                    <Show when={link.url}>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="px-3 py-1.5 rounded-xl border transition-all hover:scale-105 flex items-center gap-1.5 bg-white text-[10px] font-black uppercase shadow-xs hover:bg-slate-50"
-                        style={{
-                          "border-color": config().cardBorderColor,
-                          color: config().nameColor,
-                        }}
-                      >
-                        <span>{link.platform}</span>
-                      </a>
-                    </Show>
-                  )}
-                </For>
-              </div>
             </div>
 
-            {/* 🟢 COLUMN 2 (ฝั่งขวา): โซนกรอกเงินสนับสนุน (บีบความกว้างให้กระทัดรัด lg:col-span-5 และคุมขอบเขตที่ max-w-[340px]) */}
+            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องกรอกข้อมูลโดเนทกว้างพอดีที่ max-w-[340px] สำหรับ Cloudflare Widget) */}
             <div class="lg:col-span-5 w-full">
               <form
                 onSubmit={handleDonate}
@@ -397,10 +424,8 @@ export default function Home() {
                   />
                 </div>
 
+                {/* ฟิลด์กรอกจำนวนเงิน */}
                 <div class="space-y-3">
-                  <span class="block text-xs font-bold text-slate-700">
-                    {config().presetLabel}
-                  </span>
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
                       {(amt) => (
@@ -434,7 +459,7 @@ export default function Home() {
 
                   {/* WCAG Label Mapping */}
                   <label for="custom-amount" class="sr-only">
-                    {config().amountLabel}
+                    Amount
                   </label>
                   <input
                     id="custom-amount"
@@ -459,7 +484,7 @@ export default function Home() {
 
                 {/* WCAG Label Mapping */}
                 <label for="nickname" class="sr-only">
-                  {config().nicknameLabel}
+                  Nickname
                 </label>
                 <input
                   id="nickname"
@@ -478,7 +503,7 @@ export default function Home() {
 
                 {/* WCAG Label Mapping */}
                 <label for="donor-msg" class="sr-only">
-                  {config().messageLabel}
+                  Message
                 </label>
                 <textarea
                   id="donor-msg"
@@ -494,9 +519,9 @@ export default function Home() {
                   value={message()}
                 ></textarea>
 
-                {/* 🟢 แถบ TOS & คำยินยอมแบบมินิมอล: ประกอบด้วยแถบกดเลื่อนเพื่ออ่าน และ แถบยอมรับ อย่างกระชับตามเกณฑ์ */}
+                {/* 🟢 โซน TOS & PDPA ฉบับกระชับพิเศษ: มีเพียงแถบเลื่อนและปุ่มยินยอมที่จัดเรียงระนาบแนวนอนได้อย่างสมบูรณ์แบบไม่เบี้ยว */}
                 <div class="space-y-2">
-                  {/* แถบเลื่อนอ่านนโยบาย */}
+                  {/* แถบเลื่อนขยาย TOS */}
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
@@ -507,9 +532,7 @@ export default function Home() {
                       color: config().nameColor,
                     }}
                   >
-                    <span>
-                      📜 อ่านข้อตกลงและนโยบายความเป็นส่วนตัว (TOS & PDPA)
-                    </span>
+                    <span>📜 View Terms & Privacy Policy (TOS & PDPA)</span>
                     <span class="text-[8px]">
                       {isTosExpanded() ? "▲" : "▼"}
                     </span>
@@ -518,20 +541,19 @@ export default function Home() {
                   <Show when={isTosExpanded()}>
                     <div class="p-2.5 rounded-xl border bg-white space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] text-slate-600 transition-all duration-300">
                       <p>
-                        <strong>1. นโยบายการไม่คืนเงิน:</strong>{" "}
-                        ยอดสนับสนุนทั้งหมดให้โดยเสน่หาและไม่สามารถปฏิเสธจ่ายคืน
-                        (Chargeback) ได้ภายหลัง
+                        <strong>1. Non-Refundable:</strong> All support is
+                        voluntary and non-refundable.
                       </p>
                       <p>
-                        <strong>2. การคุ้มครองข้อมูล:</strong>{" "}
-                        จัดเก็บข้อมูลชื่อและข้อความสนับสนุนของท่านเพื่อนำไปแสดงบนระฆังจอไลฟ์ตามความยินยอม
+                        <strong>2. Live Alerts:</strong> We display your
+                        nickname and message on stream based on your consent.
                       </p>
                     </div>
                   </Show>
 
-                  {/* แถบกดยอมรับเงื่อนไข */}
+                  {/* 🟢 ช่องกดยอมรับแบบจัดตำแหน่ง Alignment สมบูรณ์ด้วย items-center และ leading-none */}
                   <label
-                    class="flex items-start gap-1.5 cursor-pointer font-bold leading-tight"
+                    class="flex items-center gap-2.5 cursor-pointer text-[9px] leading-none font-bold"
                     style={{ color: config().welcomeColor }}
                   >
                     <input
@@ -539,12 +561,11 @@ export default function Home() {
                       checked={isConsented()}
                       onChange={(e) => setIsConsented(e.currentTarget.checked)}
                       required
-                      class="rounded mt-0.5 flex-shrink-0"
+                      class="w-3.5 h-3.5 rounded border border-slate-300 flex-shrink-0 cursor-pointer"
                       style={{ "accent-color": config().submitBtnColor }}
                     />
-                    <span class="text-[9px] leading-tight font-medium opacity-90">
-                      ฉันยอมรับตามข้อกำหนดและยินยอมส่งข้อมูลขึ้นระฆังแจ้งเตือน
-                      🔒
+                    <span class="opacity-90 select-none">
+                      I agree to show my support on the live stream 🔒
                     </span>
                   </label>
                 </div>
@@ -580,7 +601,7 @@ export default function Home() {
                       when={cooldownRemaining() > 0}
                       fallback={ShowWhenLoader()}
                     >
-                      กรุณารออีก {cooldownRemaining()} วินาทีน้า ⏳
+                      Wait {cooldownRemaining()}s... ⏳
                     </Show>
                   </button>
                 </div>
@@ -595,7 +616,7 @@ export default function Home() {
   function ShowWhenLoader() {
     return (
       <Show when={loading()} fallback={config().submitBtnText}>
-        กำลังขอคิวอาร์พร้อมเพย์...
+        Generating QR Code...
       </Show>
     );
   }
