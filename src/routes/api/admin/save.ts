@@ -6,20 +6,35 @@ import { getStore } from "@netlify/blobs";
 function validateTheme(theme: any): boolean {
   if (!theme || typeof theme !== "object") return false;
 
+  // 1. คีย์ตัวแปรประเภท String ที่ระบบจำเป็นต้องมี (Required Fields)
   const requiredStrings = [
+    "mainFontFamily",
     "vtuberName",
-    "bgColor",
     "welcomeText",
-    "nicknamePlaceholder",
-    "messagePlaceholder",
-    "amountPlaceholder",
-    "submitBtnColor",
-    "submitBtnTextColor",
-    "submitBtnText",
-    "generalTextColor",
+    "bgType",
+    "bgColor",
     "cardBgColor",
+    "generalTextColor",
     "inputBgColor",
     "inputTextColor",
+    "submitBtnColor",
+    "submitBtnTextColor",
+  ];
+
+  for (const key of requiredStrings) {
+    if (typeof theme[key] !== "string" || theme[key].trim() === "")
+      return false;
+  }
+
+  // 2. คีย์ตัวแปรประเภท String ตัวเลือกเสริมที่สามารถเว้นว่างได้ (Optional Fields)
+  const optionalStrings = [
+    "avatarUrl",
+    "bannerUrl",
+    "bgUrl",
+    "nameColor",
+    "inputBorderColor",
+    "cardBorderColor",
+    "presetBorderColor",
     "youtubeUrl",
     "twitchUrl",
     "discordUrl",
@@ -29,27 +44,38 @@ function validateTheme(theme: any): boolean {
     "tiktokUrl",
   ];
 
-  for (const key of requiredStrings) {
-    if (typeof theme[key] !== "string") return false;
+  for (const key of optionalStrings) {
+    if (theme[key] !== undefined && typeof theme[key] !== "string")
+      return false;
   }
 
+  // 3. ตรวจสอบความถูกต้องและรูปแบบของรหัสสี HEX (HEX Color Format Strict Validator)
   const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
   const colorKeys = [
     "bgColor",
+    "nameColor",
+    "cardBgColor",
+    "cardBorderColor",
+    "generalTextColor",
     "inputBgColor",
     "inputTextColor",
     "inputBorderColor",
-    "cardBorderColor",
-    "cardBgColor",
     "submitBtnColor",
     "submitBtnTextColor",
-    "generalTextColor",
+    "presetBorderColor",
   ];
 
   for (const key of colorKeys) {
-    if (theme[key] && !hexColorRegex.test(theme[key])) return false;
+    if (
+      theme[key] &&
+      theme[key].trim() !== "" &&
+      !hexColorRegex.test(theme[key])
+    ) {
+      return false;
+    }
   }
 
+  // 4. ตรวจสอบความสมบูรณ์และเงื่อนไขของยอดเงินสนับสนุนด่วน (Preset Amounts Array)
   if (!Array.isArray(theme.presetAmounts) || theme.presetAmounts.length !== 4)
     return false;
   for (const amt of theme.presetAmounts) {

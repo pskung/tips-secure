@@ -326,22 +326,21 @@ export default function Home() {
   return (
     <>
       <Title>Support {config().vtuberName} 💖</Title>
-      <For each={uniqueFonts()}>
-        {(font) => (
-          <Link
-            rel="stylesheet"
-            href={`https://fonts.googleapis.com/css2?family=${font.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
-          />
-        )}
-      </For>
-      {/* 🟢 บังคับให้ช่องกรอกข้อมูลและปุ่มทั้งหมดดึงค่าฟอนต์สากลไปใช้โดยพลการ (CSS Inheritance Fix) */}
-      <Style>
+      {/* 🟢 โหลด Google Font แบบ Dynamic และบังคับใช้ฟอนต์แบบ 100% Reactive ด้วย Standard HTML <style> */}
+      <style>
         {`
-          input, textarea, button, select {
+          @import url('https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
+          
+          /* บังคับใช้ฟอนต์กับทุกอินพุต ปุ่ม และข้อความภายในคอนเทนเนอร์ */
+          .custom-font-root, 
+          .custom-font-root input, 
+          .custom-font-root textarea, 
+          .custom-font-root button, 
+          .custom-font-root select {
             font-family: '${config().mainFontFamily}', sans-serif !important;
           }
         `}
-      </Style>
+      </style>
       <script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         async
@@ -349,7 +348,7 @@ export default function Home() {
       ></script>
 
       <main
-        class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
+        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
         style={{
           "background-image":
             config().bgType === "image" && config().bgUrl

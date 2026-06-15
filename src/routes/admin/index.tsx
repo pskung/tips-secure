@@ -143,14 +143,20 @@ export default function Admin() {
   return (
     <>
       <Title>Admin Dashboard 🎨</Title>
-      <For each={uniqueFonts()}>
-        {(font) => (
-          <Link
-            rel="stylesheet"
-            href={`https://fonts.googleapis.com/css2?family=${font.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
-          />
-        )}
-      </For>
+      {/* 🟢 โหลด Google Font และพรีวิวในแผง Admin แบบ Real-time ด้วย Standard HTML <style> */}
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=${(config.mainFontFamily || "Kanit").trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
+          
+          .admin-font-root, 
+          .admin-font-root input, 
+          .admin-font-root textarea, 
+          .admin-font-root button, 
+          .admin-font-root select {
+            font-family: '${config.mainFontFamily || "Kanit"}', sans-serif !important;
+          }
+        `}
+      </style>
 
       {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
@@ -202,7 +208,7 @@ export default function Admin() {
       </Show>
 
       {/* 💻 Admin Core Workspace Panel (Cozy English Version) */}
-      <div class="min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
+      <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🎨</span>
