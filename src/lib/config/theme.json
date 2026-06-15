@@ -17,7 +17,7 @@
   "messageLabel": "Message",
   "messagePlaceholder": "Write a message...",
   "amountLabel": "Amount",
-  "amountPlaceholder": "Amount (10 - 5,000 THB)...",
+  "amountPlaceholder": "Min 10 THB...",
   "placeholderColor": "#a1a1aa",
   "socialLinks": [
     { "platform": "youtube", "url": "https://youtube.com" },

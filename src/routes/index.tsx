@@ -43,7 +43,7 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// 🟢 ฟังก์ชันชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
+// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -99,7 +99,7 @@ export default function Home() {
 
   let turnstileWidgetId: string | null = null;
 
-  // 🟢 ลบตัวแปรที่ไม่ได้อ้างอิงใช้งานจริงในหน้าหลักออกอย่างหมดจด
+  // ลบตัวแปรที่ไม่ได้อ้างอิงใช้งานจริงในหน้าหลักออกอย่างหมดจด
   const config = createMemo(() => {
     const theme = data()?.theme || {};
     return {
@@ -118,8 +118,7 @@ export default function Home() {
       messageLabel: theme.messageLabel ?? "Message",
       messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
       amountLabel: theme.amountLabel ?? "Amount",
-      amountPlaceholder:
-        theme.amountPlaceholder ?? "Amount (10 - 5,000 THB)...",
+      amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
       placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
@@ -204,6 +203,7 @@ export default function Home() {
 
     if (config().presetAmounts.length > 0) {
       setAmount(String(config().presetAmounts[0]));
+      setCustomAmountVal(String(config().presetAmounts[0])); // ซิงค์ค่าเริ่มต้นลงกล่อง Amount
     }
 
     const lastRequest = localStorage.getItem("last_donate_request");
@@ -313,7 +313,7 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* 🟢 Banner Zone: ความสูงสมส่วน และ z-0 เพื่อจัดระนาบเลเยอร์ด้านหลังเสมอ */}
+        {/* Banner Zone: อยู่เลเยอร์หลังสุดเสมอเพื่อรองรับการพาดทับของการ์ดเนื้อหา */}
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
@@ -324,16 +324,17 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* 🟢 Content Area Wrapper: ดันเนื้อหาลอยขึ้นมาทับแบนเนอร์ด้วย z-10 */}
+        {/* Content Area Wrapper: ขยับขึ้นพาดทับแบนเนอร์ด้วย z-10 */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24">
-            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - อัตราส่วนหน้าจอสมดุลกว้าง lg:col-span-7) */}
-            <div class="lg:col-span-7 space-y-4 flex flex-col w-full">
+          {/* 🟢 ปรับโครงสร้างจาก Grid สู่ Flexbox Layout เพื่อให้กล่องฝั่งซ้ายขยายชิดฝั่งขวาได้อย่างลงตัว */}
+          <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
+            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - ใช้ flex-1 เพื่อยืดขยายช่อง About ออกมาทางขวาได้อย่างประณีต สมดุล และลื่นไหล) */}
+            <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
                 style={{ "border-color": config().cardBorderColor }}
               >
-                {/* 🟢 ส่วนภาพโปรไฟล์จัดวางในระนาบแนวนอนเดียวกับชื่อช่องสตรีมเมอร์ พร้อมปุ่มไอคอนโซเชียลใต้ชื่อ */}
+                {/* โปรไฟล์หลัก: รูปภาพกับชื่อช่อง และแถบไอคอนโซเชียลตรงใต้ชื่อ */}
                 <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
                     <img
@@ -353,7 +354,7 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
-                    {/* ไอคอนโซเชียลสัญญลักษณ์แบบฝังตรงใต้ชื่อช่อง */}
+                    {/* ไอคอนโซเชียลใต้ชื่อช่อง */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={config().socialLinks || []}>
                         {(link) => (
@@ -397,11 +398,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ max-w-[340px]) */}
-            <div class="lg:col-span-5 w-full">
+            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ 340px สำหรับ Cloudflare Widget) */}
+            <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
-                class="max-w-[340px] w-full mx-auto lg:mr-0 lg:ml-auto p-5 sm:p-6 rounded-3xl border shadow-md space-y-4 bg-white relative overflow-hidden"
+                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3 bg-white relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
                   "--placeholder-color": config().placeholderColor,
@@ -419,14 +420,17 @@ export default function Home() {
                   />
                 </div>
 
+                {/* ปุ่มพรีเซ็ตและฟิลด์ระบุเงินสนับสนุน */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
                       {(amt) => (
                         <button
                           type="button"
+                          // 🟢 ซิงค์จำนวนปุ่มพรีเซ็ตไปแสดงในกล่องกรอกเงิน Custom Amount อัตโนมัติเมื่อมีการคลิกค่ะ
                           onClick={() => {
                             setAmount(String(amt));
+                            setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
                           class="py-2.5 text-xs font-black border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
@@ -513,7 +517,7 @@ export default function Home() {
                   value={message()}
                 ></textarea>
 
-                {/* 🟢 ปรับโฉม TOS & Consent บรรทัดแถบเลื่อนและปุ่มติ๊กยินยอมให้เข้าที่ตรงระนาบสวยงาม ไม่เยื้องเบี้ยว */}
+                {/* แถบ TOS & Consent มินิมอลเรียบร้อยสวยงาม */}
                 <div class="space-y-2">
                   {/* แถบเลื่อนขยาย TOS */}
                   <button
@@ -545,9 +549,9 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* แถบกดยอมรับเงื่อนไข จัดวางให้ Checkbox และข้อความอยู่เซนเตอร์แนวระนาบเดียวกันด้วย items-center */}
+                  {/* 🟢 ช่องกดยอมรับ เยื้องขวา pl-3 เพื่อความสมดุลด้านดีไซน์ที่เสมือนรวมกลุ่มอยู่ใต้ปุ่ม TOS อย่างสวยงาม */}
                   <label
-                    class="flex items-center gap-2.5 cursor-pointer text-[9px] leading-none font-bold"
+                    class="flex items-center gap-2.5 cursor-pointer text-[9px] leading-none font-bold pl-3"
                     style={{ color: config().welcomeColor }}
                   >
                     <input
@@ -573,32 +577,31 @@ export default function Home() {
                   </div>
                 </Show>
 
-                <div class="pt-1">
-                  <button
-                    type="submit"
-                    disabled={
-                      loading() ||
-                      cooldownRemaining() > 0 ||
-                      (data()?.turnstileSiteKey !== "" && !turnstileToken()) ||
-                      !isConsented()
-                    }
-                    class="w-full py-3.5 text-xs font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
-                    style={{
-                      "background-color":
-                        cooldownRemaining() > 0
-                          ? "#64748b"
-                          : config().submitBtnColor,
-                      color: config().submitBtnTextColor || "#ffffff",
-                    }}
+                {/* 🟢 ดึงปุ่มขึ้นมาร่วมกลุ่มและจัดการช่องว่าง (Margin Spacing) ให้มีความเท่ากันเป๊ะกับฟิลด์อื่นๆ เสมอภาคสวยงามค่ะ */}
+                <button
+                  type="submit"
+                  disabled={
+                    loading() ||
+                    cooldownRemaining() > 0 ||
+                    (data()?.turnstileSiteKey !== "" && !turnstileToken()) ||
+                    !isConsented()
+                  }
+                  class="w-full py-3.5 text-xs font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
+                  style={{
+                    "background-color":
+                      cooldownRemaining() > 0
+                        ? "#64748b"
+                        : config().submitBtnColor,
+                    color: config().submitBtnTextColor || "#ffffff",
+                  }}
+                >
+                  <Show
+                    when={cooldownRemaining() > 0}
+                    fallback={ShowWhenLoader()}
                   >
-                    <Show
-                      when={cooldownRemaining() > 0}
-                      fallback={ShowWhenLoader()}
-                    >
-                      Wait {cooldownRemaining()}s... ⏳
-                    </Show>
-                  </button>
-                </div>
+                    Wait {cooldownRemaining()}s... ⏳
+                  </Show>
+                </button>
               </form>
             </div>
           </div>
