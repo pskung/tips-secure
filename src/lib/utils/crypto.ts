@@ -1,15 +1,22 @@
-export function timingSafeCompare(a: string | undefined | null, b: string | undefined | null): boolean {
+import { createHash } from "crypto";
+
+export function timingSafeCompare(
+  a: string | undefined | null,
+  b: string | undefined | null,
+): boolean {
   const strA = typeof a === "string" ? a : "";
   const strB = typeof b === "string" ? b : "";
 
-  let diff = strA.length ^ strB.length;
-  const len = Math.max(strA.length, strB.length);
+  // ล็อกความยาวข้อความด้วย SHA-256 (32 Bytes) ป้องกัน Side-Channel Timing Attacks ได้อย่างถาวร
+  const hashA = createHash("sha256").update(strA).digest();
+  const hashB = createHash("sha256").update(strB).digest();
 
-  for (let i = 0; i < len; i++) {
-    const charA = i < strA.length ? strA.charCodeAt(i) : 0;
-    const charB = i < strB.length ? strB.charCodeAt(i) : 0;
-    diff |= charA ^ charB;
+  if (hashA.length !== hashB.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < hashA.length; i++) {
+    diff |= hashA[i] ^ hashB[i];
   }
 
-  return diff === 0;
+  return diff === 0 && strA.length === strB.length;
 }

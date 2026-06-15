@@ -3,43 +3,169 @@ import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
 
+// 🟢 ตัวกรองความถูกต้องและป้องกันสคริปต์แปลกปลอมบนโครงสร้างสไตล์แต่งเว็บ (Zero-Dependency Schema Validator)
+function validateTheme(theme: any): boolean {
+  if (!theme || typeof theme !== "object") return false;
+
+  const requiredStrings = [
+    "vtuberName",
+    "bgColor",
+    "welcomeText",
+    "nicknameLabel",
+    "nicknamePlaceholder",
+    "messageLabel",
+    "messagePlaceholder",
+    "presetLabel",
+    "amountLabel",
+    "amountPlaceholder",
+    "submitBtnColor",
+    "submitBtnTextColor",
+    "submitBtnText",
+  ];
+
+  for (const key of requiredStrings) {
+    if (typeof theme[key] !== "string") return false;
+  }
+
+  const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+  const colorKeys = [
+    "bgColor",
+    "cardBgColor",
+    "cardBorderColor",
+    "profileAreaBgColor",
+    "inputBgColor",
+    "submitBtnColor",
+    "submitBtnTextColor",
+  ];
+
+  for (const key of colorKeys) {
+    if (theme[key] && !hexColorRegex.test(theme[key])) return false;
+  }
+
+  if (!Array.isArray(theme.presetAmounts) || theme.presetAmounts.length !== 4)
+    return false;
+  for (const amt of theme.presetAmounts) {
+    if (typeof amt !== "number" || amt < 10 || amt > 5000) return false;
+  }
+
+  return true;
+}
+
 export async function POST(event: APIEvent) {
   try {
     const origin = event.request.headers.get("origin");
     const url = new URL(event.request.url);
     const host = event.request.headers.get("host") || url.host;
-    const protocol = event.request.headers.get("x-forwarded-proto") || url.protocol;
+    const protocol =
+      event.request.headers.get("x-forwarded-proto") || url.protocol;
     const expectedOrigin = `${protocol}://${host}`;
 
-    if (origin && origin !== expectedOrigin) {
-      safeLog(`Security Alert: CSRF Blocked on Admin Save from ${origin}`, "WARN");
-      return new Response(JSON.stringify({ error: "Rejected Cross-Origin action" }), { status: 403 });
+    // 🟢 CSRF Fail-Closed: หากไม่มีหัวกระดาษ Origin ส่งมาเลยให้ปฏิเสธคำขอทันที
+    if (!origin) {
+      return new Response(
+        JSON.stringify({
+          error: "Missing required Origin verification header",
+        }),
+        { status: 400 },
+      );
     }
 
-    const sessionToken = getCookie(event.nativeEvent, "admin_session_token");
-    if (!sessionToken) {
-      return new Response(JSON.stringify({ error: "กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ" }), { status: 401 });
+    if (origin !== expectedOrigin) {
+      safeLog(
+        `Security Alert: CSRF Blocked on Admin Save from ${origin}`,
+        "WARN",
+      );
+      return new Response(
+        JSON.stringify({ error: "Rejected Cross-Origin action" }),
+        { status: 403 },
+      );
+    }
+
+    const rawToken = getCookie(event.nativeEvent, "admin_session_token");
+    if (!rawToken) {
+      return new Response(
+        JSON.stringify({ error: "กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ" }),
+        { status: 401 },
+      );
+    }
+
+    const parts = rawToken.split(":");
+    if (parts.length !== 2) {
+      return new Response(
+        JSON.stringify({ error: "โครงสร้างเซสชันคุกกี้ไม่ถูกต้อง" }),
+        { status: 401 },
+      );
+    }
+
+    const [expiresAtStr, sessionToken] = parts;
+    const expiresAt = Number(expiresAtStr);
+
+    if (Date.now() > expiresAt) {
+      safeLog(`Admin session expired for token: ${sessionToken}`, "WARN");
+      setCookie(event.nativeEvent, "admin_session_token", "", {
+        maxAge: 0,
+        path: "/",
+      });
+      return new Response(
+        JSON.stringify({
+          error: "หมดอายุการเข้าใช้งานระบบกรุณาล็อกอินใหม่อีกครั้งค่ะ",
+        }),
+        { status: 401 },
+      );
     }
 
     const store = getStore("donation_store");
-    const sessionData = await store.get(`session:${sessionToken}`, { type: "json" }) as { expiresAt: number } | null;
+    // 🟢 ค้นหาโดยอาศัยคีย์หลักโดยตรง ไม่ต้องดึง JSON Body ด้านในมา Parse ให้กินเวลาประมวลผล
+    const sessionExists = await store.get(
+      `session:${expiresAt}:${sessionToken}`,
+    );
 
-    if (!sessionData || Date.now() > sessionData.expiresAt) {
-      safeLog(`Admin session rejected or expired for token: ${sessionToken}`, "WARN");
-      setCookie(event.nativeEvent, "admin_session_token", "", { maxAge: 0, path: "/" });
-      return new Response(JSON.stringify({ error: "หมดอายุการเข้าใช้งานระบบกรุณาล็อกอินใหม่อีกครั้งค่ะ" }), { status: 401 });
+    if (!sessionExists) {
+      safeLog(
+        `Admin session rejected or not found for token: ${sessionToken}`,
+        "WARN",
+      );
+      setCookie(event.nativeEvent, "admin_session_token", "", {
+        maxAge: 0,
+        path: "/",
+      });
+      return new Response(
+        JSON.stringify({
+          error: "ไม่พบข้อมูลเซสชัน กรุณาล็อกอินใหม่อีกครั้งค่ะ",
+        }),
+        { status: 401 },
+      );
     }
 
     const { config: newTheme } = await event.request.json();
 
-    // บันทึกเฉพาะข้อมูลชุดปรับแต่งสไตล์ลงระบบคลาวด์ Netlify Blobs (ลบและป้องกันไม่ให้คีย์รหัสหลุดเซฟรวมกับธีมสาธารณะ)
+    // 🟢 ทำการตรวจสอบความปลอดภัยของโครงสร้างธีมก่อนจัดเก็บลงเซิร์ฟเวอร์
+    if (!validateTheme(newTheme)) {
+      safeLog(
+        "Security Alert: Malformed theme config payload rejected",
+        "WARN",
+      );
+      return new Response(
+        JSON.stringify({
+          error: "พารามิเตอร์การตกแต่งมีความเสี่ยงด้านความปลอดภัย",
+        }),
+        { status: 400 },
+      );
+    }
+
     await store.setJSON("vtuber_personalized_theme", newTheme);
 
     safeLog("Admin settings saved successfully.", "INFO");
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-
   } catch (err) {
-    safeLog("Exception occurred during admin settings storage save", "ERROR", err);
-    return new Response(JSON.stringify({ error: "เกิดปัญหาขัดข้องทางเทคนิคขณะจัดเก็บข้อมูลธีม" }), { status: 500 });
+    safeLog(
+      "Exception occurred during admin settings storage save",
+      "ERROR",
+      err,
+    );
+    return new Response(
+      JSON.stringify({ error: "เกิดปัญหาขัดข้องทางเทคนิคขณะจัดเก็บข้อมูลธีม" }),
+      { status: 500 },
+    );
   }
 }
