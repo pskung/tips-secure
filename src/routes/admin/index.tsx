@@ -1,3 +1,4 @@
+// src/routes/admin/index.tsx
 import {
   createSignal,
   createMemo,
@@ -5,6 +6,7 @@ import {
   createEffect,
   For,
   Show,
+  onCleanup, // 🟢 แก้ไขปัญหาที่ 1: เพิ่มการนำเข้า onCleanup อย่างถูกต้อง
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
@@ -22,10 +24,12 @@ const getAdminData = query(async () => {
     });
     return {
       theme: theme || defaultTheme,
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "", // ส่งคีย์ตรวจบอตไปยังแผงหน้าจอแอดมิน
     };
   } catch {
     return {
       theme: defaultTheme,
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   }
 }, "adminData");
@@ -49,6 +53,10 @@ export default function Admin() {
   const [authError, setAuthError] = createSignal("");
   const [authLoading, setAuthLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
+
+  // 🟢 ประตูด่านตรวจ Turnstile สำหรับหน้าจอล็อกอินแอดมิน
+  const [adminTurnstileToken, setAdminTurnstileToken] = createSignal("");
+  let adminTurnstileWidgetId: string | null = null;
 
   createEffect(() => {
     const theme = data()?.theme;
@@ -82,6 +90,39 @@ export default function Admin() {
     ];
   });
 
+  const initAdminTurnstile = () => {
+    if (typeof window === "undefined" || !(window as any).turnstile) return;
+    const siteKey = data()?.turnstileSiteKey;
+    if (!siteKey || !document.getElementById("admin-turnstile-container"))
+      return;
+
+    try {
+      if (adminTurnstileWidgetId) {
+        (window as any).turnstile.remove(adminTurnstileWidgetId);
+      }
+
+      adminTurnstileWidgetId = (window as any).turnstile.render(
+        "#admin-turnstile-container",
+        {
+          sitekey: siteKey,
+          theme: "light",
+          size: "flexible",
+          callback: (token: string) => {
+            setAdminTurnstileToken(token);
+          },
+          "expired-callback": () => {
+            setAdminTurnstileToken("");
+          },
+          "error-callback": () => {
+            setAdminTurnstileToken("");
+          },
+        },
+      );
+    } catch (err) {
+      console.error("Failed to initialize admin Turnstile:", err);
+    }
+  };
+
   onMount(() => {
     const isVerified = sessionStorage.getItem("admin_verified") === "true";
     const storedPass = sessionStorage.getItem("admin_pass_key");
@@ -89,17 +130,38 @@ export default function Admin() {
       setPassword(storedPass);
       setIsAuthenticated(true);
     }
+
+    const checkInterval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(checkInterval);
+        initAdminTurnstile();
+      }
+    }, 100);
+
+    onCleanup(() => {
+      clearInterval(checkInterval);
+    });
   });
 
   const handleVerify = async (e: Event) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError("");
+
+    if (data()?.turnstileSiteKey && !adminTurnstileToken()) {
+      setAuthError("Please complete the security challenge first 🔒");
+      setAuthLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: password() }),
+        body: JSON.stringify({
+          password: password(),
+          turnstile_token: adminTurnstileToken(),
+        }),
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
@@ -108,6 +170,10 @@ export default function Admin() {
         setIsAuthenticated(true);
       } else {
         setAuthError(resData.error || "Incorrect password. Please try again.");
+        if ((window as any).turnstile && adminTurnstileWidgetId) {
+          (window as any).turnstile.reset(adminTurnstileWidgetId);
+          setAdminTurnstileToken("");
+        }
       }
     } catch {
       setAuthError("Auth server connection timeout.");
@@ -116,6 +182,7 @@ export default function Admin() {
     }
   };
 
+  // 🟢 แก้ไขปัญหาที่ 2: วางตรรกะจัดเก็บค่าลงบนตำแหน่งขอบเขตตัวแปร (Admin-Scope) ที่ถูกต้องสมบูรณ์
   const handleSave = async () => {
     setSaveLoading(true);
     try {
@@ -143,20 +210,14 @@ export default function Admin() {
   return (
     <>
       <Title>Admin Dashboard 🎨</Title>
-      {/* 🟢 โหลด Google Font และพรีวิวในแผง Admin แบบ Real-time ด้วย Standard HTML <style> */}
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=${(config.mainFontFamily || "Kanit").trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
-          
-          .admin-font-root, 
-          .admin-font-root input, 
-          .admin-font-root textarea, 
-          .admin-font-root button, 
-          .admin-font-root select {
-            font-family: '${config.mainFontFamily || "Kanit"}', sans-serif !important;
-          }
-        `}
-      </style>
+      <For each={uniqueFonts()}>
+        {(font) => (
+          <Link
+            rel="stylesheet"
+            href={`https://fonts.googleapis.com/css2?family=${font.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
+          />
+        )}
+      </For>
 
       {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
@@ -196,9 +257,25 @@ export default function Admin() {
                 onInput={(e) => setPassword(e.currentTarget.value)}
               />
             </div>
+
+            {/* 🟢 ส่วนแสดงประตูด่านตรวจ Turnstile สำหรับล็อกอินแอดมิน */}
+            <Show when={data()?.turnstileSiteKey}>
+              <div
+                id="admin-turnstile-container"
+                class="w-full flex justify-center py-1"
+                style={{
+                  display: adminTurnstileToken() ? "none" : "flex",
+                  "min-height": "65px",
+                }}
+              ></div>
+            </Show>
+
             <button
               type="submit"
-              disabled={authLoading()}
+              disabled={
+                authLoading() ||
+                (data()?.turnstileSiteKey !== "" && !adminTurnstileToken())
+              }
               class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
             >
               {authLoading() ? "Logging in... ⏳" : "Login to Dashboard"}
@@ -670,7 +747,7 @@ export default function Admin() {
                         />
                         <input
                           type="text"
-                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs uppercase font-mono"
+                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
                           value={config.bgColor || ""}
                           onInput={(e) =>
                             setConfig("bgColor", e.currentTarget.value)

@@ -4,8 +4,9 @@
 
 [template.environment]
   ADMIN_PASSWORD = "🔑 รหัสผ่านเข้าหลังบ้านแอดมิน"
-  XENDIT_SECRET_KEY = "💳 คีย์ธุรกรรม Xendit Secret Key API"
-  XENDIT_WEBHOOK_TOKEN = "🔗 คีย์ตรวจสอบข้อมูล Webhook Token ของ Xendit"
+  BEAM_API_KEY =  "🔑 คีย์รับเงินลับ Beam API Key"
+  BEAM_WEBHOOK_SECRET =  "🔒 คีย์ความถูกต้องของ Webhook Token"
+  BEAM_API_URL = "🌐 (Optional) URL สำหรับ Beam API เช่น https://playground.api.beamcheckout.com"
   TURNSTILE_SITE_KEY = "🔒 คีย์ระบุโดเมน Cloudflare Turnstile Site Key"
   TURNSTILE_SECRET_KEY = "🛡️ คีย์ตรวจสอบความเป็นมนุษย์ Cloudflare Turnstile Secret Key"
   STREAMLABS_ACCESS_TOKEN = "📽️ คีย์แจ้งเตือนขึ้นจอ Streamlabs Access Token API"

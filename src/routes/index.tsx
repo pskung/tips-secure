@@ -511,6 +511,7 @@ export default function Home() {
                     type="number"
                     min="10"
                     max="5000"
+                    step="0.01" // 🟢 เปิดรองรับระบบทศนิยม 2 ตำแหน่ง (หน่วยสตางค์) สไตล์ HTML5
                     placeholder={config().amountPlaceholder}
                     class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                     style={{
@@ -520,9 +521,20 @@ export default function Home() {
                       "--tw-ring-color": config().submitBtnColor,
                     }}
                     onInput={(e) => {
+                      let val = e.currentTarget.value;
+
+                      // 🟢 ตรรกะตรวจจับและตัดเศษส่วนที่เกิน 2 ตำแหน่งทิ้งทันทีที่ผู้ใช้พิมพ์
+                      if (val.includes(".")) {
+                        const [intPart, decPart] = val.split(".");
+                        if (decPart && decPart.length > 2) {
+                          val = `${intPart}.${decPart.substring(0, 2)}`;
+                          e.currentTarget.value = val; // บังคับเขียนทับค่าบนหน้าจอเบราว์เซอร์จริง
+                        }
+                      }
+
                       setCustomActive(true);
-                      setAmount(e.currentTarget.value);
-                      setCustomAmountVal(e.currentTarget.value);
+                      setAmount(val);
+                      setCustomAmountVal(val);
                     }}
                     value={customAmountVal()}
                   />

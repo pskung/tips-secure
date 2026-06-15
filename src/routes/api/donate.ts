@@ -1,10 +1,7 @@
+// src/routes/api/donate.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
-
-const EXTERNAL_API = {
-  XENDIT_INVOICES: "https://api.xendit.co/v2/invoices",
-};
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
@@ -42,7 +39,6 @@ export async function POST(event: APIEvent) {
       name,
       amount,
       message,
-      currency = "THB",
       email_confirm,
       render_time,
       turnstile_token,
@@ -78,7 +74,7 @@ export async function POST(event: APIEvent) {
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
       safeLog(
-        "Critical: TURNSTILE_SECRET_KEY is missing or undefined in production environment.",
+        "Critical: TURNSTILE_SECRET_KEY is missing in production environment.",
         "ERROR",
       );
       return new Response(
@@ -140,7 +136,6 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // 🟢 ปรับเปลี่ยนขีดจำกัดความยาวหลังบ้านเป็น 255 ตัวอักษร เพื่อให้สอดคล้องกับหน้าบ้านค่ะ
     if (message && (typeof message !== "string" || message.length > 255)) {
       return new Response(
         JSON.stringify({ error: "ข้อความยาวเกิน 255 ตัวอักษรค่ะ" }),
@@ -148,7 +143,8 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    if (isNaN(amount) || amount < 10.0 || amount > 5000.0) {
+    const rawAmount = Number(amount);
+    if (isNaN(rawAmount) || rawAmount < 10.0 || rawAmount > 5000.0) {
       return new Response(
         JSON.stringify({
           error: "ยอดเงินโดเนทขั้นต่ำต้องอยู่ระหว่าง 10 - 5,000 บาทค่ะ",
@@ -157,38 +153,51 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    if (!process.env.XENDIT_SECRET_KEY) {
+    if (!process.env.BEAM_API_KEY) {
       return new Response(
         JSON.stringify({
-          error: "ระบบยังไม่ได้ตั้งค่าคีย์รับเงินลับหลังบ้านค่ะ",
+          error: "ระบบยังไม่ได้ตั้งค่าคีย์รับเงินของ Beam หลังบ้านค่ะ",
         }),
         { status: 501 },
       );
     }
 
-    const siteUrl = `${protocol}://${host}/`;
-    const authHeader = "Basic " + btoa(`${process.env.XENDIT_SECRET_KEY}:`);
+    // 🟢 แปลงหน่วย THB เป็น Satang (สตางค์) และปัดเศษป้องกันความพังพินาศจากเศษทศนิยม
+    const netAmountInSatang = Math.round(rawAmount * 100);
 
-    const response = await fetch(EXTERNAL_API.XENDIT_INVOICES, {
+    const siteUrl = `${protocol}://${host}/`;
+    const beamUrl =
+      process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+
+    // ตั้งค่า Basic Authentication สำหรับเชื่อมต่อ Beam API
+    const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
+
+    // 🟢 ยิงคำร้องไปขอเปิดหน้าต่าง Payment Link กับ Beam
+    const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        external_id: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
-        amount: Number(amount),
-        currency,
-        description: `VTuber tip by ${name}`,
-        success_redirect_url: siteUrl,
-        failure_redirect_url: siteUrl,
-        metadata: { donor_name: name, donor_message: message || "" },
+        redirectUrl: siteUrl,
+        order: {
+          currency: "THB",
+          netAmount: netAmountInSatang, // ส่งในหน่วยสตางค์
+          description: `VTuber tip by ${name}`,
+          referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
+          // เข้ารหัสข้อมูลสตรีมเมอร์ลงไปใน internalNote เพื่อนำกลับมาแกะใช้ตอน Webhook ตีกลับ
+          internalNote: JSON.stringify({
+            donor_name: name,
+            donor_message: message || "",
+          }),
+        },
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
-      safeLog("Failed to generate Xendit payment bill", "ERROR", data);
+      safeLog("Failed to generate Beam payment link", "ERROR", data);
       return new Response(
         JSON.stringify({ error: "ไม่สามารถติดต่อเกตเวย์รับเงินภายนอกได้ค่ะ" }),
         { status: response.status },
@@ -203,7 +212,8 @@ export async function POST(event: APIEvent) {
       sameSite: "strict",
     });
 
-    return new Response(JSON.stringify({ invoice_url: data.invoice_url }), {
+    // 🟢 ใช้คุณสมบัติ data.url ที่คืนมาจาก Beam ในการ Redirect ผู้ชำระเงิน
+    return new Response(JSON.stringify({ invoice_url: data.url }), {
       status: 200,
     });
   } catch (error) {

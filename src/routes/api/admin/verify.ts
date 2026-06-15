@@ -5,9 +5,48 @@ import { getStore } from "@netlify/blobs";
 
 export async function POST(event: APIEvent) {
   try {
-    const { password } = await event.request.json();
+    const { password, turnstile_token } = await event.request.json();
     const expectedPassword = process.env.ADMIN_PASSWORD || "";
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
 
+    // 🟢 1. ตรวจยืนยันความถูกต้องของบอต ผ่าน API ปลายทางของ Cloudflare ก่อนทำตรรกะอื่น
+    if (turnstileSecret) {
+      if (!turnstile_token) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "กรุณายืนยันความปลอดภัยในด่านตรวจด้วยน้า 🔒",
+          }),
+          { status: 400 },
+        );
+      }
+
+      const verifyResponse = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            secret: turnstileSecret,
+            response: turnstile_token,
+          }),
+        },
+      );
+
+      const verifyData = await verifyResponse.json();
+      if (!verifyData.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error:
+              "ตรวจพบพฤติกรรมบอตในกระบวนการล็อกอิน กรุณาลองใหม่อีกครั้งค่ะ",
+          }),
+          { status: 403 },
+        );
+      }
+    }
+
+    // 2. หากยืนยันตัวตนว่าไม่ใช่บอตเรียบร้อย ค่อยทำตรวจสอบเทียบค่ารหัสผ่านจริง
     if (
       !password ||
       !expectedPassword ||
@@ -26,10 +65,8 @@ export async function POST(event: APIEvent) {
     const expiresAt = Date.now() + 1000 * 60 * 60 * 24; // เซสชันมีอายุ 24 ชั่วโมง
 
     const store = getStore("donation_store");
-    // 🟢 เก็บตัวแปร expiresAt ไว้ใน Key Name เพื่อให้ Cron Job ดึงข้อมูลไปเช็คได้ O(1) ทันที
     await store.set(`session:${expiresAt}:${sessionToken}`, "active");
 
-    // 🟢 ส่งคุกกี้กลับไปในฟอร์แมตที่ระบุเวลาหมดอายุไว้ล่วงหน้า
     setCookie(
       event.nativeEvent,
       "admin_session_token",
