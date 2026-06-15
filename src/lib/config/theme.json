@@ -17,10 +17,13 @@
   "nicknamePlaceholder": "Your nickname...",
   "messagePlaceholder": "Write a message...",
   "amountPlaceholder": "Min 10 THB...",
-  "socialLinks": [
-    { "platform": "youtube", "url": "https://youtube.com" },
-    { "platform": "twitch", "url": "https://twitch.tv" }
-  ],
+  "youtubeUrl": "https://youtube.com",
+  "twitchUrl": "https://twitch.tv",
+  "discordUrl": "",
+  "xUrl": "",
+  "facebookUrl": "",
+  "instagramUrl": "",
+  "tiktokUrl": "",
   "presetAmounts": [100, 300, 500, 1000],
   "presetBorderColor": "#e4e4e4",
   "submitBtnColor": "#ffdd00",

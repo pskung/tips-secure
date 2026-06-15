@@ -3,7 +3,6 @@ import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
 
-// 🟢 ตัวกรองสไตล์ที่เพิ่มระบบดักจับและตรวจสอบความถูกต้องรหัสสีของช่องกรอกข้อมูล
 function validateTheme(theme: any): boolean {
   if (!theme || typeof theme !== "object") return false;
 
@@ -21,6 +20,13 @@ function validateTheme(theme: any): boolean {
     "cardBgColor",
     "inputBgColor",
     "inputTextColor",
+    "youtubeUrl",
+    "twitchUrl",
+    "discordUrl",
+    "xUrl",
+    "facebookUrl",
+    "instagramUrl",
+    "tiktokUrl",
   ];
 
   for (const key of requiredStrings) {

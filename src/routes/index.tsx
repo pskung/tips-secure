@@ -14,7 +14,7 @@ import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที ดึงเบื้องหลัง 7 วินาที
+// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที ดึงเบื้องหลัง 5 วินาที
 const getInitialData = query(async () => {
   "use server";
   const event = getRequestEvent();
@@ -22,7 +22,7 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=5, stale-while-revalidate=7",
+      "public, max-age=0, s-maxage=5, stale-while-revalidate=5",
     );
   }
 
@@ -43,7 +43,7 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency
+// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดครอบคลุม 7 เครือข่ายตามคำขอค่ะ (Inline SVGs Helper)
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -60,10 +60,38 @@ function getSocialIcon(platform: string) {
       </svg>
     );
   }
+  if (p.includes("discord")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.121-.63-.24-1.224-.534-1.783-.876a.079.079 0 0 1-.008-.13c.12-.09.239-.185.353-.28a.077.077 0 0 1 .081-.011c3.963 1.817 8.27 1.817 12.185 0a.078.078 0 0 1 .082.01c.114.095.233.19.353.281a.078.078 0 0 1-.007.13 12.19 12.19 0 0 1-1.784.877c-.033.013-.044.062-.024.12.355.698.766 1.365 1.225 1.993a.082.082 0 0 0 .085.029 19.9 19.9 0 0 0 6.002-3.03.076.076 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
+      </svg>
+    );
+  }
   if (p.includes("twitter") || p === "x") {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    );
+  }
+  if (p.includes("facebook")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    );
+  }
+  if (p.includes("instagram")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.79.073 7.151.014 8.431 0 8.839 0 12s.014 3.569.072 4.849c.2 4.36 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.848.072 3.159 0 3.568-.014 4.848-.072 4.361-.2 6.78-2.618 6.979-6.98.059-1.28.073-1.689.073-4.848 0-3.159-.014-3.568-.072-4.849-.2-4.36-2.618-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+      </svg>
+    );
+  }
+  if (p.includes("tiktok")) {
+    return (
+      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.54-4.06-1.5-1.24-1.07-2.01-2.61-2.18-4.22-.03-.02-.06-.03-.08-.05-.04 1.7-.01 3.41-.03 5.11-.03 3.64-.17 7.42-2.16 10.51-1.62 2.58-4.43 4.23-7.53 4.23-3.14-.04-6.15-1.84-7.55-4.73-1.44-2.81-1.2-6.52.75-9.14 1.68-2.36 4.6-3.72 7.54-3.51V10c-1.47-.14-3.04.42-3.85 1.71-.87 1.3-.87 3.12-.07 4.45.74 1.34 2.29 2.14 3.83 2.01 1.55-.02 3.02-1.01 3.46-2.5.39-1.2.22-2.52.26-3.76V.02z" />
       </svg>
     );
   }
@@ -116,6 +144,13 @@ export default function Home() {
       nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
       messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
       amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
+      youtubeUrl: theme.youtubeUrl ?? "",
+      twitchUrl: theme.twitchUrl ?? "",
+      discordUrl: theme.discordUrl ?? "",
+      xUrl: theme.xUrl ?? "",
+      facebookUrl: theme.facebookUrl ?? "",
+      instagramUrl: theme.instagramUrl ?? "",
+      tiktokUrl: theme.tiktokUrl ?? "",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
@@ -125,6 +160,20 @@ export default function Home() {
       submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
       submitBtnText: theme.submitBtnText ?? "AGREE & SUPPORT ME",
     };
+  });
+
+  // 🟢 กรองหาเฉพาะช่องลิงก์โซเชียลมีเดียที่ระบุที่อยู่ URL เท่านั้น (Optional Display)
+  const socialLinks = createMemo(() => {
+    const conf = config();
+    return [
+      { platform: "youtube", url: conf.youtubeUrl },
+      { platform: "twitch", url: conf.twitchUrl },
+      { platform: "discord", url: conf.discordUrl },
+      { platform: "x", url: conf.xUrl },
+      { platform: "facebook", url: conf.facebookUrl },
+      { platform: "instagram", url: conf.instagramUrl },
+      { platform: "tiktok", url: conf.tiktokUrl },
+    ].filter((link) => link.url && link.url.trim() !== "");
   });
 
   const uniqueFonts = createMemo(() => {
@@ -347,21 +396,20 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
+                    {/* ช่องแสดงผลไอคอนโซเชียลมีเดียแบบไดนามิก */}
                     <div class="flex items-center gap-2 pt-0.5">
-                      <For each={config().socialLinks || []}>
+                      <For each={socialLinks()}>
                         {(link) => (
-                          <Show when={link.url}>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
-                              style={{ color: config().generalTextColor }}
-                              title={link.platform}
-                            >
-                              {getSocialIcon(link.platform)}
-                            </a>
-                          </Show>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
+                            style={{ color: config().generalTextColor }}
+                            title={link.platform}
+                          >
+                            {getSocialIcon(link.platform)}
+                          </a>
                         )}
                       </For>
                     </div>
@@ -398,7 +446,6 @@ export default function Home() {
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
-                  // 🟢 ตัวหนังสือคำใบ้ (Placeholder) เปลี่ยนมาผูกกับสีของกล่องกรอกข้อมูล inputTextColor ตามสั่งค่ะ
                   "--placeholder-color": hexToRgba(
                     config().inputTextColor,
                     0.6,
@@ -439,7 +486,6 @@ export default function Home() {
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnColor
                                 : config().presetBorderColor,
-                            // 🟢 เมื่อยังไม่ได้คลิก สีข้อความของปุ่ม Preset จะผูกกับสี inputTextColor ตามสั่งเพื่อความสว่างคมชัดค่ะ
                             color:
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnTextColor
@@ -521,7 +567,6 @@ export default function Home() {
                     value={message()}
                   ></textarea>
 
-                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ ผูกตามสีของอินพุต inputTextColor ค่ะ */}
                   <div
                     class="absolute bottom-2.5 right-4 text-[10px] select-none"
                     style={{ color: hexToRgba(config().inputTextColor, 0.6) }}
@@ -539,7 +584,6 @@ export default function Home() {
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
-                      // 🟢 สีข้อความปุ่ม Toggle แถบ TOS เปลี่ยนมาผูกกับสีของกล่องกรอกข้อมูล inputTextColor ตามสั่งค่ะ
                       color: config().inputTextColor,
                     }}
                   >
@@ -555,7 +599,6 @@ export default function Home() {
                       style={{
                         "background-color": config().cardBgColor,
                         "border-color": config().cardBorderColor,
-                        // 🟢 ข้อความเนื้อหาด้านในเมื่อคลี่ลงมา จะผูกตามสี generalTextColor เสมอค่ะ
                         color: config().generalTextColor,
                       }}
                     >

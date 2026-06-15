@@ -35,7 +35,13 @@ export default function Admin() {
 
   const [config, setConfig] = createStore<any>({
     presetAmounts: [100, 300, 500, 1000],
-    socialLinks: [],
+    youtubeUrl: "",
+    twitchUrl: "",
+    discordUrl: "",
+    xUrl: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    tiktokUrl: "",
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -54,7 +60,13 @@ export default function Admin() {
             theme.presetAmounts && theme.presetAmounts.length === 4
               ? [...theme.presetAmounts]
               : [100, 300, 500, 1000],
-          socialLinks: theme.socialLinks ? [...theme.socialLinks] : [],
+          youtubeUrl: theme.youtubeUrl ?? "",
+          twitchUrl: theme.twitchUrl ?? "",
+          discordUrl: theme.discordUrl ?? "",
+          xUrl: theme.xUrl ?? "",
+          facebookUrl: theme.facebookUrl ?? "",
+          instagramUrl: theme.instagramUrl ?? "",
+          tiktokUrl: theme.tiktokUrl ?? "",
         }),
       );
     }
@@ -95,10 +107,10 @@ export default function Admin() {
         sessionStorage.setItem("admin_pass_key", password());
         setIsAuthenticated(true);
       } else {
-        setAuthError(resData.error || "รหัสผ่านไม่ถูกต้องค่ะ");
+        setAuthError(resData.error || "Incorrect password. Please try again.");
       }
     } catch {
-      setAuthError("เกิดข้อผิดพลาดในการเชื่อมต่อด่านตรวจรหัสผ่าน");
+      setAuthError("Auth server connection timeout.");
     } finally {
       setAuthLoading(false);
     }
@@ -115,15 +127,14 @@ export default function Admin() {
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
-        alert("🎉 อัปเดตสไตล์และบันทึกขึ้นระบบคลาวด์เรียบร้อยแล้วค่ะ!");
+        alert("🎉 Styles updated and saved to the cloud successfully!");
       } else {
         alert(
-          resData.error ||
-            "บันทึกไม่สำเร็จเนื่องจากพารามิเตอร์ไม่ผ่านด่านตรวจความปลอดภัยค่ะ",
+          resData.error || "Save failed. Invalid style parameters detected.",
         );
       }
     } catch {
-      alert("ระบบหลังบ้านไม่ว่างชั่วคราวค่ะ");
+      alert("System error. Please try again later.");
     } finally {
       setSaveLoading(false);
     }
@@ -131,7 +142,7 @@ export default function Admin() {
 
   return (
     <>
-      <Title>ระบบหลังบ้านผู้ดูแลระบบ 🎨</Title>
+      <Title>Admin Dashboard 🎨</Title>
       <For each={uniqueFonts()}>
         {(font) => (
           <Link
@@ -141,7 +152,7 @@ export default function Admin() {
         )}
       </For>
 
-      {/* 🔐 หน้าล็อกอินดีไซน์โคซี่นวลตา */}
+      {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form
@@ -151,10 +162,10 @@ export default function Admin() {
             <div class="text-center">
               <span class="text-4xl">☕</span>
               <h1 class="text-xl font-black mt-3 text-[#2C2520]">
-                แผงควบคุมแอดมินหลังบ้าน
+                Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                กรุณาระบุรหัสผ่านลับเพื่อจัดเก็บและแก้สไตล์เว็บ
+                Enter your password to customize system styles.
               </p>
             </div>
             <Show when={authError()}>
@@ -184,13 +195,13 @@ export default function Admin() {
               disabled={authLoading()}
               class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
             >
-              {authLoading() ? "กำลังล็อกอิน... ⏳" : "เข้าสู่แผงจัดการสไตล์"}
+              {authLoading() ? "Logging in... ⏳" : "Login to Dashboard"}
             </button>
           </form>
         </div>
       </Show>
 
-      {/* 💻 แผงควบคุมดีไซน์ครีมกาแฟอุ่น นุ่มนวลตา */}
+      {/* 💻 Admin Core Workspace Panel (Cozy English Version) */}
       <div class="min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
@@ -200,7 +211,7 @@ export default function Admin() {
                 VTuber Secure Donation Settings
               </h1>
               <p class="text-[10px] text-[#7C6E65]">
-                ปรับแต่งสไตล์อย่างรวดเร็ว ปลอดภัย ไร้กล่องควบคุมรกตา
+                Customize styles and manage options seamlessly.
               </p>
             </div>
           </div>
@@ -209,42 +220,54 @@ export default function Admin() {
             disabled={saveLoading()}
             class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl cursor-pointer transition disabled:opacity-50 text-xs tracking-wider"
           >
-            {saveLoading() ? "⏳ กำลังบันทึก..." : "💾 บันทึกสไตล์ทั้งหมด"}
+            {saveLoading() ? "Saving... ⏳" : "💾 Save All Styles"}
           </button>
         </header>
 
-        {/* จัดแต่ง Responsive 2 คอลัมน์พอดิบพอดีในหนึ่งหน้าจอคอมพิวเตอร์ */}
+        {/* 2-Column Responsive Workspace Grid */}
         <div class="flex-1 max-w-7xl w-full mx-auto p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* คอลัมน์ซ้าย: ข้อมูลโปรไฟล์และข้อความ */}
+            {/* COLUMN 1: Profile & Texts Settings */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>👤</span> ข้อมูลโปรไฟล์ & ข้อความต้อนรับ
+                <span>👤</span> Profile & Welcome Text
               </h2>
 
               <div class="space-y-4">
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    ฟอนต์หลักตัวอักษร (เช่น Mitr, Kanit, Sarabun)
+                    Main Font Family
                   </label>
-                  <input
-                    type="text"
-                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
-                    value={config.mainFontFamily || ""}
-                    onInput={(e) =>
+                  <select
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    value={config.mainFontFamily || "Kanit"}
+                    onChange={(e) =>
                       setConfig("mainFontFamily", e.currentTarget.value)
                     }
-                  />
+                  >
+                    <option value="Kanit">Kanit</option>
+                    <option value="IBM Plex Sans Thai">
+                      IBM Plex Sans Thai
+                    </option>
+                    <option value="Noto Sans Thai">Noto Sans Thai</option>
+                    <option value="Mali">Mali</option>
+                    <option value="Chonburi">Chonburi</option>
+                    <option value="Pattaya">Pattaya</option>
+                    <option value="Mitr">Mitr</option>
+                    <option value="Prompt">Prompt</option>
+                    <option value="Athiti">Athiti</option>
+                    <option value="Sriracha">Sriracha</option>
+                  </select>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ชื่อ VTuber / ช่องสตรีมเมอร์
+                      Streamer / VTuber Name
                     </label>
                     <input
                       type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold"
                       value={config.vtuberName || ""}
                       onInput={(e) =>
                         setConfig("vtuberName", e.currentTarget.value)
@@ -253,7 +276,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีฟอนต์ชื่อสตรีมเมอร์
+                      Name Text Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -278,7 +301,7 @@ export default function Admin() {
 
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    ข้อความรายละเอียดต้อนรับ (About Text)
+                    Welcome Text (About)
                   </label>
                   <textarea
                     class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
@@ -293,7 +316,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ลิงก์ภาพโปรไฟล์ Avatar (วงกลม)
+                      Avatar Image Link (URL)
                     </label>
                     <input
                       type="text"
@@ -306,7 +329,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ลิงก์ภาพแบนเนอร์ด้านหลัง (Banner 4:1)
+                      Banner Image Link (URL)
                     </label>
                     <input
                       type="text"
@@ -318,21 +341,128 @@ export default function Admin() {
                     />
                   </div>
                 </div>
+
+                {/* 🟢 ส่วนกล่องตั้งค่าลิงก์ Social Media (Optional) แบบแยกชิ้นกรอกง่าย */}
+                <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
+                  <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
+                    🔗 Social Media Links (Optional)
+                  </h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        YouTube
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://youtube.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.youtubeUrl || ""}
+                        onInput={(e) =>
+                          setConfig("youtubeUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Twitch
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://twitch.tv/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.twitchUrl || ""}
+                        onInput={(e) =>
+                          setConfig("twitchUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Discord
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://discord.gg/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.discordUrl || ""}
+                        onInput={(e) =>
+                          setConfig("discordUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        X (Twitter)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://x.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.xUrl || ""}
+                        onInput={(e) =>
+                          setConfig("xUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Facebook
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://facebook.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.facebookUrl || ""}
+                        onInput={(e) =>
+                          setConfig("facebookUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Instagram
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://instagram.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.instagramUrl || ""}
+                        onInput={(e) =>
+                          setConfig("instagramUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        TikTok
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tiktok.com/@..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.tiktokUrl || ""}
+                        onInput={(e) =>
+                          setConfig("tiktokUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* คอลัมน์ขวา: การตั้งค่าสีกล่องโดเนท สีช่องกรอก และสีปุ่ม */}
+            {/* COLUMN 2: Styling & Support Presets */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>🎨</span> ระบบสีสัน & ยอดเงินสนับสนุน
+                <span>🎨</span> Styling & Support Presets
               </h2>
 
               <div class="space-y-4">
-                {/* แถวที่ 1: สีตัวอักษรภายนอกทั่วไป และสีพื้นหลังกล่อง */}
+                {/* Row 1: General text color & card background color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีตัวอักษรทั่วไป & ไอคอนโซเชียล
+                      General Text & Icons Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -355,7 +485,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีพื้นหลังการ์ด / ตัวกล่องโดเนท
+                      Card & Box Background Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -378,11 +508,11 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* 🟢 แถวที่ 2: ระบบแก้ไขสีสันของช่องกรอกข้อมูล (ป้องกันปัญหาพื้นหลังกลืนตัวอักษร) */}
+                {/* Row 2: Input background color & Input Text Color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีพื้นหลังช่องกรอกข้อมูล
+                      Input Field Background Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -405,7 +535,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีตัวอักษรในช่องกรอกข้อมูล
+                      Input Text Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -428,11 +558,11 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* แถวที่ 3: สีปุ่มสนับสนุนหลัก และสีตัวหนังสือบนปุ่ม */}
+                {/* Row 3: Submit button color & Button text color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีของปุ่มสนับสนุนหลัก
+                      Submit Button Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -455,7 +585,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีฟอนต์ตัวหนังสือบนปุ่มหลัก
+                      Submit Button Text Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -478,10 +608,10 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* แก้ไข Preset จำนวนเงินด่วน 4 ปุ่ม */}
+                {/* Quick preset amounts (THB) */}
                 <div class="border-t border-[#F0EAE1] pt-4">
                   <label class="block text-xs font-black text-[#E87A5D] uppercase tracking-wider mb-2">
-                    💵 ยอดเงินในปุ่มสนับสนุนด่วน (บาท)
+                    💵 Quick Preset Support Amounts (THB)
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <For each={[0, 1, 2, 3]}>
@@ -501,23 +631,23 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* ปรับสไตล์พื้นหลังเว็บเพจ */}
+                {/* Page background style settings */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
-                    🖼️ จัดสไตล์พื้นหลังหลักหน้าเว็บเพจ
+                    🖼/ Page Background Style
                   </label>
                   <div class="grid grid-cols-2 gap-3">
                     <button
                       class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "solid" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
                       onClick={() => setConfig("bgType", "solid")}
                     >
-                      สีทึบพื้นหลัง
+                      Solid Color
                     </button>
                     <button
                       class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "image" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
                       onClick={() => setConfig("bgType", "image")}
                     >
-                      รูปภาพวอลเปเปอร์
+                      Wallpaper Image
                     </button>
                   </div>
                   <Show
@@ -534,7 +664,7 @@ export default function Admin() {
                         />
                         <input
                           type="text"
-                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs uppercase font-mono"
                           value={config.bgColor || ""}
                           onInput={(e) =>
                             setConfig("bgColor", e.currentTarget.value)
@@ -545,7 +675,7 @@ export default function Admin() {
                   >
                     <input
                       type="text"
-                      placeholder="ระบุลิงก์รูปพื้นหลัง https://..."
+                      placeholder="Background Image URL (https://...)"
                       class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
                       value={config.bgUrl || ""}
                       onInput={(e) => setConfig("bgUrl", e.currentTarget.value)}
