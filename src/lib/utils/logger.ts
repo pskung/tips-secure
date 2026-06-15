@@ -1,5 +1,4 @@
-// 🛡️ ระบบการจัดทำ Log แบบ Zero-PII ตัดโค้ดบวมออกทั้งหมดเพื่อให้เบาหวิวและเข้าเกณฑ์ PDPA 100%
-export function safeLog(message: string, severity: 'INFO' | 'WARN' | 'ERROR' = 'INFO', rawError?: any) {
+export function safeLog(message: string, severity: "INFO" | "WARN" | "ERROR" = "INFO", rawError?: any) {
   const logPayload = {
     timestamp: new Date().toISOString(),
     severity,
@@ -7,9 +6,9 @@ export function safeLog(message: string, severity: 'INFO' | 'WARN' | 'ERROR' = '
     errorContext: rawError instanceof Error ? rawError.stack || rawError.message : undefined
   };
 
-  if (severity === 'ERROR') {
+  if (severity === "ERROR") {
     console.error(JSON.stringify(logPayload));
-  } else if (severity === 'WARN') {
+  } else if (severity === "WARN") {
     console.warn(JSON.stringify(logPayload));
   } else {
     console.log(JSON.stringify(logPayload));
