@@ -6,7 +6,7 @@ import {
   createEffect,
   For,
   Show,
-  onCleanup, // 🟢 แก้ไขปัญหาที่ 1: เพิ่มการนำเข้า onCleanup อย่างถูกต้อง
+  onCleanup,
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
@@ -54,7 +54,7 @@ export default function Admin() {
   const [authLoading, setAuthLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
 
-  // 🟢 ประตูด่านตรวจ Turnstile สำหรับหน้าจอล็อกอินแอดมิน
+  // 🟢 สำหรับประตูด่านความปลอดภัยแอดมิน
   const [adminTurnstileToken, setAdminTurnstileToken] = createSignal("");
   let adminTurnstileWidgetId: string | null = null;
 
@@ -90,38 +90,43 @@ export default function Admin() {
     ];
   });
 
-  const initAdminTurnstile = () => {
-    if (typeof window === "undefined" || !(window as any).turnstile) return;
+  // 🟢 แก้ไขสัญญาณแข่งกัน (Race Condition) ด้วยการเฝ้าดู reactive สัญญาณของ Turnstile Site Key
+  createEffect(() => {
     const siteKey = data()?.turnstileSiteKey;
-    if (!siteKey || !document.getElementById("admin-turnstile-container"))
-      return;
+    if (!siteKey) return; // 1. เฝ้ารอจนกว่าข้อมูลดึงมาจากระบบหลังบ้านสำเร็จ
 
-    try {
-      if (adminTurnstileWidgetId) {
-        (window as any).turnstile.remove(adminTurnstileWidgetId);
+    // 2. เฝ้าจับสังเกตตัวสคริปต์สากลบนเบราว์เซอร์
+    const initInterval = setInterval(() => {
+      if (typeof window !== "undefined" && (window as any).turnstile) {
+        clearInterval(initInterval);
+
+        const container = document.getElementById("admin-turnstile-container");
+        if (container) {
+          try {
+            if (adminTurnstileWidgetId) {
+              (window as any).turnstile.remove(adminTurnstileWidgetId);
+            }
+
+            adminTurnstileWidgetId = (window as any).turnstile.render(
+              "#admin-turnstile-container",
+              {
+                sitekey: siteKey,
+                theme: "light",
+                size: "flexible",
+                callback: (token: string) => setAdminTurnstileToken(token),
+                "expired-callback": () => setAdminTurnstileToken(""),
+                "error-callback": () => setAdminTurnstileToken(""),
+              },
+            );
+          } catch (err) {
+            console.error("Failed to render admin Turnstile widget:", err);
+          }
+        }
       }
+    }, 100);
 
-      adminTurnstileWidgetId = (window as any).turnstile.render(
-        "#admin-turnstile-container",
-        {
-          sitekey: siteKey,
-          theme: "light",
-          size: "flexible",
-          callback: (token: string) => {
-            setAdminTurnstileToken(token);
-          },
-          "expired-callback": () => {
-            setAdminTurnstileToken("");
-          },
-          "error-callback": () => {
-            setAdminTurnstileToken("");
-          },
-        },
-      );
-    } catch (err) {
-      console.error("Failed to initialize admin Turnstile:", err);
-    }
-  };
+    onCleanup(() => clearInterval(initInterval));
+  });
 
   onMount(() => {
     const isVerified = sessionStorage.getItem("admin_verified") === "true";
@@ -130,17 +135,6 @@ export default function Admin() {
       setPassword(storedPass);
       setIsAuthenticated(true);
     }
-
-    const checkInterval = setInterval(() => {
-      if ((window as any).turnstile) {
-        clearInterval(checkInterval);
-        initAdminTurnstile();
-      }
-    }, 100);
-
-    onCleanup(() => {
-      clearInterval(checkInterval);
-    });
   });
 
   const handleVerify = async (e: Event) => {
@@ -148,6 +142,7 @@ export default function Admin() {
     setAuthLoading(true);
     setAuthError("");
 
+    // ระบบจะสั่งล็อกอินผ่านทันทีหากเซิร์ฟเวอร์ยังไม่ได้ตั้งค่าคีย์ Turnstile (ช่วยอำนวยความสะดวกในการดีพลอยครั้งแรกแบบ open-source)
     if (data()?.turnstileSiteKey && !adminTurnstileToken()) {
       setAuthError("Please complete the security challenge first 🔒");
       setAuthLoading(false);
@@ -182,7 +177,6 @@ export default function Admin() {
     }
   };
 
-  // 🟢 แก้ไขปัญหาที่ 2: วางตรรกะจัดเก็บค่าลงบนตำแหน่งขอบเขตตัวแปร (Admin-Scope) ที่ถูกต้องสมบูรณ์
   const handleSave = async () => {
     setSaveLoading(true);
     try {
@@ -218,6 +212,13 @@ export default function Admin() {
           />
         )}
       </For>
+
+      {/* 🟢 การโหลดสคริปต์สากลของ Cloudflare Turnstile เพื่อประมวลผลบนหน้าล็อกอินแอดมิน */}
+      <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        async
+        defer
+      ></script>
 
       {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
@@ -258,7 +259,7 @@ export default function Admin() {
               />
             </div>
 
-            {/* 🟢 ส่วนแสดงประตูด่านตรวจ Turnstile สำหรับล็อกอินแอดมิน */}
+            {/* 🟢 ตัวเรนเดอร์กล่องความปลอดภัย Turnstile ส่วนแอดมิน */}
             <Show when={data()?.turnstileSiteKey}>
               <div
                 id="admin-turnstile-container"
