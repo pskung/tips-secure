@@ -14,7 +14,7 @@ import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที เพื่อสมดุลการอัปเดตสไตล์และป้องกันฐานข้อมูลล่มช่วงทราฟฟิกพุ่ง
+// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที ดึงเบื้องหลัง 7 วินาที
 const getInitialData = query(async () => {
   "use server";
   const event = getRequestEvent();
@@ -104,6 +104,7 @@ export default function Home() {
       ...theme,
       bgColor: theme.bgColor ?? "#FFFDF6",
       inputBgColor: theme.inputBgColor ?? "#f4f4f5",
+      inputTextColor: theme.inputTextColor ?? "#111111",
       inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
       cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
       cardBgColor: theme.cardBgColor ?? "#ffffff",
@@ -346,7 +347,6 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
-                    {/* ไอคอนโซเชียลควบคุมสีด้วยสีอักษรทั่วไป */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={config().socialLinks || []}>
                         {(link) => (
@@ -373,7 +373,6 @@ export default function Home() {
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
-                {/* ข้อความต้อนรับและป้ายกำกับทั้งหมดควบคุมสีด้วย สีตัวอักษรทั่วไป */}
                 <div>
                   <h2
                     class="text-xs font-black uppercase tracking-widest mb-2"
@@ -417,7 +416,7 @@ export default function Home() {
                   />
                 </div>
 
-                {/* ส่วนของ Preset ยอดเงิน และช่องกรอกแบบระบุเอง */}
+                {/* 🟢 ปุ่ม Preset ปรับปรุงใหม่: ขนาด 16px (text-base) และตัวบาง (font-normal) สอดรับสากล */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
@@ -429,7 +428,7 @@ export default function Home() {
                             setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
-                          class="py-3 text-sm font-bold border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
+                          class="py-3 text-base font-normal border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
                           style={{
                             "background-color":
                               !customActive() && amount() === String(amt)
@@ -451,6 +450,7 @@ export default function Home() {
                     </For>
                   </div>
 
+                  {/* 🟢 ช่องกรอกแบบระบุยอดเอง ปรับเป็นแบบตัวบาง (font-normal) และใช้สีตัวอักษรกล่องที่เซฟแยกได้ */}
                   <label for="custom-amount" class="sr-only">
                     Amount
                   </label>
@@ -460,10 +460,11 @@ export default function Home() {
                     min="10"
                     max="5000"
                     placeholder={config().amountPlaceholder}
-                    class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-base font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
+                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
+                      color: config().inputTextColor,
                       "--tw-ring-color": config().submitBtnColor,
                     }}
                     onInput={(e) => {
@@ -475,6 +476,7 @@ export default function Home() {
                   />
                 </div>
 
+                {/* 🟢 ช่องกรอกชื่อเล่น ปรับเป็นแบบตัวบาง และผูกสีตัวอักษรกล่อง */}
                 <label for="nickname" class="sr-only">
                   Nickname
                 </label>
@@ -483,17 +485,18 @@ export default function Home() {
                   type="text"
                   required
                   placeholder={config().nicknamePlaceholder}
-                  class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-base transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
+                  class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                   style={{
                     "background-color": config().inputBgColor,
                     "border-color": config().inputBorderColor,
+                    color: config().inputTextColor,
                     "--tw-ring-color": config().submitBtnColor,
                   }}
                   onInput={(e) => setName(e.currentTarget.value)}
                   value={name()}
                 />
 
-                {/* ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
+                {/* 🟢 ช่องกรอกข้อความอวยพร ปรับเป็นแบบตัวบาง และผูกสีตัวอักษรกล่อง */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -502,11 +505,12 @@ export default function Home() {
                     id="donor-msg"
                     placeholder={config().messagePlaceholder}
                     maxlength={255}
-                    class="w-full px-4 py-3 pb-8 rounded-xl text-slate-800 placeholder-slate-400 text-base transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none overflow-y-hidden min-h-[72px]"
+                    class="w-full px-4 py-3 pb-8 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal resize-none overflow-y-hidden min-h-[72px]"
                     rows={2}
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
+                      color: config().inputTextColor,
                       "--tw-ring-color": config().submitBtnColor,
                     }}
                     onInput={(e) => {
@@ -517,7 +521,6 @@ export default function Home() {
                     value={message()}
                   ></textarea>
 
-                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ ดักโทนด้วยสีทั่วไปจางลง */}
                   <div
                     class="absolute bottom-2.5 right-4 text-[10px] select-none"
                     style={{ color: hexToRgba(config().generalTextColor, 0.6) }}
@@ -564,7 +567,6 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* ข้อความยินยอมแบบแถวเดียว สีสอดรับกลมกลืน */}
                   <div
                     class="text-[10px] leading-normal text-center px-1"
                     style={{ color: hexToRgba(config().generalTextColor, 0.7) }}

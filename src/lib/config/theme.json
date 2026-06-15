@@ -5,6 +5,7 @@
   "bgColor": "#FFFDF6",
   "bgUrl": "",
   "inputBgColor": "#f4f4f5",
+  "inputTextColor": "#111111",
   "inputBorderColor": "#e4e4e4",
   "cardBorderColor": "#e4e4e4",
   "cardBgColor": "#ffffff",

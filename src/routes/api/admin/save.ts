@@ -3,7 +3,7 @@ import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
 
-// 🟢 ตัวกรองสไตล์ที่ผ่านการตัดฟิลด์ที่ไม่ได้ใช้ในหน้าโดเนทออกเรียบร้อยแล้ว
+// 🟢 ตัวกรองสไตล์ที่เพิ่มระบบดักจับและตรวจสอบความถูกต้องรหัสสีของช่องกรอกข้อมูล
 function validateTheme(theme: any): boolean {
   if (!theme || typeof theme !== "object") return false;
 
@@ -17,6 +17,10 @@ function validateTheme(theme: any): boolean {
     "submitBtnColor",
     "submitBtnTextColor",
     "submitBtnText",
+    "generalTextColor",
+    "cardBgColor",
+    "inputBgColor",
+    "inputTextColor",
   ];
 
   for (const key of requiredStrings) {
@@ -27,10 +31,13 @@ function validateTheme(theme: any): boolean {
   const colorKeys = [
     "bgColor",
     "inputBgColor",
+    "inputTextColor",
     "inputBorderColor",
     "cardBorderColor",
+    "cardBgColor",
     "submitBtnColor",
     "submitBtnTextColor",
+    "generalTextColor",
   ];
 
   for (const key of colorKeys) {

@@ -141,7 +141,7 @@ export default function Admin() {
         )}
       </For>
 
-      {/* 🔐 หน้าล็อกอินดีไซน์โคซี่นวลตาเข้ากับหน้าหลัก */}
+      {/* 🔐 หน้าล็อกอินดีไซน์โคซี่นวลตา */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form
@@ -190,7 +190,7 @@ export default function Admin() {
         </div>
       </Show>
 
-      {/* 💻 แผงควบคุมสไตล์หลักดีไซน์ Warm-cozy สีครีมละมุนอมเหลือง */}
+      {/* 💻 แผงควบคุมดีไซน์ครีมกาแฟอุ่น นุ่มนวลตา */}
       <div class="min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
@@ -200,7 +200,7 @@ export default function Admin() {
                 VTuber Secure Donation Settings
               </h1>
               <p class="text-[10px] text-[#7C6E65]">
-                ปรับแต่งสไตล์ บันทึกรวดเร็ว เคลียร์ข้อมูลไร้รอยต่อ
+                ปรับแต่งสไตล์อย่างรวดเร็ว ปลอดภัย ไร้กล่องควบคุมรกตา
               </p>
             </div>
           </div>
@@ -213,10 +213,10 @@ export default function Admin() {
           </button>
         </header>
 
-        {/* 2-Column Responsive Workspace Grid บน Desktop ปรากฏครบถ้วนบนหน้าเดียว */}
+        {/* จัดแต่ง Responsive 2 คอลัมน์พอดิบพอดีในหนึ่งหน้าจอคอมพิวเตอร์ */}
         <div class="flex-1 max-w-7xl w-full mx-auto p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* คอลัมน์ฝั่งซ้าย: Profile & Content Texts Settings */}
+            {/* คอลัมน์ซ้าย: ข้อมูลโปรไฟล์และข้อความ */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
                 <span>👤</span> ข้อมูลโปรไฟล์ & ข้อความต้อนรับ
@@ -225,7 +225,7 @@ export default function Admin() {
               <div class="space-y-4">
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    ฟอนต์ตัวอักษรหลัก (เช่น Mitr, Kanit, Sarabun)
+                    ฟอนต์หลักตัวอักษร (เช่น Mitr, Kanit, Sarabun)
                   </label>
                   <input
                     type="text"
@@ -240,7 +240,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ชื่อ VTuber / สตรีมเมอร์
+                      ชื่อ VTuber / ช่องสตรีมเมอร์
                     </label>
                     <input
                       type="text"
@@ -253,7 +253,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีของตัวอักษรชื่อสตรีมเมอร์
+                      สีฟอนต์ชื่อสตรีมเมอร์
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -278,7 +278,7 @@ export default function Admin() {
 
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    ข้อความรายละเอียดสนับสนุน (About Text)
+                    ข้อความรายละเอียดต้อนรับ (About Text)
                   </label>
                   <textarea
                     class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
@@ -293,7 +293,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ลิงก์อวาตาร์รูปโปรไฟล์กลม
+                      ลิงก์ภาพโปรไฟล์ Avatar (วงกลม)
                     </label>
                     <input
                       type="text"
@@ -306,7 +306,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      ลิงก์ภาพแบนเนอร์หลัง (Banner 4:1)
+                      ลิงก์ภาพแบนเนอร์ด้านหลัง (Banner 4:1)
                     </label>
                     <input
                       type="text"
@@ -321,18 +321,18 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* คอลัมน์ฝั่งขวา: Form Colors & Backdrops Settings */}
+            {/* คอลัมน์ขวา: การตั้งค่าสีกล่องโดเนท สีช่องกรอก และสีปุ่ม */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>💵</span> การตั้งค่าฟอร์มรับเงิน & สีสันทั้งหมด
+                <span>🎨</span> ระบบสีสัน & ยอดเงินสนับสนุน
               </h2>
 
               <div class="space-y-4">
+                {/* แถวที่ 1: สีตัวอักษรภายนอกทั่วไป และสีพื้นหลังกล่อง */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* 🟢 การตั้งค่าสีตัวอักษรที่เหลือทั้งหมด */}
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีตัวอักษรอื่นทั้งหมด & ไอคอนโซเชียล
+                      สีตัวอักษรทั่วไป & ไอคอนโซเชียล
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -353,11 +353,9 @@ export default function Admin() {
                       />
                     </div>
                   </div>
-
-                  {/* 🟢 การตั้งค่าสีกล่องกระดานหน้าหลัก */}
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีพื้นหลังการ์ด / สีกล่องโดเนท
+                      สีพื้นหลังการ์ด / ตัวกล่องโดเนท
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -380,10 +378,61 @@ export default function Admin() {
                   </div>
                 </div>
 
+                {/* 🟢 แถวที่ 2: ระบบแก้ไขสีสันของช่องกรอกข้อมูล (ป้องกันปัญหาพื้นหลังกลืนตัวอักษร) */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีปุ่มสนับสนุนหลัก
+                      สีพื้นหลังช่องกรอกข้อมูล
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.inputBgColor || ""}
+                        onInput={(e) =>
+                          setConfig("inputBgColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.inputBgColor || ""}
+                        onInput={(e) =>
+                          setConfig("inputBgColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      สีตัวอักษรในช่องกรอกข้อมูล
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.inputTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("inputTextColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.inputTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("inputTextColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* แถวที่ 3: สีปุ่มสนับสนุนหลัก และสีตัวหนังสือบนปุ่ม */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      สีของปุ่มสนับสนุนหลัก
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -406,7 +455,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      สีตัวอักษรบนปุ่มสนับสนุน
+                      สีฟอนต์ตัวหนังสือบนปุ่มหลัก
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -429,30 +478,17 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <div>
-                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    ข้อความในปุ่มสนับสนุนหลัก
-                  </label>
-                  <input
-                    type="text"
-                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
-                    value={config.submitBtnText || ""}
-                    onInput={(e) =>
-                      setConfig("submitBtnText", e.currentTarget.value)
-                    }
-                  />
-                </div>
-
-                <div class="border-t border-[#F0EAE1] pt-3.5">
+                {/* แก้ไข Preset จำนวนเงินด่วน 4 ปุ่ม */}
+                <div class="border-t border-[#F0EAE1] pt-4">
                   <label class="block text-xs font-black text-[#E87A5D] uppercase tracking-wider mb-2">
-                    💵 ยอดเงิน Preset โดเนทด่วน (บาท)
+                    💵 ยอดเงินในปุ่มสนับสนุนด่วน (บาท)
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <For each={[0, 1, 2, 3]}>
                       {(idx) => (
                         <input
                           type="number"
-                          class="w-full px-2 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-center text-xs font-black"
+                          class="w-full px-2 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-center text-sm font-black"
                           value={config.presetAmounts?.[idx] || 0}
                           onInput={(e) => {
                             const nextAmounts = [...config.presetAmounts];
@@ -465,48 +501,20 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-[#F0EAE1] pt-3.5">
-                  <div>
-                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      คำบอกใบ้ช่องชื่อเล่น
-                    </label>
-                    <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs"
-                      value={config.nicknamePlaceholder || ""}
-                      onInput={(e) =>
-                        setConfig("nicknamePlaceholder", e.currentTarget.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      คำบอกใบ้ช่องระบุเงินเอง
-                    </label>
-                    <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs"
-                      value={config.amountPlaceholder || ""}
-                      onInput={(e) =>
-                        setConfig("amountPlaceholder", e.currentTarget.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div class="border-t border-[#F0EAE1] pt-3.5 space-y-3">
+                {/* ปรับสไตล์พื้นหลังเว็บเพจ */}
+                <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
-                    🖼️ สไตล์พื้นหลังหลักหน้าเว็บเพจ
+                    🖼️ จัดสไตล์พื้นหลังหลักหน้าเว็บเพจ
                   </label>
                   <div class="grid grid-cols-2 gap-3">
                     <button
-                      class={`py-2 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "solid" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
+                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "solid" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
                       onClick={() => setConfig("bgType", "solid")}
                     >
                       สีทึบพื้นหลัง
                     </button>
                     <button
-                      class={`py-2 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "image" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
+                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "image" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
                       onClick={() => setConfig("bgType", "image")}
                     >
                       รูปภาพวอลเปเปอร์
@@ -526,7 +534,7 @@ export default function Admin() {
                         />
                         <input
                           type="text"
-                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs uppercase font-mono"
+                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
                           value={config.bgColor || ""}
                           onInput={(e) =>
                             setConfig("bgColor", e.currentTarget.value)
