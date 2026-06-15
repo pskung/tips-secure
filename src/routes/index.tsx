@@ -398,8 +398,9 @@ export default function Home() {
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
+                  // 🟢 ตัวหนังสือคำใบ้ (Placeholder) เปลี่ยนมาผูกกับสีของกล่องกรอกข้อมูล inputTextColor ตามสั่งค่ะ
                   "--placeholder-color": hexToRgba(
-                    config().generalTextColor,
+                    config().inputTextColor,
                     0.6,
                   ),
                   "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
@@ -416,7 +417,7 @@ export default function Home() {
                   />
                 </div>
 
-                {/* 🟢 ปุ่ม Preset ปรับปรุงใหม่: ขนาด 16px (text-base) และตัวบาง (font-normal) สอดรับสากล */}
+                {/* ส่วนของ Preset ยอดเงินสนับสนุน */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
@@ -438,10 +439,11 @@ export default function Home() {
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnColor
                                 : config().presetBorderColor,
+                            // 🟢 เมื่อยังไม่ได้คลิก สีข้อความของปุ่ม Preset จะผูกกับสี inputTextColor ตามสั่งเพื่อความสว่างคมชัดค่ะ
                             color:
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnTextColor
-                                : config().generalTextColor,
+                                : config().inputTextColor,
                           }}
                         >
                           {amt}฿
@@ -450,7 +452,6 @@ export default function Home() {
                     </For>
                   </div>
 
-                  {/* 🟢 ช่องกรอกแบบระบุยอดเอง ปรับเป็นแบบตัวบาง (font-normal) และใช้สีตัวอักษรกล่องที่เซฟแยกได้ */}
                   <label for="custom-amount" class="sr-only">
                     Amount
                   </label>
@@ -476,7 +477,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* 🟢 ช่องกรอกชื่อเล่น ปรับเป็นแบบตัวบาง และผูกสีตัวอักษรกล่อง */}
                 <label for="nickname" class="sr-only">
                   Nickname
                 </label>
@@ -496,7 +496,7 @@ export default function Home() {
                   value={name()}
                 />
 
-                {/* 🟢 ช่องกรอกข้อความอวยพร ปรับเป็นแบบตัวบาง และผูกสีตัวอักษรกล่อง */}
+                {/* ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -521,24 +521,26 @@ export default function Home() {
                     value={message()}
                   ></textarea>
 
+                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ ผูกตามสีของอินพุต inputTextColor ค่ะ */}
                   <div
                     class="absolute bottom-2.5 right-4 text-[10px] select-none"
-                    style={{ color: hexToRgba(config().generalTextColor, 0.6) }}
+                    style={{ color: hexToRgba(config().inputTextColor, 0.6) }}
                   >
                     {255 - message().length}
                   </div>
                 </div>
 
-                {/* ข้อตกลงและเงื่อนไข (คงความตัวจิ๋วเอาไว้ตามเดิม) */}
+                {/* แถบเปิดแสดง TOS */}
                 <div class="space-y-2">
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
-                    class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:bg-slate-50"
+                    class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
-                      color: config().generalTextColor,
+                      // 🟢 สีข้อความปุ่ม Toggle แถบ TOS เปลี่ยนมาผูกกับสีของกล่องกรอกข้อมูล inputTextColor ตามสั่งค่ะ
+                      color: config().inputTextColor,
                     }}
                   >
                     <span>Terms & Privacy Policy (TOS & PDPA)</span>
@@ -553,7 +555,8 @@ export default function Home() {
                       style={{
                         "background-color": config().cardBgColor,
                         "border-color": config().cardBorderColor,
-                        color: hexToRgba(config().generalTextColor, 0.8),
+                        // 🟢 ข้อความเนื้อหาด้านในเมื่อคลี่ลงมา จะผูกตามสี generalTextColor เสมอค่ะ
+                        color: config().generalTextColor,
                       }}
                     >
                       <p>
@@ -575,7 +578,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
-                      class="font-bold underline cursor-pointer hover:text-slate-800 text-[10px]"
+                      class="font-bold underline cursor-pointer text-[10px]"
                       style={{ color: config().generalTextColor }}
                     >
                       Terms & Policy
