@@ -3,7 +3,7 @@ import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
 
-// 🟢 ตัวกรองความถูกต้องและป้องกันสคริปต์แปลกปลอมบนโครงสร้างสไตล์แต่งเว็บ (Zero-Dependency Schema Validator)
+// 🟢 ตัวกรองสไตล์ที่ผ่านการตัดฟิลด์ที่ไม่ได้ใช้ในหน้าโดเนทออกเรียบร้อยแล้ว
 function validateTheme(theme: any): boolean {
   if (!theme || typeof theme !== "object") return false;
 
@@ -11,12 +11,8 @@ function validateTheme(theme: any): boolean {
     "vtuberName",
     "bgColor",
     "welcomeText",
-    "nicknameLabel",
     "nicknamePlaceholder",
-    "messageLabel",
     "messagePlaceholder",
-    "presetLabel",
-    "amountLabel",
     "amountPlaceholder",
     "submitBtnColor",
     "submitBtnTextColor",
@@ -30,10 +26,9 @@ function validateTheme(theme: any): boolean {
   const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
   const colorKeys = [
     "bgColor",
-    "cardBgColor",
-    "cardBorderColor",
-    "profileAreaBgColor",
     "inputBgColor",
+    "inputBorderColor",
+    "cardBorderColor",
     "submitBtnColor",
     "submitBtnTextColor",
   ];
@@ -60,7 +55,6 @@ export async function POST(event: APIEvent) {
       event.request.headers.get("x-forwarded-proto") || url.protocol;
     const expectedOrigin = `${protocol}://${host}`;
 
-    // 🟢 CSRF Fail-Closed: หากไม่มีหัวกระดาษ Origin ส่งมาเลยให้ปฏิเสธคำขอทันที
     if (!origin) {
       return new Response(
         JSON.stringify({
@@ -115,7 +109,6 @@ export async function POST(event: APIEvent) {
     }
 
     const store = getStore("donation_store");
-    // 🟢 ค้นหาโดยอาศัยคีย์หลักโดยตรง ไม่ต้องดึง JSON Body ด้านในมา Parse ให้กินเวลาประมวลผล
     const sessionExists = await store.get(
       `session:${expiresAt}:${sessionToken}`,
     );
@@ -139,7 +132,6 @@ export async function POST(event: APIEvent) {
 
     const { config: newTheme } = await event.request.json();
 
-    // 🟢 ทำการตรวจสอบความปลอดภัยของโครงสร้างธีมก่อนจัดเก็บลงเซิร์ฟเวอร์
     if (!validateTheme(newTheme)) {
       safeLog(
         "Security Alert: Malformed theme config payload rejected",

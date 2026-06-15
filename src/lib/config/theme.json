@@ -12,11 +12,8 @@
   "mainFontFamily": "Kanit",
   "welcomeText": "Hi! If you want to support my content on YouTube and podcasts, you're on the right page! You can send me a support here. Thank you! 💖",
   "welcomeColor": "#222222",
-  "nicknameLabel": "Nickname",
   "nicknamePlaceholder": "Your nickname...",
-  "messageLabel": "Message",
   "messagePlaceholder": "Write a message...",
-  "amountLabel": "Amount",
   "amountPlaceholder": "Min 10 THB...",
   "placeholderColor": "#a1a1aa",
   "socialLinks": [
