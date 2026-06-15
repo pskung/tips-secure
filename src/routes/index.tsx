@@ -14,7 +14,7 @@ import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที ดึงเบื้องหลัง 7 วินาที เพื่อสมดุลการอัปเดตสไตล์และป้องกันฐานข้อมูลล่มช่วงทราฟฟิกพุ่ง
+// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที เพื่อสมดุลการอัปเดตสไตล์และป้องกันฐานข้อมูลล่มช่วงทราฟฟิกพุ่ง
 const getInitialData = query(async () => {
   "use server";
   const event = getRequestEvent();
@@ -43,7 +43,7 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
+// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -106,20 +106,19 @@ export default function Home() {
       inputBgColor: theme.inputBgColor ?? "#f4f4f5",
       inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
       cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
+      cardBgColor: theme.cardBgColor ?? "#ffffff",
       vtuberName: theme.vtuberName ?? "Teacher Stefano",
       nameColor: theme.nameColor ?? "#111111",
-      welcomeColor: theme.welcomeColor ?? "#222222",
+      generalTextColor: theme.generalTextColor ?? "#222222",
       mainFontFamily: theme.mainFontFamily ?? "Kanit",
       welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
       nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
       messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
       amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
-      placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
           : [100, 300, 500, 1000],
-      presetBtnColor: theme.presetBtnColor ?? "#ffffff",
       presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
       submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
       submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
@@ -137,6 +136,22 @@ export default function Home() {
       ),
     ];
   });
+
+  const hexToRgba = (hex: string, opacity: number): string => {
+    if (!hex) return `rgba(255, 255, 255, ${opacity})`;
+    let cleanHex = hex.trim().replace("#", "");
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex
+        .split("")
+        .map((char) => char + char)
+        .join("");
+    }
+    if (cleanHex.length !== 6) return hex;
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
 
   const sanitizeUrl = (url: string | undefined): string => {
     if (!url) return "";
@@ -306,8 +321,11 @@ export default function Home() {
             {/* COLUMN 1 (About - Left Side) */}
             <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
-                class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
-                style={{ "border-color": config().cardBorderColor }}
+                class="p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col space-y-4 text-left"
+                style={{
+                  "border-color": config().cardBorderColor,
+                  "background-color": config().cardBgColor,
+                }}
               >
                 <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
@@ -328,6 +346,7 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
+                    {/* ไอคอนโซเชียลควบคุมสีด้วยสีอักษรทั่วไป */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={config().socialLinks || []}>
                         {(link) => (
@@ -336,7 +355,8 @@ export default function Home() {
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              class="p-1 rounded-lg transition-colors hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900"
+                              class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
+                              style={{ color: config().generalTextColor }}
                               title={link.platform}
                             >
                               {getSocialIcon(link.platform)}
@@ -353,16 +373,17 @@ export default function Home() {
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
+                {/* ข้อความต้อนรับและป้ายกำกับทั้งหมดควบคุมสีด้วย สีตัวอักษรทั่วไป */}
                 <div>
                   <h2
                     class="text-xs font-black uppercase tracking-widest mb-2"
-                    style={{ color: config().nameColor }}
+                    style={{ color: config().generalTextColor }}
                   >
                     About {config().vtuberName}
                   </h2>
                   <p
                     class="text-xs sm:text-sm leading-relaxed whitespace-pre-line"
-                    style={{ color: config().welcomeColor }}
+                    style={{ color: config().generalTextColor }}
                   >
                     {config().welcomeText}
                   </p>
@@ -374,10 +395,14 @@ export default function Home() {
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
-                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3.5 bg-white relative overflow-hidden"
+                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3.5 relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
-                  "--placeholder-color": config().placeholderColor,
+                  "background-color": config().cardBgColor,
+                  "--placeholder-color": hexToRgba(
+                    config().generalTextColor,
+                    0.6,
+                  ),
                   "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
                 }}
               >
@@ -409,7 +434,7 @@ export default function Home() {
                             "background-color":
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnColor
-                                : config().presetBtnColor,
+                                : config().inputBgColor,
                             "border-color":
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnColor
@@ -417,7 +442,7 @@ export default function Home() {
                             color:
                               !customActive() && amount() === String(amt)
                                 ? config().submitBtnTextColor
-                                : "#111111",
+                                : config().generalTextColor,
                           }}
                         >
                           {amt}฿
@@ -450,7 +475,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* ช่องกรอกชื่อเล่น (ขนาดมาตรฐาน 16px สำหรับเบราว์เซอร์สากล) */}
                 <label for="nickname" class="sr-only">
                   Nickname
                 </label>
@@ -493,8 +517,11 @@ export default function Home() {
                     value={message()}
                   ></textarea>
 
-                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ เพื่อความสวยสะอาดตา */}
-                  <div class="absolute bottom-2.5 right-4 text-[10px] text-slate-400 select-none">
+                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ ดักโทนด้วยสีทั่วไปจางลง */}
+                  <div
+                    class="absolute bottom-2.5 right-4 text-[10px] select-none"
+                    style={{ color: hexToRgba(config().generalTextColor, 0.6) }}
+                  >
                     {255 - message().length}
                   </div>
                 </div>
@@ -508,7 +535,7 @@ export default function Home() {
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
-                      color: config().nameColor,
+                      color: config().generalTextColor,
                     }}
                   >
                     <span>Terms & Privacy Policy (TOS & PDPA)</span>
@@ -518,7 +545,14 @@ export default function Home() {
                   </button>
 
                   <Show when={isTosExpanded()}>
-                    <div class="p-2.5 rounded-xl border bg-white space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] text-slate-600 transition-all duration-300">
+                    <div
+                      class="p-2.5 rounded-xl border space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
+                      style={{
+                        "background-color": config().cardBgColor,
+                        "border-color": config().cardBorderColor,
+                        color: hexToRgba(config().generalTextColor, 0.8),
+                      }}
+                    >
                       <p>
                         <strong>1. Non-Refundable:</strong> All support is
                         voluntary and non-refundable.
@@ -530,13 +564,17 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* 🟢 ย่นข้อความกฎหมายให้สั้นกระชับที่สุด เพื่อให้แสดงผลแถวเดียวสวยงามพอดิบพอดี */}
-                  <div class="text-[10px] leading-normal text-slate-500 text-center px-1">
+                  {/* ข้อความยินยอมแบบแถวเดียว สีสอดรับกลมกลืน */}
+                  <div
+                    class="text-[10px] leading-normal text-center px-1"
+                    style={{ color: hexToRgba(config().generalTextColor, 0.7) }}
+                  >
                     By supporting, you agree to our{" "}
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
                       class="font-bold underline cursor-pointer hover:text-slate-800 text-[10px]"
+                      style={{ color: config().generalTextColor }}
                     >
                       Terms & Policy
                     </button>
