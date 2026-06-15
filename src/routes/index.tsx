@@ -179,7 +179,6 @@ export default function Home() {
 
   onMount(() => {
     setRenderTime(Date.now());
-
     setAmount("");
     setCustomAmountVal("");
 
@@ -304,7 +303,7 @@ export default function Home() {
         {/* Content Area Wrapper */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
           <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            {/* COLUMN 1 (ฝั่งซ้าย - About) */}
+            {/* COLUMN 1 (About - Left Side) */}
             <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
@@ -371,7 +370,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* COLUMN 2 (ฝั่งขวา - ฟอร์มรับเงินโดเนท) */}
+            {/* COLUMN 2 (Donation Panel - Right Side) */}
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
@@ -393,6 +392,7 @@ export default function Home() {
                   />
                 </div>
 
+                {/* ส่วนของ Preset ยอดเงิน และช่องกรอกแบบระบุเอง */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
@@ -404,7 +404,7 @@ export default function Home() {
                             setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
-                          class="py-2.5 text-xs font-black border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
+                          class="py-3 text-sm font-bold border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
                           style={{
                             "background-color":
                               !customActive() && amount() === String(amt)
@@ -435,7 +435,7 @@ export default function Home() {
                     min="10"
                     max="5000"
                     placeholder={config().amountPlaceholder}
-                    class="w-full px-4 py-2.5 rounded-xl text-slate-800 placeholder-slate-400 text-xs font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
+                    class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-base font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
@@ -450,6 +450,7 @@ export default function Home() {
                   />
                 </div>
 
+                {/* ช่องกรอกชื่อเล่น (ขนาดมาตรฐาน 16px สำหรับเบราว์เซอร์สากล) */}
                 <label for="nickname" class="sr-only">
                   Nickname
                 </label>
@@ -458,7 +459,7 @@ export default function Home() {
                   type="text"
                   required
                   placeholder={config().nicknamePlaceholder}
-                  class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
+                  class="w-full px-4 py-3 rounded-xl text-slate-800 placeholder-slate-400 text-base transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)]"
                   style={{
                     "background-color": config().inputBgColor,
                     "border-color": config().inputBorderColor,
@@ -468,7 +469,7 @@ export default function Home() {
                   value={name()}
                 />
 
-                {/* กล่องกรอกข้อความโดเนทปรับปรุงให้ยืดหยุ่น Auto-expand ไร้แถบเลื่อนแนวตั้ง */}
+                {/* ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -477,7 +478,7 @@ export default function Home() {
                     id="donor-msg"
                     placeholder={config().messagePlaceholder}
                     maxlength={255}
-                    class="w-full px-4 py-3 pb-7 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none overflow-y-hidden min-h-[64px]"
+                    class="w-full px-4 py-3 pb-8 rounded-xl text-slate-800 placeholder-slate-400 text-base transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none overflow-y-hidden min-h-[72px]"
                     rows={2}
                     style={{
                       "background-color": config().inputBgColor,
@@ -486,20 +487,19 @@ export default function Home() {
                     }}
                     onInput={(e) => {
                       setMessage(e.currentTarget.value);
-                      // คำนวณความสูงให้ยืดขยายตามจำนวนตัวอักษรโดยไม่สร้าง Scrollbar
                       e.currentTarget.style.height = "auto";
                       e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
                     }}
                     value={message()}
                   ></textarea>
 
-                  {/* แสดงผลเฉพาะยอดจำนวนคำที่คงเหลือเพียงตัวเลขเดี่ยวๆ เสมือนกล่องพิมพ์สากล */}
-                  <div class="absolute bottom-1.5 right-3 text-[9px] text-slate-400 select-none">
+                  {/* แสดงจำนวนคำคงเหลือเดี่ยวๆ เพื่อความสวยสะอาดตา */}
+                  <div class="absolute bottom-2.5 right-4 text-[10px] text-slate-400 select-none">
                     {255 - message().length}
                   </div>
                 </div>
 
-                {/* แถบ TOS และข้อตกลงแบบมินิมอล */}
+                {/* ข้อตกลงและเงื่อนไข (คงความตัวจิ๋วเอาไว้ตามเดิม) */}
                 <div class="space-y-2">
                   <button
                     type="button"
@@ -530,21 +530,21 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* 🟢 ข้อความ PDPA Consent ปรับปรุงใหม่ให้สั้นลงไม่เกิน 2 บรรทัดและถูกต้องตามกฎหมาย */}
-                  <div class="text-[9px] leading-snug text-slate-500 text-center px-1">
-                    By clicking "Agree & Support Me", you agree to our{" "}
+                  {/* 🟢 ย่นข้อความกฎหมายให้สั้นกระชับที่สุด เพื่อให้แสดงผลแถวเดียวสวยงามพอดิบพอดี */}
+                  <div class="text-[10px] leading-normal text-slate-500 text-center px-1">
+                    By supporting, you agree to our{" "}
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
-                      class="font-bold underline cursor-pointer hover:text-slate-800"
+                      class="font-bold underline cursor-pointer hover:text-slate-800 text-[10px]"
                     >
-                      Terms & Privacy Policy
+                      Terms & Policy
                     </button>
                     .
                   </div>
                 </div>
 
-                {/* ปุ่มยืนยันหลัก */}
+                {/* ปุ่มหลักยินยอมและสนับสนุน */}
                 <button
                   type="submit"
                   disabled={
@@ -552,7 +552,7 @@ export default function Home() {
                     cooldownRemaining() > 0 ||
                     (data()?.turnstileSiteKey !== "" && !turnstileToken())
                   }
-                  class="w-full py-3.5 text-xs font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
+                  class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                   style={{
                     "background-color":
                       cooldownRemaining() > 0
@@ -569,7 +569,7 @@ export default function Home() {
                   </Show>
                 </button>
 
-                {/* Cloudflare Turnstile Widget */}
+                {/* Cloudflare Turnstile */}
                 <Show when={data()?.turnstileSiteKey}>
                   <div
                     id="turnstile-container"
