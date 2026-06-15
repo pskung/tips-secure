@@ -7,7 +7,7 @@ import {
   For,
   Show,
 } from "solid-js";
-import { Title, Link } from "@solidjs/meta";
+import { Title, Link, Style } from "@solidjs/meta"; // 🟢 นำเข้า Style เพื่อเขียนกฎควบคุมฟอนต์สากลค่ะ
 import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import { getRequestEvent } from "solid-js/web";
@@ -43,7 +43,7 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดครอบคลุม 7 เครือข่ายตามคำขอค่ะ (Inline SVGs Helper)
+// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดครอบคลุม 7 เครือข่าย
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -162,7 +162,6 @@ export default function Home() {
     };
   });
 
-  // 🟢 กรองหาเฉพาะช่องลิงก์โซเชียลมีเดียที่ระบุที่อยู่ URL เท่านั้น (Optional Display)
   const socialLinks = createMemo(() => {
     const conf = config();
     return [
@@ -335,6 +334,14 @@ export default function Home() {
           />
         )}
       </For>
+      {/* 🟢 บังคับให้ช่องกรอกข้อมูลและปุ่มทั้งหมดดึงค่าฟอนต์สากลไปใช้โดยพลการ (CSS Inheritance Fix) */}
+      <Style>
+        {`
+          input, textarea, button, select {
+            font-family: '${config().mainFontFamily}', sans-serif !important;
+          }
+        `}
+      </Style>
       <script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         async
@@ -396,7 +403,6 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
-                    {/* ช่องแสดงผลไอคอนโซเชียลมีเดียแบบไดนามิก */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={socialLinks()}>
                         {(link) => (
