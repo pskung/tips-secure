@@ -98,7 +98,6 @@ export default function Home() {
 
   let turnstileWidgetId: string | null = null;
 
-  // ลบตัวแปรที่ไม่ได้อ้างอิงใช้งานจริงในหน้าหลักออกอย่างหมดจด
   const config = createMemo(() => {
     const theme = data()?.theme || {};
     return {
@@ -124,7 +123,7 @@ export default function Home() {
       presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
       submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
       submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "ACCEPT & SUPPORT ME",
+      submitBtnText: theme.submitBtnText ?? "AGREE & SUPPORT ME",
     };
   });
 
@@ -138,22 +137,6 @@ export default function Home() {
       ),
     ];
   });
-
-  const hexToRgba = (hex: string, opacity: number): string => {
-    if (!hex) return `rgba(255, 255, 255, ${opacity})`;
-    let cleanHex = hex.trim().replace("#", "");
-    if (cleanHex.length === 3) {
-      cleanHex = cleanHex
-        .split("")
-        .map((char) => char + char)
-        .join("");
-    }
-    if (cleanHex.length !== 6) return hex;
-    const r = parseInt(cleanHex.substring(0, 2), 16);
-    const g = parseInt(cleanHex.substring(2, 4), 16);
-    const b = parseInt(cleanHex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
 
   const sanitizeUrl = (url: string | undefined): string => {
     if (!url) return "";
@@ -197,7 +180,6 @@ export default function Home() {
   onMount(() => {
     setRenderTime(Date.now());
 
-    // 🟢 ไม่ระบุจำนวนเงิน 100฿ อัตโนมัติ ปล่อยเป็นฟอร์มว่างตอนโหลดตามสั่งเลยค่ะ
     setAmount("");
     setCustomAmountVal("");
 
@@ -252,7 +234,7 @@ export default function Home() {
           email_confirm: honeypot(),
           render_time: renderTime(),
           turnstile_token: turnstileToken(),
-          is_consented: true, // 🟢 รวมผลเป็น True โดยปริยายเพราะผู้ใช้กดยอมรับผ่านปุ่มหลักแล้วค่ะ
+          is_consented: true,
         }),
       });
 
@@ -308,7 +290,7 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* Banner Zone: อยู่เลเยอร์หลังสุดเสมอเพื่อรองรับการพาดทับของการ์ดเนื้อหา */}
+        {/* Banner Zone */}
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
@@ -319,17 +301,15 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* Content Area Wrapper: ขยับขึ้นพาดทับแบนเนอร์ด้วย z-10 */}
+        {/* Content Area Wrapper */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          {/* ปรับโครงสร้างจาก Grid สู่ Flexbox Layout เพื่อให้กล่องฝั่งซ้ายขยายชิดฝั่งขวาได้อย่างลงตัว */}
           <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            {/* COLUMN 1 (ฝั่งซ้าย - ใช้ flex-1 เพื่อยืดขยายช่อง About ออกมาทางขวาได้อย่างประณีต สมดุล และลื่นไหล) */}
+            {/* COLUMN 1 (ฝั่งซ้าย - About) */}
             <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
                 style={{ "border-color": config().cardBorderColor }}
               >
-                {/* โปรไฟล์หลัก: รูปภาพกับชื่อช่อง และแถบไอคอนโซเชียลตรงใต้ชื่อ */}
                 <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
                     <img
@@ -349,7 +329,6 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
-                    {/* ไอคอนโซเชียลใต้ชื่อช่อง */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={config().socialLinks || []}>
                         {(link) => (
@@ -375,7 +354,6 @@ export default function Home() {
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
-                {/* รายละเอียดข้อความ About */}
                 <div>
                   <h2
                     class="text-xs font-black uppercase tracking-widest mb-2"
@@ -393,7 +371,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ 340px สำหรับ Cloudflare Widget) */}
+            {/* COLUMN 2 (ฝั่งขวา - ฟอร์มรับเงินโดเนท) */}
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
@@ -415,14 +393,12 @@ export default function Home() {
                   />
                 </div>
 
-                {/* ปุ่มพรีเซ็ตและฟิลด์ระบุเงินสนับสนุน */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
                       {(amt) => (
                         <button
                           type="button"
-                          // ซิงค์จำนวนปุ่มพรีเซ็ตไปแสดงในกล่องกรอกเงิน Custom Amount อัตโนมัติเมื่อมีการคลิกค่ะ
                           onClick={() => {
                             setAmount(String(amt));
                             setCustomAmountVal(String(amt));
@@ -450,7 +426,6 @@ export default function Home() {
                     </For>
                   </div>
 
-                  {/* WCAG Label Mapping */}
                   <label for="custom-amount" class="sr-only">
                     Amount
                   </label>
@@ -475,7 +450,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* WCAG Label Mapping */}
                 <label for="nickname" class="sr-only">
                   Nickname
                 </label>
@@ -494,7 +468,7 @@ export default function Home() {
                   value={name()}
                 />
 
-                {/* WCAG Label Mapping พร้อมตัวบอกจำนวนคำและเลเอาต์นับคำ 255 ตัวอักษรที่มุมขวาล่าง */}
+                {/* กล่องกรอกข้อความโดเนทปรับปรุงให้ยืดหยุ่น Auto-expand ไร้แถบเลื่อนแนวตั้ง */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -503,19 +477,25 @@ export default function Home() {
                     id="donor-msg"
                     placeholder={config().messagePlaceholder}
                     maxlength={255}
-                    class="w-full px-4 py-3 pb-7 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none"
+                    class="w-full px-4 py-3 pb-7 rounded-xl text-slate-800 placeholder-slate-400 text-xs transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] resize-none overflow-y-hidden min-h-[64px]"
                     rows={2}
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
                       "--tw-ring-color": config().submitBtnColor,
                     }}
-                    onInput={(e) => setMessage(e.currentTarget.value)}
+                    onInput={(e) => {
+                      setMessage(e.currentTarget.value);
+                      // คำนวณความสูงให้ยืดขยายตามจำนวนตัวอักษรโดยไม่สร้าง Scrollbar
+                      e.currentTarget.style.height = "auto";
+                      e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                    }}
                     value={message()}
                   ></textarea>
-                  {/* 🟢 ตัวเลขนับจำนวนตัวอักษรที่เหลือที่มุมขวาล่างแบบเรียบร้อย */}
+
+                  {/* แสดงผลเฉพาะยอดจำนวนคำที่คงเหลือเพียงตัวเลขเดี่ยวๆ เสมือนกล่องพิมพ์สากล */}
                   <div class="absolute bottom-1.5 right-3 text-[9px] text-slate-400 select-none">
-                    {255 - message().length} / 255
+                    {255 - message().length}
                   </div>
                 </div>
 
@@ -550,9 +530,9 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* 🟢 ข้อความระบุคำยินยอมที่ชัดเจน (PDPA Disclosure) อยู่ตรงเหนี่ปุ่ม ACCEPT & SUPPORT ME พอดิบพอดี */}
-                  <div class="text-[9px] leading-relaxed text-slate-500 text-center px-1">
-                    By clicking "Accept & Support Me", you agree to our{" "}
+                  {/* 🟢 ข้อความ PDPA Consent ปรับปรุงใหม่ให้สั้นลงไม่เกิน 2 บรรทัดและถูกต้องตามกฎหมาย */}
+                  <div class="text-[9px] leading-snug text-slate-500 text-center px-1">
+                    By clicking "Agree & Support Me", you agree to our{" "}
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
@@ -560,12 +540,11 @@ export default function Home() {
                     >
                       Terms & Privacy Policy
                     </button>
-                    , and consent to displaying your nickname and message on the
-                    live stream.
+                    .
                   </div>
                 </div>
 
-                {/* 🟢 ปุ่มยืนยันหลัก: ควบรวมคำสั่งยินยอมเข้าไว้ในปุ่มเดียวอย่างถูกสุขลักษณะกฎหมายและเพิ่มยอดขายสำเร็จ */}
+                {/* ปุ่มยืนยันหลัก */}
                 <button
                   type="submit"
                   disabled={
@@ -590,7 +569,7 @@ export default function Home() {
                   </Show>
                 </button>
 
-                {/* 🟢 Cloudflare Turnstile Widget: จัดวางด้านล่างปุ่ม SUPPORT และใช้ CSS display เพื่อให้หายไปทันทีเมื่อทำธุรกรรมสำเร็จโดยโครงไม่ล่ม */}
+                {/* Cloudflare Turnstile Widget */}
                 <Show when={data()?.turnstileSiteKey}>
                   <div
                     id="turnstile-container"
