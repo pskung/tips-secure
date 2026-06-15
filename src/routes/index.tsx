@@ -43,7 +43,7 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// 🟢 ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
+// 🟢 ฟังก์ชันชุดไอคอนโซเชียลแบบละเอียดไร้ Dependency (Embedded SVG Icons Helper)
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -67,7 +67,6 @@ function getSocialIcon(platform: string) {
       </svg>
     );
   }
-  // ไอคอนลิงก์ทั่วไป (Generic URL Icon)
   return (
     <svg
       class="w-5 h-5 stroke-current fill-none"
@@ -100,32 +99,28 @@ export default function Home() {
 
   let turnstileWidgetId: string | null = null;
 
+  // 🟢 ลบตัวแปรที่ไม่ได้อ้างอิงใช้งานจริงในหน้าหลักออกอย่างหมดจด
   const config = createMemo(() => {
     const theme = data()?.theme || {};
     return {
       ...theme,
       bgColor: theme.bgColor ?? "#FFFDF6",
-      cardBgColor: theme.cardBgColor ?? "#ffffff",
-      cardOpacity: theme.cardOpacity ?? 1.0,
-      cardBlur: theme.cardBlur ?? 0,
-      cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
-      cardBorderOpacity: theme.cardBorderOpacity ?? 1.0,
-      profileAreaBgColor: theme.profileAreaBgColor ?? "#ffffff",
-      profileAreaOpacity: theme.profileAreaOpacity ?? 1.0,
       inputBgColor: theme.inputBgColor ?? "#f4f4f5",
-      inputBgOpacity: theme.inputBgOpacity ?? 1.0,
       inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
+      cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
       vtuberName: theme.vtuberName ?? "Teacher Stefano",
       nameColor: theme.nameColor ?? "#111111",
       welcomeColor: theme.welcomeColor ?? "#222222",
-      labelColor: theme.labelColor ?? "#111111",
-      placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       mainFontFamily: theme.mainFontFamily ?? "Kanit",
       welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
+      nicknameLabel: theme.nicknameLabel ?? "Nickname",
       nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
+      messageLabel: theme.messageLabel ?? "Message",
       messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
+      amountLabel: theme.amountLabel ?? "Amount",
       amountPlaceholder:
         theme.amountPlaceholder ?? "Amount (10 - 5,000 THB)...",
+      placeholderColor: theme.placeholderColor ?? "#a1a1aa",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
@@ -318,7 +313,7 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* 🟢 Banner Zone: z-0 และความสูงสอดรับกันอย่างลงตัว */}
+        {/* 🟢 Banner Zone: ความสูงสมส่วน และ z-0 เพื่อจัดระนาบเลเยอร์ด้านหลังเสมอ */}
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
@@ -329,16 +324,16 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* 🟢 Content Area Wrapper: ยกกล่องหลักพาดทับแบนเนอร์เชิงมิติอย่างชัดเจนด้วย z-10 */}
+        {/* 🟢 Content Area Wrapper: ดันเนื้อหาลอยขึ้นมาทับแบนเนอร์ด้วย z-10 */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24">
-            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - โซน About กว้างกว่าเดิมเป็น col-span-7) */}
+            {/* 🟢 COLUMN 1 (ฝั่งซ้าย - อัตราส่วนหน้าจอสมดุลกว้าง lg:col-span-7) */}
             <div class="lg:col-span-7 space-y-4 flex flex-col w-full">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md bg-white flex flex-col space-y-4 text-left"
                 style={{ "border-color": config().cardBorderColor }}
               >
-                {/* 🟢 โปรไฟล์หลัก: ปรับรูป Avatar ให้ขยายใหญ่ขึ้น 10-25% (w-16 h-16 ขยายเป็น sm:w-20 sm:h-20) */}
+                {/* 🟢 ส่วนภาพโปรไฟล์จัดวางในระนาบแนวนอนเดียวกับชื่อช่องสตรีมเมอร์ พร้อมปุ่มไอคอนโซเชียลใต้ชื่อ */}
                 <div class="flex items-center gap-4 w-full">
                   <div class="flex-shrink-0">
                     <img
@@ -358,7 +353,7 @@ export default function Home() {
                       {config().vtuberName}
                     </h1>
 
-                    {/* 🟢 ย้าย Youtube / Twitch มาอยู่ใต้ชื่อช่องเป็นรูป Inline SVG Icons ที่หรูหรากระชับ */}
+                    {/* ไอคอนโซเชียลสัญญลักษณ์แบบฝังตรงใต้ชื่อช่อง */}
                     <div class="flex items-center gap-2 pt-0.5">
                       <For each={config().socialLinks || []}>
                         {(link) => (
@@ -384,7 +379,7 @@ export default function Home() {
                   style={{ "border-color": config().cardBorderColor }}
                 ></div>
 
-                {/* กล่องประวัติ About */}
+                {/* รายละเอียดข้อความ About */}
                 <div>
                   <h2
                     class="text-xs font-black uppercase tracking-widest mb-2"
@@ -402,7 +397,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องกรอกข้อมูลโดเนทกว้างพอดีที่ max-w-[340px] สำหรับ Cloudflare Widget) */}
+            {/* 🟢 COLUMN 2 (ฝั่งขวา - ช่องรับเงินโดเนทกระชับพอดีที่ max-w-[340px]) */}
             <div class="lg:col-span-5 w-full">
               <form
                 onSubmit={handleDonate}
@@ -424,7 +419,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* ฟิลด์กรอกจำนวนเงิน */}
                 <div class="space-y-3">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
@@ -519,7 +513,7 @@ export default function Home() {
                   value={message()}
                 ></textarea>
 
-                {/* 🟢 โซน TOS & PDPA ฉบับกระชับพิเศษ: มีเพียงแถบเลื่อนและปุ่มยินยอมที่จัดเรียงระนาบแนวนอนได้อย่างสมบูรณ์แบบไม่เบี้ยว */}
+                {/* 🟢 ปรับโฉม TOS & Consent บรรทัดแถบเลื่อนและปุ่มติ๊กยินยอมให้เข้าที่ตรงระนาบสวยงาม ไม่เยื้องเบี้ยว */}
                 <div class="space-y-2">
                   {/* แถบเลื่อนขยาย TOS */}
                   <button
@@ -532,7 +526,7 @@ export default function Home() {
                       color: config().nameColor,
                     }}
                   >
-                    <span>📜 View Terms & Privacy Policy (TOS & PDPA)</span>
+                    <span>Terms & Privacy Policy (TOS & PDPA)</span>
                     <span class="text-[8px]">
                       {isTosExpanded() ? "▲" : "▼"}
                     </span>
@@ -551,7 +545,7 @@ export default function Home() {
                     </div>
                   </Show>
 
-                  {/* 🟢 ช่องกดยอมรับแบบจัดตำแหน่ง Alignment สมบูรณ์ด้วย items-center และ leading-none */}
+                  {/* แถบกดยอมรับเงื่อนไข จัดวางให้ Checkbox และข้อความอยู่เซนเตอร์แนวระนาบเดียวกันด้วย items-center */}
                   <label
                     class="flex items-center gap-2.5 cursor-pointer text-[9px] leading-none font-bold"
                     style={{ color: config().welcomeColor }}
