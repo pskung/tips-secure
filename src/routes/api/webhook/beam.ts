@@ -1,3 +1,4 @@
+// src/routes/api/webhook/beam.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
 import { timingSafeCompare } from "~/lib/utils/crypto";
@@ -14,6 +15,7 @@ export async function POST(event: APIEvent) {
     const body = await event.request.json();
     const headers = event.request.headers;
 
+    // 🟢 เปลี่ยนจาก Xendit Callback มาใช้ Beam Webhook Token ยืนยันความปลอดภัย
     const callbackToken = headers.get("x-beam-webhook-token");
     const expectedToken = process.env.BEAM_WEBHOOK_SECRET;
 
@@ -24,7 +26,7 @@ export async function POST(event: APIEvent) {
       expectedToken.trim() === ""
     ) {
       safeLog(
-        "Security Alert: Missing Webhook validation credentials.",
+        "Security Alert: Null, blank or missing Webhook validation credentials.",
         "WARN",
       );
       return new Response(
@@ -41,12 +43,15 @@ export async function POST(event: APIEvent) {
       );
     }
 
+    // 🟢 ตรวจสอบสถานะการจ่ายเงินที่สำเร็จของระบบบิลและคำสั่งซื้อ (PAID / SUCCEEDED)
     const isPaymentLinkPaid =
       body.status === "PAID" || body.status === "SUCCEEDED";
     const isTransactionSuccess = body.transactionType === "PAYMENT";
 
     if (isPaymentLinkPaid || isTransactionSuccess) {
       const store = getStore("donation_store");
+
+      // ดึงหมายเลข ID ธุรกรรมหลัก
       const transactionId =
         body.transactionId || body.chargeId || body.paymentLinkId;
 
@@ -57,27 +62,19 @@ export async function POST(event: APIEvent) {
         );
       }
 
-      const txKey = `processed_tx:${transactionId}`;
-
-      try {
-        // 🟢 เปลี่ยนมาใช้ตัวเลือก onlyIfNew เพื่อเขียนคีย์ธุรกรรมแบบ Atomic ป้องกันสัญญาณแข่งกันประมวลผลล่ม 100%
-        await store.setJSON(
-          txKey,
-          { expiresAt: Date.now() + 1000 * 60 * 60 * 48 }, // เก็บไว้ตรวจสอบ 48 ชั่วโมง
-          { onlyIfNew: true },
-        );
-      } catch (writeError: any) {
-        // คีย์มีอยู่แล้ว บ่งบอกว่าเสี้ยววินาทีเดียวกันมี Webhook อีกเส้นบันทึกธุรกรรมนี้สำเร็จแล้ว ให้ตีกลับ 200 OK ทันที
-        safeLog(
-          `Atomic collision resolved. Duplicate webhook blocked: ${transactionId}`,
-          "INFO",
-        );
+      // 🟢 ป้องกัน Replay Attack: บันทึกความปลอดภัยเพื่อปฏิเสธการสแปมอีเวนท์ซ้ำ
+      const isAlreadyProcessed = await store.get(
+        `processed_tx:${transactionId}`,
+      );
+      if (isAlreadyProcessed) {
         return new Response(
           JSON.stringify({ error: "Duplicate webhook processed and ignored" }),
           { status: 200 },
         );
       }
+      await store.set(`processed_tx:${transactionId}`, "true");
 
+      // 🟢 ดึงยอดสตางค์จาก GrossAmount หรือ Amount ของ Beam แล้วหารด้วย 100 กลับเป็นยอดเงินปกติ
       const amountInSatang = body.grossAmount || body.amount || 0;
       const amountInThb = amountInSatang / 100;
       const currency = body.currency || "THB";
@@ -85,6 +82,7 @@ export async function POST(event: APIEvent) {
       let donorName = "Anonymous";
       let donorMessage = "";
 
+      // ค้นหา ID สำหรับนำไปเรียกต่อข้อมูลจากเซิร์ฟเวอร์หลักของ Beam
       const paymentLinkId = body.sourceId || body.paymentLinkId;
 
       if (paymentLinkId) {
@@ -93,6 +91,7 @@ export async function POST(event: APIEvent) {
         const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
 
         try {
+          // ดึงสเปกต้นขั้วจาก Beam API ป้องกันธุรกรรมปลอมแบบ 100% (Server-to-Server Validation)
           const plResponse = await fetch(
             `${beamUrl}/api/v1/payment-links/${paymentLinkId}`,
             {
@@ -112,7 +111,7 @@ export async function POST(event: APIEvent) {
           }
         } catch (fetchErr) {
           safeLog(
-            "Failed to fetch detailed payment-link from Beam API",
+            "Failed to fetch detailed payment-link from Beam API, trying fallback metadata",
             "WARN",
             fetchErr,
           );
@@ -121,6 +120,7 @@ export async function POST(event: APIEvent) {
 
       const alertPromises: Promise<any>[] = [];
 
+      // ส่วนการส่งข้อมูลแจ้งเตือนขึ้นหน้าจอโปรแกรม Streamlabs
       if (process.env.STREAMLABS_ACCESS_TOKEN) {
         try {
           const params = new URLSearchParams();
@@ -141,6 +141,11 @@ export async function POST(event: APIEvent) {
                 if (!slRes.ok) {
                   const slData = await slRes.json();
                   safeLog("Streamlabs Dispatch warning:", "WARN", slData);
+                } else {
+                  safeLog(
+                    `Alert Box (Streamlabs) triggered for: ${donorName}`,
+                    "INFO",
+                  );
                 }
               })
               .catch((err) =>
@@ -156,6 +161,7 @@ export async function POST(event: APIEvent) {
         }
       }
 
+      // ส่วนการส่งข้อมูลแจ้งเตือนขึ้นหน้าจอโปรแกรม StreamElements
       if (
         process.env.STREAMELEMENTS_JWT &&
         process.env.STREAMELEMENTS_CHANNEL_ID
@@ -187,6 +193,11 @@ export async function POST(event: APIEvent) {
                 if (!seRes.ok) {
                   const seData = await seRes.json();
                   safeLog("StreamElements Dispatch warning:", "WARN", seData);
+                } else {
+                  safeLog(
+                    `Alert Box (StreamElements) triggered for: ${donorName}`,
+                    "INFO",
+                  );
                 }
               })
               .catch((err) =>
@@ -202,15 +213,8 @@ export async function POST(event: APIEvent) {
         }
       }
 
-      // 🟢 รันขั้นตอนส่งข้อมูลขึ้นหน้าจอโดเนทแบบ Non-blocking Async Background Task ทันที ป้องกันเซิร์ฟเวอร์ค้างรอระบบส่งแจ้งเตือนตอบสนอง
       if (alertPromises.length > 0) {
-        Promise.all(alertPromises).catch((err) =>
-          safeLog(
-            "Asynchronous Background Alerts pipeline caught error:",
-            "ERROR",
-            err,
-          ),
-        );
+        await Promise.all(alertPromises);
       }
     }
 
