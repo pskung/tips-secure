@@ -166,8 +166,9 @@ export default function Home() {
 
   // รันการกรองความปลอดภัยฝั่งเบราว์เซอร์ด้วย Zod เสมอ ปิดโอกาสโจมตีด้วย CSS Injection บนจอสตรีมเมอร์
   const safeFont = createMemo(() => {
-    const parsed = fontNameSchema.safeParse(config().mainFontFamily);
-    return parsed.success ? parsed.data : "Kanit";
+    const font = config().mainFontFamily;
+    if (!font) return "Kanit";
+    return font.replace(/[^a-zA-Z0-9\u0e00-\u0e7f\s-]/g, "").trim() || "Kanit";
   });
 
   const hexToRgba = (hex: string, opacity: number): string => {
@@ -232,16 +233,20 @@ export default function Home() {
       }
     }
 
-    const checkInterval = setInterval(() => {
-      if (typeof window !== "undefined" && (window as any).turnstile) {
-        clearInterval(checkInterval);
-        initTurnstile();
-      }
-    }, 100);
+    if ((window as any).turnstile) {
+      initTurnstile();
+    } else {
+      (window as any).onloadTurnstileCallback = () => initTurnstile();
+    }
+  });
 
-    onCleanup(() => {
-      clearInterval(checkInterval);
-    });
+  createEffect(() => {
+    if (cooldownRemaining() > 0) {
+      const timer = setTimeout(() => {
+        setCooldownRemaining((prev) => prev - 1);
+      }, 1000);
+      onCleanup(() => clearTimeout(timer));
+    }
   });
 
   const handleDonate = async (e: Event) => {
