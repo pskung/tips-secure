@@ -232,20 +232,16 @@ export default function Home() {
       }
     }
 
-    if ((window as any).turnstile) {
-      initTurnstile();
-    } else {
-      (window as any).onloadTurnstileCallback = () => initTurnstile();
-    }
-  });
+    const checkInterval = setInterval(() => {
+      if (typeof window !== "undefined" && (window as any).turnstile) {
+        clearInterval(checkInterval);
+        initTurnstile();
+      }
+    }, 100);
 
-  createEffect(() => {
-    if (cooldownRemaining() > 0) {
-      const timer = setTimeout(() => {
-        setCooldownRemaining((prev) => prev - 1);
-      }, 1000);
-      onCleanup(() => clearTimeout(timer));
-    }
+    onCleanup(() => {
+      clearInterval(checkInterval);
+    });
   });
 
   const handleDonate = async (e: Event) => {
