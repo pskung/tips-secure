@@ -1,4 +1,3 @@
-// src/routes/admin/index.tsx
 import {
   createSignal,
   createMemo,
@@ -14,7 +13,6 @@ import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ดึงค่าดีไซน์สตรีมเมอร์จากคลาวด์เพื่อป้อนเข้าเป็นค่าเริ่มต้นของ Admin Form
 const getAdminData = query(async () => {
   "use server";
   try {
@@ -24,7 +22,7 @@ const getAdminData = query(async () => {
     });
     return {
       theme: theme || defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "", // ส่งคีย์ตรวจบอตไปยังแผงหน้าจอแอดมิน
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   } catch {
     return {
@@ -54,7 +52,6 @@ export default function Admin() {
   const [authLoading, setAuthLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
 
-  // 🟢 สำหรับประตูด่านความปลอดภัยแอดมิน
   const [adminTurnstileToken, setAdminTurnstileToken] = createSignal("");
   let adminTurnstileWidgetId: string | null = null;
 
@@ -90,42 +87,41 @@ export default function Admin() {
     ];
   });
 
-  // 🟢 แก้ไขสัญญาณแข่งกัน (Race Condition) ด้วยการเฝ้าดู reactive สัญญาณของ Turnstile Site Key
+  // ใช้ Onload Callback ไร้ลูป setInterval หน่วงเวลาซีพียู
   createEffect(() => {
     const siteKey = data()?.turnstileSiteKey;
-    if (!siteKey) return; // 1. เฝ้ารอจนกว่าข้อมูลดึงมาจากระบบหลังบ้านสำเร็จ
+    if (!siteKey || typeof window === "undefined") return;
 
-    // 2. เฝ้าจับสังเกตตัวสคริปต์สากลบนเบราว์เซอร์
-    const initInterval = setInterval(() => {
-      if (typeof window !== "undefined" && (window as any).turnstile) {
-        clearInterval(initInterval);
-
-        const container = document.getElementById("admin-turnstile-container");
-        if (container) {
-          try {
-            if (adminTurnstileWidgetId) {
-              (window as any).turnstile.remove(adminTurnstileWidgetId);
-            }
-
-            adminTurnstileWidgetId = (window as any).turnstile.render(
-              "#admin-turnstile-container",
-              {
-                sitekey: siteKey,
-                theme: "light",
-                size: "flexible",
-                callback: (token: string) => setAdminTurnstileToken(token),
-                "expired-callback": () => setAdminTurnstileToken(""),
-                "error-callback": () => setAdminTurnstileToken(""),
-              },
-            );
-          } catch (err) {
-            console.error("Failed to render admin Turnstile widget:", err);
+    const renderWidget = () => {
+      const container = document.getElementById("admin-turnstile-container");
+      if (container && (window as any).turnstile) {
+        try {
+          if (adminTurnstileWidgetId) {
+            (window as any).turnstile.remove(adminTurnstileWidgetId);
           }
+
+          adminTurnstileWidgetId = (window as any).turnstile.render(
+            "#admin-turnstile-container",
+            {
+              sitekey: siteKey,
+              theme: "light",
+              size: "flexible",
+              callback: (token: string) => setAdminTurnstileToken(token),
+              "expired-callback": () => setAdminTurnstileToken(""),
+              "error-callback": () => setAdminTurnstileToken(""),
+            },
+          );
+        } catch (err) {
+          console.error("Failed to render admin Turnstile widget:", err);
         }
       }
-    }, 100);
+    };
 
-    onCleanup(() => clearInterval(initInterval));
+    if ((window as any).turnstile) {
+      renderWidget();
+    } else {
+      (window as any).onloadTurnstileCallback = renderWidget;
+    }
   });
 
   onMount(() => {
@@ -142,7 +138,6 @@ export default function Admin() {
     setAuthLoading(true);
     setAuthError("");
 
-    // ระบบจะสั่งล็อกอินผ่านทันทีหากเซิร์ฟเวอร์ยังไม่ได้ตั้งค่าคีย์ Turnstile (ช่วยอำนวยความสะดวกในการดีพลอยครั้งแรกแบบ open-source)
     if (data()?.turnstileSiteKey && !adminTurnstileToken()) {
       setAuthError("Please complete the security challenge first 🔒");
       setAuthLoading(false);
@@ -213,14 +208,12 @@ export default function Admin() {
         )}
       </For>
 
-      {/* 🟢 การโหลดสคริปต์สากลของ Cloudflare Turnstile เพื่อประมวลผลบนหน้าล็อกอินแอดมิน */}
       <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback"
         async
         defer
       ></script>
 
-      {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form
@@ -259,7 +252,6 @@ export default function Admin() {
               />
             </div>
 
-            {/* 🟢 ตัวเรนเดอร์กล่องความปลอดภัย Turnstile ส่วนแอดมิน */}
             <Show when={data()?.turnstileSiteKey}>
               <div
                 id="admin-turnstile-container"
@@ -285,7 +277,6 @@ export default function Admin() {
         </div>
       </Show>
 
-      {/* 💻 Admin Core Workspace Panel (Cozy English Version) */}
       <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
@@ -308,10 +299,8 @@ export default function Admin() {
           </button>
         </header>
 
-        {/* 2-Column Responsive Workspace Grid */}
         <div class="flex-1 max-w-7xl w-full mx-auto p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* COLUMN 1: Profile & Texts Settings */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
                 <span>👤</span> Profile & Welcome Text
@@ -426,7 +415,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* 🟢 ส่วนกล่องตั้งค่าลิงก์ Social Media (Optional) แบบแยกชิ้นกรอกง่าย */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
                     🔗 Social Media Links (Optional)
@@ -535,14 +523,12 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* COLUMN 2: Styling & Support Presets */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
                 <span>🎨</span> Styling & Support Presets
               </h2>
 
               <div class="space-y-4">
-                {/* Row 1: General text color & card background color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -592,7 +578,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Row 2: Input background color & Input Text Color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -642,7 +627,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Row 3: Submit button color & Button text color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -692,7 +676,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Quick preset amounts (THB) */}
                 <div class="border-t border-[#F0EAE1] pt-4">
                   <label class="block text-xs font-black text-[#E87A5D] uppercase tracking-wider mb-2">
                     💵 Quick Preset Support Amounts (THB)
@@ -715,7 +698,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Page background style settings */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
                     🖼/ Page Background Style

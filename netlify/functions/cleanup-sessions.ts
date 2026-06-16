@@ -5,7 +5,9 @@ const getStore = (blobs as any).getStore;
 
 export default async (req: Request, context: Context) => {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] Starting monthly admin session cleanup...`);
+  console.log(
+    `[${timestamp}] Starting weekly expired payment idempotency keys cleanup...`,
+  );
 
   try {
     const store = getStore("donation_store");
@@ -14,34 +16,24 @@ export default async (req: Request, context: Context) => {
     const now = Date.now();
 
     for await (const entry of store.list({
-      prefix: "session:",
+      prefix: "processed_tx:",
       paginate: true,
     })) {
       for (const blob of entry.blobs) {
         checkedCount++;
-        const sessionKey = blob.key;
+        const key = blob.key;
 
         try {
-          const parts = sessionKey.split(":");
-          // 🟢 ตรวจหาคีย์ที่ตั้งในรูปแบบ session:expiresAt:token
-          if (parts.length === 3) {
-            const expiresAt = Number(parts[1]);
+          const val = (await store.get(key, { type: "json" })) as {
+            expiresAt: number;
+          } | null;
 
-            // 🟢 ลบข้อมูลได้ทันทีจากข้อมูลชื่อคีย์ โดยไม่ต้องยิงคำสั่ง Get ค้นหาบอดี้ด้านใน
-            if (now > expiresAt) {
-              await store.delete(sessionKey);
-              deletedCount++;
-            }
-          } else {
-            // ลบกรณีเป็นขยะเซสชันโครงร่างเก่า
-            await store.delete(sessionKey);
+          if (val && now > val.expiresAt) {
+            await store.delete(key);
             deletedCount++;
           }
         } catch (innerError) {
-          console.error(
-            `Failed to process session key: ${sessionKey}`,
-            innerError,
-          );
+          console.error(`Failed to process key: ${key}`, innerError);
         }
       }
     }
@@ -63,7 +55,7 @@ export default async (req: Request, context: Context) => {
     );
   } catch (error) {
     console.error(
-      `[${timestamp}] Critical failure during session cleanup`,
+      `[${timestamp}] Critical failure during system cleanup`,
       error,
     );
     return new Response(
@@ -77,5 +69,5 @@ export default async (req: Request, context: Context) => {
 };
 
 export const config: Config = {
-  schedule: "0 0 1 * *",
+  schedule: "0 0 * * 0", // 🟢 กำหนดเวลารันทุกวันอาทิตย์เที่ยงคืน (Weekly) ตรงตามประสงค์ค่ะ
 };

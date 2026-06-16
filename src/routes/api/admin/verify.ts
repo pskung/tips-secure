@@ -1,7 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { setCookie } from "vinxi/http";
 import { timingSafeCompare } from "~/lib/utils/crypto";
-import { getStore } from "@netlify/blobs";
+import { createHmac } from "crypto";
 
 export async function POST(event: APIEvent) {
   try {
@@ -9,7 +9,6 @@ export async function POST(event: APIEvent) {
     const expectedPassword = process.env.ADMIN_PASSWORD || "";
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
 
-    // 🟢 1. ตรวจยืนยันความถูกต้องของบอต ผ่าน API ปลายทางของ Cloudflare ก่อนทำตรรกะอื่น
     if (turnstileSecret) {
       if (!turnstile_token) {
         return new Response(
@@ -39,14 +38,13 @@ export async function POST(event: APIEvent) {
           JSON.stringify({
             success: false,
             error:
-              "ตรวจพบพฤติกรรมบอตในกระบวนการล็อกอิน กรุณาลองใหม่อีกครั้งค่ะ",
+              "ตรวจพบพฤติกรรมบอทในกระบวนการล็อกอิน กรุณาลองใหม่อีกครั้งค่ะ",
           }),
           { status: 403 },
         );
       }
     }
 
-    // 2. หากยืนยันตัวตนว่าไม่ใช่บอตเรียบร้อย ค่อยทำตรวจสอบเทียบค่ารหัสผ่านจริง
     if (
       !password ||
       !expectedPassword ||
@@ -61,16 +59,16 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const sessionToken = crypto.randomUUID();
-    const expiresAt = Date.now() + 1000 * 60 * 60 * 24; // เซสชันมีอายุ 24 ชั่วโมง
+    const expiresAt = Date.now() + 1000 * 60 * 60 * 24; // 24 ชั่วโมง
+    const signature = createHmac("sha256", expectedPassword)
+      .update(String(expiresAt))
+      .digest("hex");
 
-    const store = getStore("donation_store");
-    await store.set(`session:${expiresAt}:${sessionToken}`, "active");
-
+    // เสริมความปลอดภัยด้วย Secure Cookie Prefix ยอดนิยมระดับ Enterprise
     setCookie(
       event.nativeEvent,
-      "admin_session_token",
-      `${expiresAt}:${sessionToken}`,
+      "__Host-admin_session_token",
+      `${expiresAt}.${signature}`,
       {
         path: "/",
         httpOnly: true,

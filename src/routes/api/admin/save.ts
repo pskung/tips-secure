@@ -2,88 +2,74 @@ import type { APIEvent } from "@solidjs/start/server";
 import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
+import { createHmac } from "crypto";
+import { timingSafeCompare } from "~/lib/utils/crypto";
+import { z } from "zod";
 
-function validateTheme(theme: any): boolean {
-  if (!theme || typeof theme !== "object") return false;
+// ประกาศการรวบยอดตรวจสอบความสมบูรณ์ปลอดภัยของข้อมูลแผงสตรีมเมอร์ผ่าน Zod Schema
+const themeSchema = z.object({
+  mainFontFamily: z
+    .string()
+    .regex(/^[a-zA-Z0-9\u0e00-\u0e7f\s-]+$/, "Invalid font family characters")
+    .max(50),
+  vtuberName: z.string().min(1).max(100),
+  welcomeText: z.string().min(1).max(1000),
+  bgType: z.enum(["solid", "image"]),
+  bgColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  cardBgColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  generalTextColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  inputBgColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  inputTextColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  submitBtnColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
+  submitBtnTextColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid color format"),
 
-  // 1. คีย์ตัวแปรประเภท String ที่ระบบจำเป็นต้องมี (Required Fields)
-  const requiredStrings = [
-    "mainFontFamily",
-    "vtuberName",
-    "welcomeText",
-    "bgType",
-    "bgColor",
-    "cardBgColor",
-    "generalTextColor",
-    "inputBgColor",
-    "inputTextColor",
-    "submitBtnColor",
-    "submitBtnTextColor",
-  ];
+  avatarUrl: z.string().url().or(z.literal("")).optional(),
+  bannerUrl: z.string().url().or(z.literal("")).optional(),
+  bgUrl: z.string().url().or(z.literal("")).optional(),
+  nameColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .or(z.literal(""))
+    .optional(),
+  inputBorderColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .or(z.literal(""))
+    .optional(),
+  cardBorderColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .or(z.literal(""))
+    .optional(),
+  presetBorderColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .or(z.literal(""))
+    .optional(),
+  youtubeUrl: z.string().url().or(z.literal("")).optional(),
+  twitchUrl: z.string().url().or(z.literal("")).optional(),
+  discordUrl: z.string().url().or(z.literal("")).optional(),
+  xUrl: z.string().url().or(z.literal("")).optional(),
+  facebookUrl: z.string().url().or(z.literal("")).optional(),
+  instagramUrl: z.string().url().or(z.literal("")).optional(),
+  tiktokUrl: z.string().url().or(z.literal("")).optional(),
 
-  for (const key of requiredStrings) {
-    if (typeof theme[key] !== "string" || theme[key].trim() === "")
-      return false;
-  }
-
-  // 2. คีย์ตัวแปรประเภท String ตัวเลือกเสริมที่สามารถเว้นว่างได้ (Optional Fields)
-  const optionalStrings = [
-    "avatarUrl",
-    "bannerUrl",
-    "bgUrl",
-    "nameColor",
-    "inputBorderColor",
-    "cardBorderColor",
-    "presetBorderColor",
-    "youtubeUrl",
-    "twitchUrl",
-    "discordUrl",
-    "xUrl",
-    "facebookUrl",
-    "instagramUrl",
-    "tiktokUrl",
-  ];
-
-  for (const key of optionalStrings) {
-    if (theme[key] !== undefined && typeof theme[key] !== "string")
-      return false;
-  }
-
-  // 3. ตรวจสอบความถูกต้องและรูปแบบของรหัสสี HEX (HEX Color Format Strict Validator)
-  const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-  const colorKeys = [
-    "bgColor",
-    "nameColor",
-    "cardBgColor",
-    "cardBorderColor",
-    "generalTextColor",
-    "inputBgColor",
-    "inputTextColor",
-    "inputBorderColor",
-    "submitBtnColor",
-    "submitBtnTextColor",
-    "presetBorderColor",
-  ];
-
-  for (const key of colorKeys) {
-    if (
-      theme[key] &&
-      theme[key].trim() !== "" &&
-      !hexColorRegex.test(theme[key])
-    ) {
-      return false;
-    }
-  }
-
-  // 4. ตรวจสอบความสมบูรณ์และเงื่อนไขของยอดเงินสนับสนุนด่วน (Preset Amounts Array)
-  if (!Array.isArray(theme.presetAmounts) || theme.presetAmounts.length !== 4)
-    return false;
-  for (const amt of theme.presetAmounts) {
-    if (typeof amt !== "number" || amt < 10 || amt > 5000) return false;
-  }
-
-  return true;
-}
+  presetAmounts: z.array(z.number().min(10).max(5000)).length(4),
+});
 
 export async function POST(event: APIEvent) {
   try {
@@ -94,16 +80,7 @@ export async function POST(event: APIEvent) {
       event.request.headers.get("x-forwarded-proto") || url.protocol;
     const expectedOrigin = `${protocol}://${host}`;
 
-    if (!origin) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required Origin verification header",
-        }),
-        { status: 400 },
-      );
-    }
-
-    if (origin !== expectedOrigin) {
+    if (!origin || origin !== expectedOrigin) {
       safeLog(
         `Security Alert: CSRF Blocked on Admin Save from ${origin}`,
         "WARN",
@@ -114,7 +91,8 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const rawToken = getCookie(event.nativeEvent, "admin_session_token");
+    // เรียกอ่านคุกกี้ระดับ Prefix คุ้มครองสูง
+    const rawToken = getCookie(event.nativeEvent, "__Host-admin_session_token");
     if (!rawToken) {
       return new Response(
         JSON.stringify({ error: "กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ" }),
@@ -122,20 +100,20 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const parts = rawToken.split(":");
-    if (parts.length !== 2) {
+    const dotIndex = rawToken.indexOf(".");
+    if (dotIndex === -1) {
       return new Response(
         JSON.stringify({ error: "โครงสร้างเซสชันคุกกี้ไม่ถูกต้อง" }),
         { status: 401 },
       );
     }
 
-    const [expiresAtStr, sessionToken] = parts;
+    const expiresAtStr = rawToken.substring(0, dotIndex);
+    const clientSignature = rawToken.substring(dotIndex + 1);
     const expiresAt = Number(expiresAtStr);
 
     if (Date.now() > expiresAt) {
-      safeLog(`Admin session expired for token: ${sessionToken}`, "WARN");
-      setCookie(event.nativeEvent, "admin_session_token", "", {
+      setCookie(event.nativeEvent, "__Host-admin_session_token", "", {
         maxAge: 0,
         path: "/",
       });
@@ -147,17 +125,13 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const store = getStore("donation_store");
-    const sessionExists = await store.get(
-      `session:${expiresAt}:${sessionToken}`,
-    );
+    const expectedPassword = process.env.ADMIN_PASSWORD || "";
+    const expectedSignature = createHmac("sha256", expectedPassword)
+      .update(expiresAtStr)
+      .digest("hex");
 
-    if (!sessionExists) {
-      safeLog(
-        `Admin session rejected or not found for token: ${sessionToken}`,
-        "WARN",
-      );
-      setCookie(event.nativeEvent, "admin_session_token", "", {
+    if (!timingSafeCompare(clientSignature, expectedSignature)) {
+      setCookie(event.nativeEvent, "__Host-admin_session_token", "", {
         maxAge: 0,
         path: "/",
       });
@@ -171,10 +145,13 @@ export async function POST(event: APIEvent) {
 
     const { config: newTheme } = await event.request.json();
 
-    if (!validateTheme(newTheme)) {
+    // ดึงกลไกตรวจสอบความปลอดภัยของ Zod เข้ามาป้องกันตัวแทนลูปแมนนวลอย่างรวดเร็ว
+    const validation = themeSchema.safeParse(newTheme);
+    if (!validation.success) {
       safeLog(
         "Security Alert: Malformed theme config payload rejected",
         "WARN",
+        validation.error,
       );
       return new Response(
         JSON.stringify({
@@ -184,7 +161,8 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    await store.setJSON("vtuber_personalized_theme", newTheme);
+    const store = getStore("donation_store");
+    await store.setJSON("vtuber_personalized_theme", validation.data);
 
     safeLog("Admin settings saved successfully.", "INFO");
     return new Response(JSON.stringify({ success: true }), { status: 200 });
