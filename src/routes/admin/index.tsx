@@ -87,41 +87,41 @@ export default function Admin() {
     ];
   });
 
-  // ใช้ Onload Callback ไร้ลูป setInterval หน่วงเวลาซีพียู
+  // 🟢 คืนตรรกะตรวจเช็คความพร้อมทำงานของ Turnstile ฝั่งแอดมินด้วยความเสถียร 100% ปิดประเด็นการเรียกคิวรีพังพินาศ
   createEffect(() => {
     const siteKey = data()?.turnstileSiteKey;
     if (!siteKey || typeof window === "undefined") return;
 
-    const renderWidget = () => {
-      const container = document.getElementById("admin-turnstile-container");
-      if (container && (window as any).turnstile) {
-        try {
-          if (adminTurnstileWidgetId) {
-            (window as any).turnstile.remove(adminTurnstileWidgetId);
-          }
+    const checkInterval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(checkInterval);
 
-          adminTurnstileWidgetId = (window as any).turnstile.render(
-            "#admin-turnstile-container",
-            {
-              sitekey: siteKey,
-              theme: "light",
-              size: "flexible",
-              callback: (token: string) => setAdminTurnstileToken(token),
-              "expired-callback": () => setAdminTurnstileToken(""),
-              "error-callback": () => setAdminTurnstileToken(""),
-            },
-          );
-        } catch (err) {
-          console.error("Failed to render admin Turnstile widget:", err);
+        const container = document.getElementById("admin-turnstile-container");
+        if (container) {
+          try {
+            if (adminTurnstileWidgetId) {
+              (window as any).turnstile.remove(adminTurnstileWidgetId);
+            }
+
+            adminTurnstileWidgetId = (window as any).turnstile.render(
+              "#admin-turnstile-container",
+              {
+                sitekey: siteKey,
+                theme: "light",
+                size: "flexible",
+                callback: (token: string) => setAdminTurnstileToken(token),
+                "expired-callback": () => setAdminTurnstileToken(""),
+                "error-callback": () => setAdminTurnstileToken(""),
+              },
+            );
+          } catch (err) {
+            console.error("Failed to render admin Turnstile widget:", err);
+          }
         }
       }
-    };
+    }, 100);
 
-    if ((window as any).turnstile) {
-      renderWidget();
-    } else {
-      (window as any).onloadTurnstileCallback = renderWidget;
-    }
+    onCleanup(() => clearInterval(checkInterval));
   });
 
   onMount(() => {
@@ -209,7 +209,7 @@ export default function Admin() {
       </For>
 
       <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         async
         defer
       ></script>
