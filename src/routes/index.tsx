@@ -13,14 +13,6 @@ import { getStore } from "@netlify/blobs";
 import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
-import { z } from "zod";
-
-// ใช้ Zod สกัดกั้นและทลายสิทธิ์ CSS Injection ของฟอนต์สตรีมเมอร์ ณ ต้นน้ำอย่างเคร่งครัด
-const fontNameSchema = z
-  .string()
-  .regex(/^[a-zA-Z0-9\u0e00-\u0e7f\s-]+$/, "Invalid font name")
-  .max(50)
-  .default("Kanit");
 
 const getInitialData = query(async () => {
   "use server";
@@ -164,7 +156,8 @@ export default function Home() {
     ];
   });
 
-  // รันการกรองความปลอดภัยฝั่งเบราว์เซอร์ด้วย Zod เสมอ ปิดโอกาสโจมตีด้วย CSS Injection บนจอสตรีมเมอร์
+  // 🟢 ล้างอักขระพิเศษสำหรับป้องกัน CSS Injection ผ่านฟังก์ชัน Regex ดั้งเดิมของเบราว์เซอร์
+  // ให้ผลลัพธ์ความปลอดภัยสูงสุดเช่นเดิมโดยไม่ต้องยัด Zod ลง Client Bundle ช่วยตัดปัญหาโค้ดพังขณะ Hydrate
   const safeFont = createMemo(() => {
     const font = config().mainFontFamily;
     if (!font) return "Kanit";
@@ -233,11 +226,17 @@ export default function Home() {
       }
     }
 
-    if ((window as any).turnstile) {
-      initTurnstile();
-    } else {
-      (window as any).onloadTurnstileCallback = () => initTurnstile();
-    }
+    // 🟢 เปลี่ยนกลับมาใช้วิธี Polling Interval ที่เสถียรที่สุดในการดักหาโมดูล โดยปราศจาก Error ของเบราว์เซอร์
+    const checkInterval = setInterval(() => {
+      if (typeof window !== "undefined" && (window as any).turnstile) {
+        clearInterval(checkInterval);
+        initTurnstile();
+      }
+    }, 100);
+
+    onCleanup(() => {
+      clearInterval(checkInterval);
+    });
   });
 
   createEffect(() => {
@@ -313,8 +312,9 @@ export default function Home() {
           }
         `}
       </style>
+      {/* 🟢 คืนค่าแท็ก script แบบดั้งเดิมที่เสถียรที่สุดเพื่อล้างปัญหาบล็อกกระบวนการเรนเดอร์ */}
       <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         async
         defer
       ></script>
@@ -448,7 +448,6 @@ export default function Home() {
                             setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
-                          // 🟢 ยกระดับความพร้อมใช้งานแก่ผู้พิการ (WCAG compliant) ระบุสถานะ และ Focus ring ครบถ้วน
                           aria-pressed={
                             !customActive() && amount() === String(amt)
                               ? "true"
