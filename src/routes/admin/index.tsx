@@ -53,6 +53,60 @@ export default function Admin() {
   const [authError, setAuthError] = createSignal("");
   const [authLoading, setAuthLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
+  const [avatarLoading, setAvatarLoading] = createSignal(false);
+  const [bannerLoading, setBannerLoading] = createSignal(false);
+  const [bgLoading, setBgLoading] = createSignal(false);
+
+  // 🟢 ฟังก์ชันอัปโหลดรูปภาพและดักขนาดห้ามเกิน 5MB ฝั่งคลินิกหน้าบ้าน
+  const handleFileUpload = async (
+    e: Event,
+    type: "avatar" | "banner" | "bg",
+  ) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    if (file.size > MAX_SIZE) {
+      alert(
+        "❌ ขนาดไฟล์ภาพต้องไม่เกิน 5 MB นะคะ กรุณาบีบอัดรูปภาพแล้วลองใหม่อีกครั้งค่ะ",
+      );
+      input.value = ""; // เคลียร์ไฟล์ช่อง
+      return;
+    }
+
+    if (type === "avatar") setAvatarLoading(true);
+    else if (type === "banner") setBannerLoading(true);
+    else if (type === "bg") setBgLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        if (type === "avatar") setConfig("avatarUrl", resData.url);
+        else if (type === "banner") setConfig("bannerUrl", resData.url);
+        else if (type === "bg") setConfig("bgUrl", resData.url);
+        alert(`🎉 อัปโหลดรูปภาพสำเร็จเรียบร้อยแล้วค่ะ!`);
+      } else {
+        alert(resData.error || "เกิดความผิดพลาดในการอัปโหลดรูปภาพค่ะ");
+      }
+    } catch {
+      alert("ไม่สามารถติดต่อเซิร์ฟเวอร์อัปโหลดได้ในขณะนี้ค่ะ");
+    } finally {
+      if (type === "avatar") setAvatarLoading(false);
+      else if (type === "banner") setBannerLoading(false);
+      else if (type === "bg") setBgLoading(false);
+    }
+  };
 
   // 🟢 สำหรับประตูด่านความปลอดภัยแอดมิน
   const [adminTurnstileToken, setAdminTurnstileToken] = createSignal("");
@@ -400,29 +454,60 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Avatar Image Link (URL)
+                      อัปโหลดรูปประจำตัว (Avatar){" "}
+                      <span class="text-rose-500 font-bold">
+                        *ขนาดต้องไม่เกิน 5 MB
+                      </span>
                     </label>
-                    <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.avatarUrl || ""}
-                      onInput={(e) =>
-                        setConfig("avatarUrl", e.currentTarget.value)
-                      }
-                    />
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={avatarLoading()}
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                        onChange={(e) => handleFileUpload(e, "avatar")}
+                      />
+                    </div>
+                    <Show when={config.avatarUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ อัปโหลดไว้แล้ว
+                        </span>
+                        <img
+                          src={config.avatarUrl}
+                          class="w-10 h-10 rounded-full object-cover border border-[#E5DCCF]"
+                        />
+                      </div>
+                    </Show>
                   </div>
+
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Banner Image Link (URL)
+                      อัปโหลดรูปแบนเนอร์ (Banner){" "}
+                      <span class="text-rose-500 font-bold">
+                        *ขนาดต้องไม่เกิน 5 MB
+                      </span>
                     </label>
-                    <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.bannerUrl || ""}
-                      onInput={(e) =>
-                        setConfig("bannerUrl", e.currentTarget.value)
-                      }
-                    />
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={bannerLoading()}
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                        onChange={(e) => handleFileUpload(e, "banner")}
+                      />
+                    </div>
+                    <Show when={config.bannerUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ อัปโหลดไว้แล้ว
+                        </span>
+                        <img
+                          src={config.bannerUrl}
+                          class="w-16 h-8 rounded-lg object-cover border border-[#E5DCCF]"
+                        />
+                      </div>
+                    </Show>
                   </div>
                 </div>
 
@@ -757,13 +842,32 @@ export default function Admin() {
                       </div>
                     }
                   >
-                    <input
-                      type="text"
-                      placeholder="Background Image URL (https://...)"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.bgUrl || ""}
-                      onInput={(e) => setConfig("bgUrl", e.currentTarget.value)}
-                    />
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        อัปโหลดวอลเปเปอร์ (Wallpaper){" "}
+                        <span class="text-rose-500 font-bold">
+                          *ขนาดต้องไม่เกิน 5 MB
+                        </span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={bgLoading()}
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                        onChange={(e) => handleFileUpload(e, "bg")}
+                      />
+                      <Show when={config.bgUrl}>
+                        <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                          <span class="text-[10px] text-emerald-600 font-bold">
+                            ✓ อัปโหลดไว้แล้ว
+                          </span>
+                          <img
+                            src={config.bgUrl}
+                            class="w-16 h-8 rounded-lg object-cover border border-[#E5DCCF]"
+                          />
+                        </div>
+                      </Show>
+                    </div>
                   </Show>
                 </div>
               </div>

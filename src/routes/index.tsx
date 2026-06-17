@@ -123,6 +123,19 @@ export default function Home() {
   const [customAmountVal, setCustomAmountVal] = createSignal("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
   const [isTosExpanded, setIsTosExpanded] = createSignal(false);
+  // 🟢 ฟังก์ชันจัดส่งภาพผ่าน Netlify Image CDN เพื่อสเกลขนาดและสตรีมรูปแบบ WebP/AVIF อัตโนมัติ [1]
+  const optimizeImage = (
+    url: string | undefined,
+    width: number,
+    quality: number = 80,
+  ): string => {
+    if (!url) return "";
+    const cleanUrl = url.trim();
+    if (cleanUrl === "") return "";
+
+    // ส่งพาธรูปผ่าน Netlify Image CDN ไปปรับขนาดเบลอฉากหลังหรือจัดรูปแบบในพริบตา [1]
+    return `/.netlify/images?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality}`;
+  };
 
   let turnstileWidgetId: string | null = null;
 
@@ -352,7 +365,7 @@ export default function Home() {
         style={{
           "background-image":
             config().bgType === "image" && config().bgUrl
-              ? `url(${config().bgUrl})`
+              ? `url(${optimizeImage(config().bgUrl, 1920)})` // ปรับวอลเปเปอร์ภาพเต็มหน้าจอให้พอดี 1920px
               : "none",
           "background-color": config().bgColor,
           "font-family": `'${config().mainFontFamily}', sans-serif`,
@@ -364,7 +377,11 @@ export default function Home() {
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
-            "background-image": `url(${config().bannerUrl || "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"})`,
+            "background-image": `url(${
+              config().bannerUrl
+                ? optimizeImage(config().bannerUrl, 1200) // ลดขนาดแบนเนอร์เหลือความกว้าง 1200px สบายจอ
+                : "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"
+            })`,
             "border-color": config().cardBorderColor,
           }}
         >
@@ -387,8 +404,9 @@ export default function Home() {
                   <div class="flex-shrink-0">
                     <img
                       src={
-                        sanitizeUrl(config().avatarUrl) ||
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                        config().avatarUrl
+                          ? optimizeImage(config().avatarUrl, 200) // สเกลลดขนาดเหลือความกว้างเพียง 200px ประหยัดโควต้ามากค่ะ
+                          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
                       }
                       alt="Avatar"
                       class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
