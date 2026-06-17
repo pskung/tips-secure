@@ -1,53 +1,49 @@
 // src/routes/api/admin/upload.ts
 import type { APIEvent } from "@solidjs/start/server";
-import { getCookie } from "vinxi/http";
 import { getStore } from "@netlify/blobs";
 import { safeLog } from "~/lib/utils/logger";
 
+async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
+  const authHeader = event.request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return false;
+
+  const token = authHeader.substring(7);
+  const url = new URL(event.request.url);
+  const host = event.request.headers.get("host") || url.host;
+  const protocol =
+    event.request.headers.get("x-forwarded-proto") || url.protocol;
+
+  try {
+    const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
+    const res = await fetch(identityUrl, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const user = await res.json();
+      return !!user.id;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 export async function POST(event: APIEvent) {
   try {
-    // 1. ตรวจสอบสิทธิ์ความปลอดภัยในระดับแอดมินผู้ดูแล
-    const rawToken = getCookie(event.nativeEvent, "admin_session_token");
-    if (!rawToken) {
+    const isAuthenticated = await verifyAdminJWT(event);
+    if (!isAuthenticated) {
       return new Response(
-        JSON.stringify({ error: "กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ" }),
+        JSON.stringify({
+          error: "ไม่มีสิทธิ์เข้าถึงหรือเซสชันหมดอายุ กรุณาล็อกอินใหม่ค่ะ",
+        }),
         { status: 401 },
       );
     }
 
-    const parts = rawToken.split(":");
-    if (parts.length !== 2) {
-      return new Response(
-        JSON.stringify({ error: "โครงสร้างคุกกี้ไม่ถูกต้อง" }),
-        { status: 401 },
-      );
-    }
-
-    const [expiresAtStr, sessionToken] = parts;
-    const expiresAt = Number(expiresAtStr);
-
-    if (Date.now() > expiresAt) {
-      return new Response(
-        JSON.stringify({ error: "หมดอายุการล็อกอิน กรุณาเข้าสู่ระบบใหม่นะคะ" }),
-        { status: 401 },
-      );
-    }
-
-    const store = getStore("donation_store");
-    const sessionExists = await store.get(
-      `session:${expiresAt}:${sessionToken}`,
-    );
-    if (!sessionExists) {
-      return new Response(
-        JSON.stringify({ error: "เซสชันไม่ถูกต้อง กรุณาล็อกอินใหม่ค่ะ" }),
-        { status: 401 },
-      );
-    }
-
-    // 2. แกะข้อมูลภาพอัปโหลด
     const formData = await event.request.formData();
     const file = formData.get("file") as File;
-    const type = formData.get("type") as string; // 'avatar', 'banner', หรือ 'bg'
+    const type = formData.get("type") as string;
 
     if (!file || !type) {
       return new Response(
@@ -56,7 +52,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // ตรวจสอบขนาดไม่ให้เกิน 5MB (5 * 1024 * 1024 bytes) ด่านหลังบ้าน
+    // จำกัดขนาดไฟล์ห้ามเกิน 5MB หลังบ้าน (5 * 1024 * 1024 bytes)
     const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return new Response(
@@ -65,7 +61,6 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // สกัดการอัปโหลดไฟล์แปลกปลอม ตรวจประเภทให้เป็นรูปภาพเท่านั้น
     if (!file.type.startsWith("image/")) {
       return new Response(
         JSON.stringify({ error: "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพนะคะ" }),
@@ -73,27 +68,25 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // วิเคราะห์หาประเภทนามสกุลไฟล์
     let ext = "png";
     if (file.type === "image/jpeg" || file.type === "image/jpg") ext = "jpg";
     else if (file.type === "image/gif") ext = "gif";
     else if (file.type === "image/webp") ext = "webp";
     else if (file.type === "image/svg+xml") ext = "svg";
 
-    // 3. กำหนดชื่อไฟล์โดยแนบ Timestamp ป้องกันแคชหน้า CDN ค้าง
     const timestamp = Date.now();
     const filename = `${type}_${timestamp}.${ext}`;
 
-    // 4. บันทึกรูปภาพแบบ Binary (ArrayBuffer) ลง Netlify Blobs
+    const store = getStore("donation_store");
     const arrayBuffer = await file.arrayBuffer();
     await store.set(`image:${filename}`, arrayBuffer);
 
-    safeLog(`Admin successfully uploaded image: ${filename}`, "INFO");
+    safeLog(`Admin uploaded image: ${filename}`, "INFO");
 
     return new Response(
       JSON.stringify({
         success: true,
-        url: `/api/images/${filename}`, // พาธปลายทางสำหรับการเรียกใช้งาน
+        url: `/api/images/${filename}`,
         filename,
       }),
       { status: 200 },

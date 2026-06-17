@@ -1,8 +1,36 @@
+// src/routes/api/admin/save.ts
 import type { APIEvent } from "@solidjs/start/server";
-import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
-import { ThemeSchema } from "~/lib/utils/schemas"; // นำเข้า Zod Schema เรียบร้อยแล้ว
+import { ThemeSchema } from "~/lib/utils/schemas";
+
+// ฟังก์ชันดึงและยืนยันสิทธิ์ JWT ไร้สถานะผ่าน Netlify Identity Endpoint
+async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
+  const authHeader = event.request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return false;
+
+  const token = authHeader.substring(7);
+  const url = new URL(event.request.url);
+  const host = event.request.headers.get("host") || url.host;
+  const protocol =
+    event.request.headers.get("x-forwarded-proto") || url.protocol;
+
+  try {
+    const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
+    const res = await fetch(identityUrl, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const user = await res.json();
+      return !!user.id; // หาก Login ผ่าน Netlify สำเร็จ จะพบ ID ประจำตัวผู้ใช้
+    }
+  } catch (err) {
+    safeLog("Failed to verify JWT with Netlify Identity Gateway", "ERROR", err);
+    return false;
+  }
+  return false;
+}
 
 export async function POST(event: APIEvent) {
   try {
@@ -13,16 +41,7 @@ export async function POST(event: APIEvent) {
       event.request.headers.get("x-forwarded-proto") || url.protocol;
     const expectedOrigin = `${protocol}://${host}`;
 
-    if (!origin) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required Origin verification header",
-        }),
-        { status: 400 },
-      );
-    }
-
-    if (origin !== expectedOrigin) {
+    if (!origin || origin !== expectedOrigin) {
       safeLog(
         `Security Alert: CSRF Blocked on Admin Save from ${origin}`,
         "WARN",
@@ -33,56 +52,12 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const rawToken = getCookie(event.nativeEvent, "admin_session_token");
-    if (!rawToken) {
-      return new Response(
-        JSON.stringify({ error: "กรุณาเข้าสู่ระบบก่อนดำเนินการค่ะ" }),
-        { status: 401 },
-      );
-    }
-
-    const parts = rawToken.split(":");
-    if (parts.length !== 2) {
-      return new Response(
-        JSON.stringify({ error: "โครงสร้างเซสชันคุกกี้ไม่ถูกต้อง" }),
-        { status: 401 },
-      );
-    }
-
-    const [expiresAtStr, sessionToken] = parts;
-    const expiresAt = Number(expiresAtStr);
-
-    if (Date.now() > expiresAt) {
-      safeLog(`Admin session expired for token: ${sessionToken}`, "WARN");
-      setCookie(event.nativeEvent, "admin_session_token", "", {
-        maxAge: 0,
-        path: "/",
-      });
+    // ยืนยันสิทธิ์ความปลอดภัยด้วย JWT
+    const isAuthenticated = await verifyAdminJWT(event);
+    if (!isAuthenticated) {
       return new Response(
         JSON.stringify({
-          error: "หมดอายุการเข้าใช้งานระบบกรุณาล็อกอินใหม่อีกครั้งค่ะ",
-        }),
-        { status: 401 },
-      );
-    }
-
-    const store = getStore("donation_store");
-    const sessionExists = await store.get(
-      `session:${expiresAt}:${sessionToken}`,
-    );
-
-    if (!sessionExists) {
-      safeLog(
-        `Admin session rejected or not found for token: ${sessionToken}`,
-        "WARN",
-      );
-      setCookie(event.nativeEvent, "admin_session_token", "", {
-        maxAge: 0,
-        path: "/",
-      });
-      return new Response(
-        JSON.stringify({
-          error: "ไม่พบข้อมูลเซสชัน กรุณาล็อกอินใหม่อีกครั้งค่ะ",
+          error: "ไม่มีสิทธิ์เข้าถึงหรือเซสชันหมดอายุ กรุณาล็อกอินใหม่ค่ะ",
         }),
         { status: 401 },
       );
@@ -90,30 +65,21 @@ export async function POST(event: APIEvent) {
 
     const { config: newTheme } = await event.request.json();
 
-    // 🟢 1. ตรวจสอบความถูกต้องและความปลอดภัยของธีมด้วย Zod Schema
+    // กรองความถูกต้องพารามิเตอร์ตกแต่งด้วย Zod
     const result = ThemeSchema.safeParse(newTheme);
     if (!result.success) {
-      // ดึงข้อความแสดงจุดบกพร่องข้อแรกสุดส่งกลับให้แอดมิน เพื่อความสะดวกในการแก้ไขคีย์ตกแต่ง
       const firstError = result.error.issues[0].message;
-      safeLog(
-        "Security Alert: Malformed theme config payload rejected by Zod Schema",
-        "WARN",
-        result.error.format(),
-      );
       return new Response(
-        JSON.stringify({
-          error: `การตั้งค่าไม่ถูกต้อง: ${firstError}`,
-        }),
+        JSON.stringify({ error: `การตั้งค่าไม่ถูกต้อง: ${firstError}` }),
         { status: 400 },
       );
     }
 
-    // 🟢 2. บันทึกเฉพาะข้อมูลที่ผ่านการกรอง (Sanitized Data) เรียบร้อยแล้วลงฐานข้อมูล
-    // ฟังก์ชัน result.data จะทิ้งตัวแปรอื่น ๆ ที่สแกนเจอแปลกปลอมออกไปให้ทันทีค่ะ
+    const store = getStore("donation_store");
     await store.setJSON("vtuber_personalized_theme", result.data);
 
     safeLog(
-      "Admin settings saved successfully with Zod strict parsing.",
+      "Admin settings saved successfully via Netlify Identity JWT.",
       "INFO",
     );
     return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -124,7 +90,7 @@ export async function POST(event: APIEvent) {
       err,
     );
     return new Response(
-      JSON.stringify({ error: "เกิดปัญหาขัดข้องทางเทคนิคขณะจัดเก็บข้อมูลธีม" }),
+      JSON.stringify({ error: "เกิดปัญหาขัดข้องขณะจัดเก็บข้อมูลธีม" }),
       { status: 500 },
     );
   }

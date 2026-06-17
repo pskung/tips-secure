@@ -17,7 +17,6 @@ export async function GET(event: APIEvent) {
       return new Response("Image not found", { status: 404 });
     }
 
-    // กำหนดประเภทข้อมูลรูปภาพจากนามสกุลไฟล์
     let contentType = "image/png";
     if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
       contentType = "image/jpeg";
@@ -33,7 +32,7 @@ export async function GET(event: APIEvent) {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        // กำหนด Cache-Control ให้แคชคงอยู่ถาวร เนื่องจากชื่อไฟล์ของเรามี Timestamp คอยเปลี่ยนในตัวอยู่แล้ว
+        // แคชรูปภาพเป็นอมตะบนเครื่องผู้ใช้และ CDN เนื่องจากชื่อไฟล์ของเราเปลี่ยนตามมิติกาลเวลา Timestamp อยู่แล้วค่ะ
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
