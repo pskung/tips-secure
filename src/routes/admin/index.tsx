@@ -30,6 +30,14 @@ const getAdminData = query(async () => {
   }
 }, "adminData");
 
+// ฟังก์ชันช่วยดึงค่าคุ้กกี้ในฝั่ง Client
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
 export default function Admin() {
   const data = createAsync(() => getAdminData());
 
@@ -45,10 +53,10 @@ export default function Admin() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
-  const [email, setEmail] = createSignal(""); // สัญญาณรับอีเมลแอดมิน
-  const [password, setPassword] = createSignal("");
+  const [email, setEmail] = createSignal("");
   const [authError, setAuthError] = createSignal("");
   const [authLoading, setAuthLoading] = createSignal(false);
+  const [magicLinkSent, setMagicLinkSent] = createSignal(false); // สถานะยืนยันการส่งลิงก์สำเร็จ
   const [saveLoading, setSaveLoading] = createSignal(false);
 
   const [avatarLoading, setAvatarLoading] = createSignal(false);
@@ -89,48 +97,109 @@ export default function Admin() {
     ];
   });
 
-  onMount(() => {
-    const isVerified = sessionStorage.getItem("admin_verified") === "true";
-    const storedToken = sessionStorage.getItem("admin_jwt");
-    if (isVerified && storedToken) {
-      setIsAuthenticated(true);
+  onMount(async () => {
+    // 1. ตรวจสอบเซสชันเดิมที่มีอยู่ก่อน (จาก sessionStorage หรือคุ้กกี้ 24 ชม.)
+    let storedToken =
+      sessionStorage.getItem("admin_jwt") || getCookie("admin_jwt");
+
+    if (storedToken) {
+      // ทำการตรวจสอบ Token กับระบบหลังบ้านก่อนว่ายังไม่หมดอายุจริง
+      try {
+        const res = await fetch("/.netlify/identity/user", {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        if (res.ok) {
+          sessionStorage.setItem("admin_verified", "true");
+          sessionStorage.setItem("admin_jwt", storedToken);
+          setIsAuthenticated(true);
+          return;
+        }
+      } catch {
+        // หากสิทธิ์หมดอายุแล้ว ให้ล้างค่าทิ้งเพื่อรอการรีเซ็ตเข้าสู่ระบบใหม่
+      }
+    }
+
+    // 2. ดักจับ Hash เพื่อแลกโทเคนกรณีคลิกกลับมาจากอีเมลยืนยันตัวตน
+    const hash = window.location.hash;
+    if (hash && hash.startsWith("#")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const recoveryToken = params.get("recovery_token");
+      const inviteToken = params.get("invite_token"); // รองรับกรณีแอดมินเพิ่งโดนเชิญใหม่
+
+      const targetToken = recoveryToken || inviteToken;
+      const targetType = recoveryToken ? "recovery" : "invite";
+
+      if (targetToken) {
+        setAuthLoading(true);
+        setAuthError("");
+        try {
+          const res = await fetch("/.netlify/identity/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: targetType,
+              token: targetToken,
+            }),
+          });
+          const resData = await res.json();
+          if (res.ok && resData.access_token) {
+            // บันทึกสิทธิ์เข้าสู่ระบบแบบถาวรชั่วคราว
+            sessionStorage.setItem("admin_verified", "true");
+            sessionStorage.setItem("admin_jwt", resData.access_token);
+
+            // ตั้งค่า Cookie สำหรับการเก็บประวัติไว้ 24 ชั่วโมง (จะล้างออกหลัง 24 ชม. หรือปิดเบราว์เซอร์แล้วแต่เงื่อนไขคุ้กกี้)
+            document.cookie = `admin_jwt=${resData.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
+
+            setIsAuthenticated(true);
+
+            // ทำการลบค่า Hash ออกจาก URL แถบที่อยู่ทันที เพื่อความปลอดภัยและสวยงาม
+            window.history.replaceState(null, "", window.location.pathname);
+          } else {
+            setAuthError(
+              resData.error_description ||
+                "ลิงก์เข้าสู่ระบบหมดอายุหรือถูกใช้งานไปแล้วค่ะ",
+            );
+          }
+        } catch {
+          setAuthError("เชื่อมต่อเพื่อตรวจสอบลิงก์ยืนยันตัวตนไม่สำเร็จค่ะ");
+        } finally {
+          setAuthLoading(false);
+        }
+      }
     }
   });
 
-  // 🟢 ล็อกอินแอดมินโดยตรงกับ Netlify Identity Backchannel
-  const handleVerify = async (e: Event) => {
+  // 🟢 คำขอรับ Magic Link ไปยัง Netlify Identity API
+  const handleRequestMagicLink = async (e: Event) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      const res = await fetch("/.netlify/identity/login", {
+      const res = await fetch("/.netlify/identity/recover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email(),
-          password: password(),
+          email: email().trim(),
         }),
       });
-      const resData = await res.json();
-      if (res.ok && resData.access_token) {
-        sessionStorage.setItem("admin_verified", "true");
-        sessionStorage.setItem("admin_jwt", resData.access_token);
-        setIsAuthenticated(true);
+
+      if (res.ok) {
+        setMagicLinkSent(true);
       } else {
+        const resData = await res.json().catch(() => ({}));
         setAuthError(
           resData.error_description ||
-            "ข้อมูลล็อกอินไม่ถูกต้อง กรุณาตรวจสอบอีกครั้งค่ะ",
+            "ไม่สามารถส่งลิงก์เข้าสู่ระบบได้ กรุณาตรวจสอบอีเมลว่าระบุถูกต้องในฐานข้อมูลหรือไม่นะคะ",
         );
       }
     } catch {
-      setAuthError("เชื่อมต่อระบบตรวจสอบสิทธิ์ภายนอกไม่สำเร็จค่ะ");
+      setAuthError("เกิดปัญหาขัดข้องทางเทคนิคขณะส่งลิงก์ยืนยันตัวตนค่ะ");
     } finally {
       setAuthLoading(false);
     }
   };
 
-  // 🟢 ฟังก์ชันจัดส่งภาพผ่าน FormData ดักขนาดความจุไม่ให้เกิน 5MB
   const handleFileUpload = async (
     e: Event,
     type: "avatar" | "banner" | "bg",
@@ -220,11 +289,11 @@ export default function Admin() {
         )}
       </For>
 
-      {/* บล็อกล็อกอินแอดมินดีไซน์ Cozy ใหม่เชื่อมตรงกับ Netlify Identity */}
+      {/* บล็อกล็อกอินแอดมินดีไซน์แบบ Passwordless Cozy */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form
-            onSubmit={handleVerify}
+            onSubmit={handleRequestMagicLink}
             class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-5 shadow-xl animate-fade-in"
           >
             <div class="text-center">
@@ -233,66 +302,74 @@ export default function Admin() {
                 Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                ล็อกอินบัญชี Netlify Identity เพื่อตกแต่งดีไซน์ค่ะ
+                {magicLinkSent()
+                  ? "ส่งลิงก์เข้าสู่ระบบเรียบร้อยแล้วค่ะ"
+                  : "กรอกอีเมลเพื่อรับลิงก์เข้าสู่ระบบ (Magic Link) ค่ะ"}
               </p>
             </div>
+
             <Show when={authError()}>
               <div class="p-3 bg-red-50 border border-red-200 text-red-600 text-xs text-center rounded-xl font-bold">
                 {authError()}
               </div>
             </Show>
-            <div class="space-y-3">
-              <div class="space-y-1">
-                <label
-                  for="email"
-                  class="text-[10px] font-black text-[#5C4F45] uppercase tracking-wider"
-                >
-                  ADMIN EMAIL
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  placeholder="admin@example.com"
-                  class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl focus:ring-1 focus:ring-[#E87A5D] focus:outline-none text-[#2C2520] text-sm font-bold"
-                  value={email()}
-                  onInput={(e) => setEmail(e.currentTarget.value)}
-                />
-              </div>
 
-              <div class="space-y-1">
-                <label
-                  for="pwd"
-                  class="text-[10px] font-black text-[#5C4F45] uppercase tracking-wider"
-                >
-                  PASSWORD
-                </label>
-                <input
-                  id="pwd"
-                  type="password"
-                  required
-                  placeholder="••••••••••••"
-                  class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl focus:ring-1 focus:ring-[#E87A5D] focus:outline-none text-[#2C2520] text-sm font-bold"
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={authLoading()}
-              class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
+            <Show
+              when={!magicLinkSent()}
+              fallback={
+                <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-2">
+                  <p class="text-xs text-emerald-800 font-bold">
+                    📬 ลิงก์ยืนยันตัวตนถูกส่งไปที่กล่องข้อความแล้วค่ะ!
+                  </p>
+                  <p class="text-[10px] text-[#7C6E65] leading-relaxed">
+                    กรุณาเปิดอีเมลของคุณและคลิกปุ่มยืนยันตัวตนเพื่อเข้าสู่แดชบอร์ดตกแต่งได้ทันทีค่ะ
+                    (ลิงก์นี้ใช้ได้เพียงหนึ่งครั้งเท่านั้นน้า)
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setMagicLinkSent(false)}
+                    class="text-[10px] text-[#E87A5D] font-bold underline cursor-pointer mt-2 block mx-auto"
+                  >
+                    ย้อนกลับเพื่อส่งใหม่อีกครั้ง
+                  </button>
+                </div>
+              }
             >
-              {authLoading()
-                ? "กำลังเข้าสู่ระบบ... ⏳"
-                : "เข้าสู่แผงควบคุมหลัก"}
-            </button>
+              <div class="space-y-3">
+                <div class="space-y-1">
+                  <label
+                    for="email"
+                    class="text-[10px] font-black text-[#5C4F45] uppercase tracking-wider"
+                  >
+                    ADMIN EMAIL
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    placeholder="admin@example.com"
+                    class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl focus:ring-1 focus:ring-[#E87A5D] focus:outline-none text-[#2C2520] text-sm font-bold"
+                    value={email()}
+                    onInput={(e) => setEmail(e.currentTarget.value)}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading()}
+                class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
+              >
+                {authLoading()
+                  ? "กำลังส่งลิงก์ยืนยัน... ⏳"
+                  : "ส่งลิงก์เข้าสู่ระบบ (Magic Link)"}
+              </button>
+            </Show>
           </form>
         </div>
       </Show>
 
-      {/* พื้นที่แกนควบคุมหลังบ้านหลัก */}
+      {/* พื้นที่แกนควบคุมหลังบ้านหลัก (คงเดิมไว้ทั้งหมดเพื่อความต่อเนื่องของฟีเจอร์) */}
       <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
