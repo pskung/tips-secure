@@ -1,14 +1,14 @@
-# 🚀 Netlify Configuration for SvelteKit and One-Click Deploy Template
 [build]
   command = "npm run build"
+  publish = "dist"
 
-# 🛠️ ประกาศรายการกล่องข้อความที่จะปรากฏให้ผู้ใช้กรอกตอนกดติดตั้ง One-Click Deploy [3]
 [template.environment]
-  ADMIN_PASSWORD = "🔑 *จำเป็นต้องกรอก* - ตั้งค่ารหัสผ่านสำหรับการล็อกอินหลังบ้านเพื่อปรับสไตล์สีเว็บ"
-  XENDIT_SECRET_KEY = "💰 (Optional) คีย์ธุรกรรม Xendit Secret Key"
-  XENDIT_WEBHOOK_TOKEN = "🛡️ (Optional) คีย์ความปลอดภัยบิล Xendit Webhook Token"
-  TURNSTILE_SITE_KEY = "🤖 (Optional) คีย์สแกนบอท Turnstile Site Key"
-  TURNSTILE_SECRET_KEY = "🔒 (Optional) คีย์ลับสแกนบอท Turnstile Secret Key"
-  STREAMLABS_ACCESS_TOKEN = "📺 (Optional) คีย์แจ้งเตือนขึ้นจอ Streamlabs Token"
+  ADMIN_PASSWORD = "🔑 รหัสผ่านเข้าหลังบ้านแอดมิน"
+  BEAM_API_KEY =  "🔑 คีย์รับเงินลับ Beam API Key"
+  BEAM_WEBHOOK_SECRET =  "🔒 คีย์ความถูกต้องของ Webhook Token"
+  BEAM_API_URL = "🌐 (Optional) URL สำหรับ Beam API เช่น https://playground.api.beamcheckout.com"
+  TURNSTILE_SITE_KEY = "🔒 คีย์ระบุโดเมน Cloudflare Turnstile Site Key"
+  TURNSTILE_SECRET_KEY = "🛡️ คีย์ตรวจสอบความเป็นมนุษย์ Cloudflare Turnstile Secret Key"
+  STREAMLABS_ACCESS_TOKEN = "📽️ คีย์แจ้งเตือนขึ้นจอ Streamlabs Access Token API"
   STREAMELEMENTS_JWT = "📽️ (Optional) คีย์แจ้งเตือนขึ้นจอ StreamElements JWT"
   STREAMELEMENTS_CHANNEL_ID = "🆔 (Optional) รหัสช่องสตรีม Streamelements ID"

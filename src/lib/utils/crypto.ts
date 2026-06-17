@@ -1,18 +1,22 @@
-// 🛡️ พัฒนาโดยอาคาริ: อัลกอริทึมเปรียบเทียบข้อความแบบใช้เวลาคงที่ (Constant-time string comparison)
-// ทำงานผ่าน Pure JS ไร้การพึ่งพา Node.js ส่งผลให้สามารถรันบน Cloudflare Pages ได้โดยตรงโดยไม่ต้องใช้ nodejs_compat
-export function timingSafeCompare(a: string | undefined | null, b: string | undefined | null): boolean {
-  const strA = typeof a === 'string' ? a : '';
-  const strB = typeof b === 'string' ? b : '';
+import { createHash } from "crypto";
 
-  // ตรวจสอบขนาดความยาวเพื่อป้องกันการตัดจบ (Early-exit Protection)
-  let diff = strA.length ^ strB.length;
-  const len = Math.max(strA.length, strB.length);
+export function timingSafeCompare(
+  a: string | undefined | null,
+  b: string | undefined | null,
+): boolean {
+  const strA = typeof a === "string" ? a : "";
+  const strB = typeof b === "string" ? b : "";
 
-  for (let i = 0; i < len; i++) {
-    const charA = i < strA.length ? strA.charCodeAt(i) : 0;
-    const charB = i < strB.length ? strB.charCodeAt(i) : 0;
-    diff |= charA ^ charB; // ใช้ bitwise XOR ตรวจสอบความแตกต่างทีละหลัก
+  // ล็อกความยาวข้อความด้วย SHA-256 (32 Bytes) ป้องกัน Side-Channel Timing Attacks ได้อย่างถาวร
+  const hashA = createHash("sha256").update(strA).digest();
+  const hashB = createHash("sha256").update(strB).digest();
+
+  if (hashA.length !== hashB.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < hashA.length; i++) {
+    diff |= hashA[i] ^ hashB[i];
   }
 
-  return diff === 0;
+  return diff === 0 && strA.length === strB.length;
 }
