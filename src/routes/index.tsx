@@ -647,7 +647,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ปุ่มหลักยินยอมและสนับสนุน */}
+                {/* 🟢 1. Cloudflare Turnstile (เลื่อนขึ้นมาแสดงผลก่อน) */}
+                <Show when={data()?.turnstileSiteKey}>
+                  <div
+                    id="turnstile-container"
+                    class="w-full flex justify-center transition-all duration-300 py-1"
+                    style={{
+                      display: turnstileToken() ? "none" : "flex",
+                      "min-height": "65px",
+                    }}
+                  ></div>
+                </Show>
+
+                {/* 🟢 2. ปุ่มหลักยินยอมและสนับสนุน (เลื่อนลงมาอยู่ด้านล่างสุด) */}
                 <button
                   type="submit"
                   disabled={
