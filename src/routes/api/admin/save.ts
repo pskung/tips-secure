@@ -2,88 +2,7 @@ import type { APIEvent } from "@solidjs/start/server";
 import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
-
-function validateTheme(theme: any): boolean {
-  if (!theme || typeof theme !== "object") return false;
-
-  // 1. คีย์ตัวแปรประเภท String ที่ระบบจำเป็นต้องมี (Required Fields)
-  const requiredStrings = [
-    "mainFontFamily",
-    "vtuberName",
-    "welcomeText",
-    "bgType",
-    "bgColor",
-    "cardBgColor",
-    "generalTextColor",
-    "inputBgColor",
-    "inputTextColor",
-    "submitBtnColor",
-    "submitBtnTextColor",
-  ];
-
-  for (const key of requiredStrings) {
-    if (typeof theme[key] !== "string" || theme[key].trim() === "")
-      return false;
-  }
-
-  // 2. คีย์ตัวแปรประเภท String ตัวเลือกเสริมที่สามารถเว้นว่างได้ (Optional Fields)
-  const optionalStrings = [
-    "avatarUrl",
-    "bannerUrl",
-    "bgUrl",
-    "nameColor",
-    "inputBorderColor",
-    "cardBorderColor",
-    "presetBorderColor",
-    "youtubeUrl",
-    "twitchUrl",
-    "discordUrl",
-    "xUrl",
-    "facebookUrl",
-    "instagramUrl",
-    "tiktokUrl",
-  ];
-
-  for (const key of optionalStrings) {
-    if (theme[key] !== undefined && typeof theme[key] !== "string")
-      return false;
-  }
-
-  // 3. ตรวจสอบความถูกต้องและรูปแบบของรหัสสี HEX (HEX Color Format Strict Validator)
-  const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-  const colorKeys = [
-    "bgColor",
-    "nameColor",
-    "cardBgColor",
-    "cardBorderColor",
-    "generalTextColor",
-    "inputBgColor",
-    "inputTextColor",
-    "inputBorderColor",
-    "submitBtnColor",
-    "submitBtnTextColor",
-    "presetBorderColor",
-  ];
-
-  for (const key of colorKeys) {
-    if (
-      theme[key] &&
-      theme[key].trim() !== "" &&
-      !hexColorRegex.test(theme[key])
-    ) {
-      return false;
-    }
-  }
-
-  // 4. ตรวจสอบความสมบูรณ์และเงื่อนไขของยอดเงินสนับสนุนด่วน (Preset Amounts Array)
-  if (!Array.isArray(theme.presetAmounts) || theme.presetAmounts.length !== 4)
-    return false;
-  for (const amt of theme.presetAmounts) {
-    if (typeof amt !== "number" || amt < 10 || amt > 5000) return false;
-  }
-
-  return true;
-}
+import { ThemeSchema } from "~/lib/utils/schemas"; // นำเข้า Zod Schema เรียบร้อยแล้ว
 
 export async function POST(event: APIEvent) {
   try {
@@ -171,22 +90,32 @@ export async function POST(event: APIEvent) {
 
     const { config: newTheme } = await event.request.json();
 
-    if (!validateTheme(newTheme)) {
+    // 🟢 1. ตรวจสอบความถูกต้องและความปลอดภัยของธีมด้วย Zod Schema
+    const result = ThemeSchema.safeParse(newTheme);
+    if (!result.success) {
+      // ดึงข้อความแสดงจุดบกพร่องข้อแรกสุดส่งกลับให้แอดมิน เพื่อความสะดวกในการแก้ไขคีย์ตกแต่ง
+      const firstError = result.error.issues[0].message;
       safeLog(
-        "Security Alert: Malformed theme config payload rejected",
+        "Security Alert: Malformed theme config payload rejected by Zod Schema",
         "WARN",
+        result.error.format(),
       );
       return new Response(
         JSON.stringify({
-          error: "พารามิเตอร์การตกแต่งมีความเสี่ยงด้านความปลอดภัย",
+          error: `การตั้งค่าไม่ถูกต้อง: ${firstError}`,
         }),
         { status: 400 },
       );
     }
 
-    await store.setJSON("vtuber_personalized_theme", newTheme);
+    // 🟢 2. บันทึกเฉพาะข้อมูลที่ผ่านการกรอง (Sanitized Data) เรียบร้อยแล้วลงฐานข้อมูล
+    // ฟังก์ชัน result.data จะทิ้งตัวแปรอื่น ๆ ที่สแกนเจอแปลกปลอมออกไปให้ทันทีค่ะ
+    await store.setJSON("vtuber_personalized_theme", result.data);
 
-    safeLog("Admin settings saved successfully.", "INFO");
+    safeLog(
+      "Admin settings saved successfully with Zod strict parsing.",
+      "INFO",
+    );
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
     safeLog(

@@ -1,7 +1,7 @@
-// src/routes/api/donate.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { getCookie, setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
+import { DonateInputSchema } from "~/lib/utils/schemas"; // 🟢 นำเข้า Zod Schema เรียบร้อยแล้ว
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
@@ -35,6 +35,18 @@ export async function POST(event: APIEvent) {
     }
 
     const body = await event.request.json();
+
+    // 🟢 1. ใช้ Zod ทำการตรวจสอบประเภทตัวแปร ความยาว และโครงสร้างทั้งหมดในขั้นตอนเดียว
+    const result = DonateInputSchema.safeParse(body);
+    if (!result.success) {
+      // ดึงเอาข้อความแจ้งเตือนข้อผิดพลาดแรกสุดส่งกลับหน้าจอทันที เช่น "ยอดเงินโดเนทขั้นต่ำต้องอยู่ระหว่าง 10 - 5,000 บาทค่ะ"
+      const firstError = result.error.issues[0].message;
+      return new Response(JSON.stringify({ error: firstError }), {
+        status: 400,
+      });
+    }
+
+    // ตัวแปรทุกตัวผ่านการรับประกันประเภทข้อมูลรันไทม์ (Type-Safe) จาก Zod เรียบร้อยแล้วค่ะ
     const {
       name,
       amount,
@@ -42,18 +54,9 @@ export async function POST(event: APIEvent) {
       email_confirm,
       render_time,
       turnstile_token,
-      is_consented,
-    } = body;
+    } = result.data;
 
-    if (!is_consented) {
-      return new Response(
-        JSON.stringify({
-          error: "กรุณากดยินยอมยอมรับนโยบายก่อนดำเนินรายการค่ะ",
-        }),
-        { status: 400 },
-      );
-    }
-
+    // 🟢 2. ระบบตรวจสอบสแปมบอทและอัตราความเร็วการพิมพ์
     if (email_confirm) {
       safeLog("Spam Bot Detected: Invisible honeypot trap triggered.", "WARN", {
         email_confirm,
@@ -71,6 +74,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
+    // 🟢 3. ตรวจสอบ Cloudflare Turnstile Verification
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
       safeLog(
@@ -83,13 +87,6 @@ export async function POST(event: APIEvent) {
             "ระบบความปลอดภัยไม่ได้เปิดใช้งานอย่างสมบูรณ์ กรุณาติดต่อสตรีมเมอร์ค่ะ",
         }),
         { status: 500 },
-      );
-    }
-
-    if (!turnstile_token) {
-      return new Response(
-        JSON.stringify({ error: "กรุณารอระบบยืนยันตัวตนสักครู่น้า 🔒" }),
-        { status: 400 },
       );
     }
 
@@ -115,6 +112,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
+    // 🟢 4. ตรวจสอบคุกกี้สกัดการโอนซ้ำรัวๆ
     const cooldownActive = getCookie(event.nativeEvent, "cooldown_active");
     if (cooldownActive === "true") {
       return new Response(
@@ -123,36 +121,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    if (
-      !name ||
-      typeof name !== "string" ||
-      !/^[a-zA-Z0-9\u0e00-\u0e7f\s._-]+$/.test(name) ||
-      name.length < 2 ||
-      name.length > 25
-    ) {
-      return new Response(
-        JSON.stringify({ error: "กรุณาตรวจสอบความถูกต้องของชื่อเล่นค่ะ" }),
-        { status: 400 },
-      );
-    }
-
-    if (message && (typeof message !== "string" || message.length > 255)) {
-      return new Response(
-        JSON.stringify({ error: "ข้อความยาวเกิน 255 ตัวอักษรค่ะ" }),
-        { status: 400 },
-      );
-    }
-
-    const rawAmount = Number(amount);
-    if (isNaN(rawAmount) || rawAmount < 10.0 || rawAmount > 5000.0) {
-      return new Response(
-        JSON.stringify({
-          error: "ยอดเงินโดเนทขั้นต่ำต้องอยู่ระหว่าง 10 - 5,000 บาทค่ะ",
-        }),
-        { status: 400 },
-      );
-    }
-
+    // 🟢 5. สกัดการเริ่มเปิดธุรกรรมหากเกตเวย์ Beam ข้อมูลไม่สมบูรณ์ [1]
     if (!process.env.BEAM_API_KEY) {
       return new Response(
         JSON.stringify({
@@ -162,17 +131,16 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // 🟢 แปลงหน่วย THB เป็น Satang (สตางค์) และปัดเศษป้องกันความพังพินาศจากเศษทศนิยม
-    const netAmountInSatang = Math.round(rawAmount * 100);
+    // ทำการแปลงหน่วย THB เป็น Satang (สตางค์) และปัดเศษป้องการจุดทศนิยมผิดเพี้ยน [1]
+    const netAmountInSatang = Math.round(amount * 100);
 
     const siteUrl = `${protocol}://${host}/`;
     const beamUrl =
       process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
 
-    // ตั้งค่า Basic Authentication สำหรับเชื่อมต่อ Beam API
     const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
 
-    // 🟢 ยิงคำร้องไปขอเปิดหน้าต่าง Payment Link กับ Beam
+    // ส่งคำขอสร้างลิงก์ชำระเงินกับ Beam API [1]
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
       headers: {
@@ -183,10 +151,9 @@ export async function POST(event: APIEvent) {
         redirectUrl: siteUrl,
         order: {
           currency: "THB",
-          netAmount: netAmountInSatang, // ส่งในหน่วยสตางค์
+          netAmount: netAmountInSatang, // ส่งหน่วยสตางค์
           description: `VTuber tip by ${name}`,
           referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
-          // เข้ารหัสข้อมูลสตรีมเมอร์ลงไปใน internalNote เพื่อนำกลับมาแกะใช้ตอน Webhook ตีกลับ
           internalNote: JSON.stringify({
             donor_name: name,
             donor_message: message || "",
@@ -212,7 +179,6 @@ export async function POST(event: APIEvent) {
       sameSite: "strict",
     });
 
-    // 🟢 ใช้คุณสมบัติ data.url ที่คืนมาจาก Beam ในการ Redirect ผู้ชำระเงิน
     return new Response(JSON.stringify({ invoice_url: data.url }), {
       status: 200,
     });
