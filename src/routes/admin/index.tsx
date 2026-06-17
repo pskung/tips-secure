@@ -30,14 +30,6 @@ const getAdminData = query(async () => {
   }
 }, "adminData");
 
-// ฟังก์ชันช่วยดึงค่าคุ้กกี้ในฝั่ง Client
-function getCookie(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-
 export default function Admin() {
   const data = createAsync(() => getAdminData());
 
@@ -53,10 +45,7 @@ export default function Admin() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
-  const [email, setEmail] = createSignal("");
   const [authError, setAuthError] = createSignal("");
-  const [authLoading, setAuthLoading] = createSignal(false);
-  const [magicLinkSent, setMagicLinkSent] = createSignal(false); // สถานะยืนยันการส่งลิงก์สำเร็จ
   const [saveLoading, setSaveLoading] = createSignal(false);
 
   const [avatarLoading, setAvatarLoading] = createSignal(false);
@@ -97,107 +86,34 @@ export default function Admin() {
     ];
   });
 
-  onMount(async () => {
-    // 1. ตรวจสอบเซสชันเดิมที่มีอยู่ก่อน (จาก sessionStorage หรือคุ้กกี้ 24 ชม.)
-    let storedToken =
-      sessionStorage.getItem("admin_jwt") || getCookie("admin_jwt");
-
-    if (storedToken) {
-      // ทำการตรวจสอบ Token กับระบบหลังบ้านก่อนว่ายังไม่หมดอายุจริง
-      try {
-        const res = await fetch("/.netlify/identity/user", {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        if (res.ok) {
-          sessionStorage.setItem("admin_verified", "true");
-          sessionStorage.setItem("admin_jwt", storedToken);
-          setIsAuthenticated(true);
-          return;
-        }
-      } catch {
-        // หากสิทธิ์หมดอายุแล้ว ให้ล้างค่าทิ้งเพื่อรอการรีเซ็ตเข้าสู่ระบบใหม่
-      }
-    }
-
-    // 2. ดักจับ Hash เพื่อแลกโทเคนกรณีคลิกกลับมาจากอีเมลยืนยันตัวตน
+  onMount(() => {
+    // 🟢 1. ตรวจจับโทเคน OAuth ที่เด้งกลับมาจากหน้าลงทะเบียน/เข้าสู่ระบบ
     const hash = window.location.hash;
-    if (hash && hash.startsWith("#")) {
+    if (hash && hash.includes("access_token")) {
       const params = new URLSearchParams(hash.substring(1));
-      const recoveryToken = params.get("recovery_token");
-      const inviteToken = params.get("invite_token"); // รองรับกรณีแอดมินเพิ่งโดนเชิญใหม่
-
-      const targetToken = recoveryToken || inviteToken;
-      const targetType = recoveryToken ? "recovery" : "invite";
-
-      if (targetToken) {
-        setAuthLoading(true);
-        setAuthError("");
-        try {
-          const res = await fetch("/.netlify/identity/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: targetType,
-              token: targetToken,
-            }),
-          });
-          const resData = await res.json();
-          if (res.ok && resData.access_token) {
-            // บันทึกสิทธิ์เข้าสู่ระบบแบบถาวรชั่วคราว
-            sessionStorage.setItem("admin_verified", "true");
-            sessionStorage.setItem("admin_jwt", resData.access_token);
-
-            // ตั้งค่า Cookie สำหรับการเก็บประวัติไว้ 24 ชั่วโมง (จะล้างออกหลัง 24 ชม. หรือปิดเบราว์เซอร์แล้วแต่เงื่อนไขคุ้กกี้)
-            document.cookie = `admin_jwt=${resData.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
-
-            setIsAuthenticated(true);
-
-            // ทำการลบค่า Hash ออกจาก URL แถบที่อยู่ทันที เพื่อความปลอดภัยและสวยงาม
-            window.history.replaceState(null, "", window.location.pathname);
-          } else {
-            setAuthError(
-              resData.error_description ||
-                "ลิงก์เข้าสู่ระบบหมดอายุหรือถูกใช้งานไปแล้วค่ะ",
-            );
-          }
-        } catch {
-          setAuthError("เชื่อมต่อเพื่อตรวจสอบลิงก์ยืนยันตัวตนไม่สำเร็จค่ะ");
-        } finally {
-          setAuthLoading(false);
-        }
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        sessionStorage.setItem("admin_verified", "true");
+        sessionStorage.setItem("admin_jwt", accessToken);
+        // ล้าง URL Hash ไม่ให้ค้างบนเบราว์เซอร์
+        window.history.replaceState(null, "", window.location.pathname);
+        setIsAuthenticated(true);
+      }
+    } else {
+      // 🟢 2. ตรวจค้นข้อมูลในเบราว์เซอร์เซสชันเดิม
+      const isVerified = sessionStorage.getItem("admin_verified") === "true";
+      const storedToken = sessionStorage.getItem("admin_jwt");
+      if (isVerified && storedToken) {
+        setIsAuthenticated(true);
       }
     }
   });
 
-  // 🟢 คำขอรับ Magic Link ไปยัง Netlify Identity API
-  const handleRequestMagicLink = async (e: Event) => {
-    e.preventDefault();
-    setAuthLoading(true);
+  // 🟢 ฟังก์ชันส่งตัวแทนแอดมินไปใช้บริการสิทธิ์ OAuth ของ Netlify Identity
+  const handleOAuthLogin = (provider: "google" | "github") => {
     setAuthError("");
-
-    try {
-      const res = await fetch("/.netlify/identity/recover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email().trim(),
-        }),
-      });
-
-      if (res.ok) {
-        setMagicLinkSent(true);
-      } else {
-        const resData = await res.json().catch(() => ({}));
-        setAuthError(
-          resData.error_description ||
-            "ไม่สามารถส่งลิงก์เข้าสู่ระบบได้ กรุณาตรวจสอบอีเมลว่าระบุถูกต้องในฐานข้อมูลหรือไม่นะคะ",
-        );
-      }
-    } catch {
-      setAuthError("เกิดปัญหาขัดข้องทางเทคนิคขณะส่งลิงก์ยืนยันตัวตนค่ะ");
-    } finally {
-      setAuthLoading(false);
-    }
+    const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
+    window.location.href = authorizeUrl;
   };
 
   const handleFileUpload = async (
@@ -289,22 +205,17 @@ export default function Admin() {
         )}
       </For>
 
-      {/* บล็อกล็อกอินแอดมินดีไซน์แบบ Passwordless Cozy */}
+      {/* บล็อกล็อกอินแอดมินดีไซน์ Cozy ใหม่เชื่อมตรงกับ Netlify Identity OAuth */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleRequestMagicLink}
-            class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-5 shadow-xl animate-fade-in"
-          >
-            <div class="text-center">
+          <div class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl text-center">
+            <div>
               <span class="text-4xl">☕</span>
               <h1 class="text-xl font-black mt-3 text-[#2C2520]">
                 Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                {magicLinkSent()
-                  ? "ส่งลิงก์เข้าสู่ระบบเรียบร้อยแล้วค่ะ"
-                  : "กรอกอีเมลเพื่อรับลิงก์เข้าสู่ระบบ (Magic Link) ค่ะ"}
+                กรุณาเข้าสู่ระบบด้วยบัญชีโซเชียลเพื่อความปลอดภัยสูงสุดค่ะ
               </p>
             </div>
 
@@ -314,62 +225,43 @@ export default function Admin() {
               </div>
             </Show>
 
-            <Show
-              when={!magicLinkSent()}
-              fallback={
-                <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-2">
-                  <p class="text-xs text-emerald-800 font-bold">
-                    📬 ลิงก์ยืนยันตัวตนถูกส่งไปที่กล่องข้อความแล้วค่ะ!
-                  </p>
-                  <p class="text-[10px] text-[#7C6E65] leading-relaxed">
-                    กรุณาเปิดอีเมลของคุณและคลิกปุ่มยืนยันตัวตนเพื่อเข้าสู่แดชบอร์ดตกแต่งได้ทันทีค่ะ
-                    (ลิงก์นี้ใช้ได้เพียงหนึ่งครั้งเท่านั้นน้า)
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setMagicLinkSent(false)}
-                    class="text-[10px] text-[#E87A5D] font-bold underline cursor-pointer mt-2 block mx-auto"
-                  >
-                    ย้อนกลับเพื่อส่งใหม่อีกครั้ง
-                  </button>
-                </div>
-              }
-            >
-              <div class="space-y-3">
-                <div class="space-y-1">
-                  <label
-                    for="email"
-                    class="text-[10px] font-black text-[#5C4F45] uppercase tracking-wider"
-                  >
-                    ADMIN EMAIL
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    placeholder="admin@example.com"
-                    class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl focus:ring-1 focus:ring-[#E87A5D] focus:outline-none text-[#2C2520] text-sm font-bold"
-                    value={email()}
-                    onInput={(e) => setEmail(e.currentTarget.value)}
-                  />
-                </div>
-              </div>
+            <div class="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                class="w-full py-3.5 bg-[#EA4335] hover:bg-[#d63c2e] text-white font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-2 text-sm"
+              >
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.54 0-6.425-2.885-6.425-6.425s2.885-6.425 6.425-6.425c1.6 0 3.06.59 4.19 1.55l3.1-3.1C19.29 2.22 15.93 1 12.24 1 5.92 1 12s4.92 11 11.24 11c6.53 0 10.86-4.6 10.86-11 0-.74-.07-1.46-.2-2.115H12.24z" />
+                </svg>
+                ลงชื่อเข้าใช้ด้วย Google
+              </button>
 
               <button
-                type="submit"
-                disabled={authLoading()}
-                class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
+                type="button"
+                onClick={() => handleOAuthLogin("github")}
+                class="w-full py-3.5 bg-[#24292e] hover:bg-[#1a1e22] text-white font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-2 text-sm"
               >
-                {authLoading()
-                  ? "กำลังส่งลิงก์ยืนยัน... ⏳"
-                  : "ส่งลิงก์เข้าสู่ระบบ (Magic Link)"}
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                </svg>
+                ลงชื่อเข้าใช้ด้วย GitHub
               </button>
-            </Show>
-          </form>
+            </div>
+
+            <p class="text-[10px] text-[#7C6E65] leading-relaxed">
+              *หมายเหตุ:
+              สิทธิ์การจัดเก็บข้อมูลและการอัปโหลดถูกล็อกไว้ให้กับอีเมลที่ระบุในไฟล์สภาพแวดล้อม{" "}
+              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5]">
+                ADMIN_EMAIL
+              </code>{" "}
+              เท่านั้นค่ะ
+            </p>
+          </div>
         </div>
       </Show>
 
-      {/* พื้นที่แกนควบคุมหลังบ้านหลัก (คงเดิมไว้ทั้งหมดเพื่อความต่อเนื่องของฟีเจอร์) */}
+      {/* พื้นที่แกนควบคุมหลังบ้านหลัก */}
       <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">

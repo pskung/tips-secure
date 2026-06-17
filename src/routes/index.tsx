@@ -218,7 +218,22 @@ export default function Home() {
     }
   };
 
+  // ค้นหาส่วนฟังก์ชัน Home และปรับแต่งเฉพาะ onMount ดังนี้ค่ะ:
   onMount(() => {
+    // 🟢 ดักจับและประมวลผลเซสชันแอดมินที่เด้งกลับมาจาก OAuth
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        sessionStorage.setItem("admin_verified", "true");
+        sessionStorage.setItem("admin_jwt", accessToken);
+        // ดีดแอดมินข้ามไปหน้าควบคุมทันที
+        window.location.href = "/admin";
+        return;
+      }
+    }
+
     setRenderTime(Date.now());
     setAmount("");
     setCustomAmountVal("");
