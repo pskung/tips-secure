@@ -447,7 +447,7 @@ export default function Home() {
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
-                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md space-y-3.5 relative overflow-hidden"
+                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col gap-3.5 relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
@@ -458,19 +458,19 @@ export default function Home() {
                   "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
                 }}
               >
-                <div class="hidden">
-                  <input
-                    type="text"
-                    name="email_confirm"
-                    value={honeypot()}
-                    onInput={(e) => setHoneypot(e.currentTarget.value)}
-                    tabindex={-1}
-                    autocomplete="off"
-                  />
-                </div>
+                {/* 1. บล็อก Honeypot ซ่อนตัว (เมื่อเปลี่ยนเป็น Flex Gap จะไม่มีแรงดัน margin-top เหลืออยู่ด้านบนหน้าต่างกรอกเงินเลยค่ะ) */}
+                <input
+                  type="text"
+                  name="email_confirm"
+                  value={honeypot()}
+                  onInput={(e) => setHoneypot(e.currentTarget.value)}
+                  tabindex={-1}
+                  autocomplete="off"
+                  class="hidden"
+                />
 
-                {/* ส่วนของ Preset ยอดเงินสนับสนุน */}
-                <div class="space-y-3">
+                {/* 2. ส่วนของ Preset ยอดเงินสนับสนุน */}
+                <div class="flex flex-col gap-2.5">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
                       {(amt) => (
@@ -511,7 +511,7 @@ export default function Home() {
                     type="number"
                     min="10"
                     max="5000"
-                    step="0.01" // 🟢 เปิดรองรับระบบทศนิยม 2 ตำแหน่ง (หน่วยสตางค์) สไตล์ HTML5
+                    step="0.01"
                     placeholder={config().amountPlaceholder}
                     class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                     style={{
@@ -522,16 +522,13 @@ export default function Home() {
                     }}
                     onInput={(e) => {
                       let val = e.currentTarget.value;
-
-                      // 🟢 ตรรกะตรวจจับและตัดเศษส่วนที่เกิน 2 ตำแหน่งทิ้งทันทีที่ผู้ใช้พิมพ์
                       if (val.includes(".")) {
                         const [intPart, decPart] = val.split(".");
                         if (decPart && decPart.length > 2) {
                           val = `${intPart}.${decPart.substring(0, 2)}`;
-                          e.currentTarget.value = val; // บังคับเขียนทับค่าบนหน้าจอเบราว์เซอร์จริง
+                          e.currentTarget.value = val;
                         }
                       }
-
                       setCustomActive(true);
                       setAmount(val);
                       setCustomAmountVal(val);
@@ -540,26 +537,29 @@ export default function Home() {
                   />
                 </div>
 
-                <label for="nickname" class="sr-only">
-                  Nickname
-                </label>
-                <input
-                  id="nickname"
-                  type="text"
-                  required
-                  placeholder={config().nicknamePlaceholder}
-                  class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
-                  style={{
-                    "background-color": config().inputBgColor,
-                    "border-color": config().inputBorderColor,
-                    color: config().inputTextColor,
-                    "--tw-ring-color": config().submitBtnColor,
-                  }}
-                  onInput={(e) => setName(e.currentTarget.value)}
-                  value={name()}
-                />
+                {/* 3. ช่องกรอกชื่อเล่น */}
+                <div class="flex flex-col">
+                  <label for="nickname" class="sr-only">
+                    Nickname
+                  </label>
+                  <input
+                    id="nickname"
+                    type="text"
+                    required
+                    placeholder={config().nicknamePlaceholder}
+                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
+                    style={{
+                      "background-color": config().inputBgColor,
+                      "border-color": config().inputBorderColor,
+                      color: config().inputTextColor,
+                      "--tw-ring-color": config().submitBtnColor,
+                    }}
+                    onInput={(e) => setName(e.currentTarget.value)}
+                    value={name()}
+                  />
+                </div>
 
-                {/* ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
+                {/* 4. ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -592,8 +592,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* แถบเปิดแสดง TOS */}
-                <div class="space-y-2">
+                {/* 5. แถบเปิดแสดง TOS */}
+                <div class="flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
@@ -647,7 +647,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 🟢 1. Cloudflare Turnstile (เลื่อนขึ้นมาแสดงผลก่อน) */}
+                {/* 6. Cloudflare Turnstile */}
                 <Show when={data()?.turnstileSiteKey}>
                   <div
                     id="turnstile-container"
@@ -659,7 +659,7 @@ export default function Home() {
                   ></div>
                 </Show>
 
-                {/* 🟢 2. ปุ่มหลักยินยอมและสนับสนุน (เลื่อนลงมาอยู่ด้านล่างสุด) */}
+                {/* 7. ปุ่มหลักยินยอมและสนับสนุน */}
                 <button
                   type="submit"
                   disabled={
@@ -683,18 +683,6 @@ export default function Home() {
                     Wait {cooldownRemaining()}s... ⏳
                   </Show>
                 </button>
-
-                {/* Cloudflare Turnstile */}
-                <Show when={data()?.turnstileSiteKey}>
-                  <div
-                    id="turnstile-container"
-                    class="w-full flex justify-center transition-all duration-300"
-                    style={{
-                      display: turnstileToken() ? "none" : "flex",
-                      "min-height": "65px",
-                    }}
-                  ></div>
-                </Show>
               </form>
             </div>
           </div>
