@@ -23,11 +23,7 @@ export const DonateInputSchema = z.object({
   is_consented: z.boolean().refine((val) => val === true, {
     message: "You must agree to the Terms & Policy to continue.",
   }),
-  email_confirm: z
-    .string()
-    .max(0, "Operation rejected")
-    .optional()
-    .or(z.literal("")),
+  email_confirm: z.string().optional().or(z.literal("")),
   turnstile_token: z
     .string()
     .min(1, "Please complete the security verification."),

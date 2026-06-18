@@ -3,26 +3,21 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
+  timingSafeEqual,
 } from "crypto";
 
 export function timingSafeCompare(
   a: string | undefined | null,
   b: string | undefined | null,
 ): boolean {
-  const strA = typeof a === "string" ? a : "";
-  const strB = typeof b === "string" ? b : "";
+  const strA = a ?? "";
+  const strB = b ?? "";
 
+  // แปลงทั้งสองฟิลด์เป็น SHA-256 เพื่อการันตีขนาด 32 ไบต์ ป้องกัน timingSafeEqual แครชจากความยาวต่างกัน
   const hashA = createHash("sha256").update(strA).digest();
   const hashB = createHash("sha256").update(strB).digest();
 
-  if (hashA.length !== hashB.length) return false;
-
-  let diff = 0;
-  for (let i = 0; i < hashA.length; i++) {
-    diff |= hashA[i] ^ hashB[i];
-  }
-
-  return diff === 0 && strA.length === strB.length;
+  return timingSafeEqual(hashA, hashB) && strA.length === strB.length;
 }
 
 const getEncryptionKey = (): Buffer => {
