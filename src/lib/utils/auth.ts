@@ -8,13 +8,34 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
   const token = authHeader.substring(7);
   const url = new URL(event.request.url);
   const headers = event.request.headers;
+
   let host = headers.get("x-forwarded-host") || headers.get("host") || url.host;
-  const protocol =
-    event.request.headers.get("x-forwarded-proto") || url.protocol;
+
+  if (!host || host.includes("localhost") || host.includes("127.0.0.1")) {
+    const fallbackUrl = process.env.DEPLOY_PRIME_URL || process.env.URL;
+    if (fallbackUrl) {
+      try {
+        const parsedFallback = new URL(fallbackUrl);
+        host = parsedFallback.host;
+      } catch {
+        host = fallbackUrl.replace(/^https?:\/\//, "");
+      }
+    }
+  }
+
+  const isLocal =
+    host.includes("localhost") ||
+    host.includes("127.0.0.1") ||
+    host.includes("localhost:3000");
+  const protocol = isLocal ? "http" : "https";
+
+  const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
+  safeLog(
+    `Admin authentication request routed to Gateway: ${identityUrl}`,
+    "INFO",
+  );
 
   try {
-    const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
-
     const res = await fetch(identityUrl, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
@@ -51,9 +72,18 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
       }
 
       return !!user.id;
+    } else {
+      safeLog(
+        `Identity Gateway returned status code ${res.status} for address: ${identityUrl}`,
+        "WARN",
+      );
     }
   } catch (err) {
-    safeLog("Failed to verify JWT with Netlify Identity Gateway", "ERROR", err);
+    safeLog(
+      `Failed to verify JWT with Netlify Identity Gateway at ${identityUrl}`,
+      "ERROR",
+      err,
+    );
     return false;
   }
   return false;
