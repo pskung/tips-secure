@@ -1,8 +1,6 @@
-// src/lib/utils/auth.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
 
-// 🟢 ยื่นสิทธิ์ประเมิน JWT เป็นศูนย์กลางหนึ่งเดียวของหลังบ้าน ป้องกันโค้ดซ้ำซ้อนในระบบ
 export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
   const authHeader = event.request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) return false;
@@ -15,6 +13,7 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
 
   try {
     const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
+
     const res = await fetch(identityUrl, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },

@@ -1,4 +1,3 @@
-// src/routes/api/webhook/beam.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
 import { timingSafeCompare, encryptPII } from "~/lib/utils/crypto";
@@ -52,10 +51,8 @@ export async function POST(event: APIEvent) {
         );
       }
 
-      // 🟢 แก้ไขจุดที่ 1: กำหนดความสอดคล้องข้อมูลระดับสูง (Strong Consistency) ตั้งแต่ขั้นตอนเปิดใช้งาน Store
       const store = getStore({ name: "donation_store", consistency: "strong" });
 
-      // 🟢 แก้ไขจุดที่ 2: ตัดอ็อพชัน { consistent: true } ออก เนื่องจาก Store ได้รับการบังคับใช้สิทธิ์แบบสากลจากจุดแรกแล้วค่ะ
       const isAlreadyProcessed = await store.get(
         `processed_tx:${transactionId}`,
       );
@@ -99,7 +96,6 @@ export async function POST(event: APIEvent) {
               const plData = await plResponse.json();
               const noteStr = plData.order?.internalNote;
               if (noteStr) {
-                // 🟢 [แก้ไขตรรกะบั๊กสำเร็จ] ทำการแยกแยะ JSON String ออกมาเป็นอ็อบเจกต์ก่อนดึงข้อมูลใช้งานฟิลด์
                 try {
                   const parsedNote = JSON.parse(noteStr);
                   donorName = parsedNote.donor_name || "Anonymous";

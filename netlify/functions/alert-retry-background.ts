@@ -1,4 +1,3 @@
-// netlify/functions/alert-retry-background.ts
 import { getStore } from "@netlify/blobs";
 import { createDecipheriv, createHash } from "crypto";
 
@@ -8,7 +7,6 @@ const EXTERNAL_API = {
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
 
-// 🟢 ฟังก์ชันถอดรหัสลับย่อยภายในรันไทม์จำกัดของระบบคลาวด์ (Standalone Decryptor)
 function decryptPII(encryptedText: string): string {
   if (!encryptedText) return "";
   try {
@@ -62,7 +60,6 @@ export default async (req: Request) => {
       return new Response("Done", { status: 200 });
     }
 
-    // 🟢 ถอดรหัสลับข้อมูลเพื่อดึงเอาชื่อและข้อความที่แท้จริงของผู้สนับสนุนส่งไปยัง Streamlabs / StreamElements
     const donorName = decryptPII(alertData.donorName);
     const donorMessage = decryptPII(alertData.donorMessage);
     const { amountInThb, currency } = alertData;

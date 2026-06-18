@@ -1,4 +1,3 @@
-// src/routes/admin/index.tsx
 import {
   createSignal,
   createMemo,
@@ -87,7 +86,6 @@ export default function Admin() {
   });
 
   onMount(() => {
-    // 🟢 1. ตรวจจับโทเคน OAuth ที่เด้งกลับมาจากหน้าลงทะเบียน/เข้าสู่ระบบ
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
       const params = new URLSearchParams(hash.substring(1));
@@ -95,12 +93,10 @@ export default function Admin() {
       if (accessToken) {
         sessionStorage.setItem("admin_verified", "true");
         sessionStorage.setItem("admin_jwt", accessToken);
-        // ล้าง URL Hash ไม่ให้ค้างบนเบราว์เซอร์
         window.history.replaceState(null, "", window.location.pathname);
         setIsAuthenticated(true);
       }
     } else {
-      // 🟢 2. ตรวจค้นข้อมูลในเบราว์เซอร์เซสชันเดิม
       const isVerified = sessionStorage.getItem("admin_verified") === "true";
       const storedToken = sessionStorage.getItem("admin_jwt");
       if (isVerified && storedToken) {
@@ -109,8 +105,7 @@ export default function Admin() {
     }
   });
 
-  // 🟢 ฟังก์ชันส่งตัวแทนแอดมินไปใช้บริการสิทธิ์ OAuth ของ Netlify Identity
-  const handleOAuthLogin = (provider: "google" | "github") => {
+  const handleOAuthLogin = (provider: "google") => {
     setAuthError("");
     const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
     window.location.href = authorizeUrl;
@@ -124,11 +119,9 @@ export default function Admin() {
     if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      alert(
-        "❌ ขนาดไฟล์ภาพต้องไม่เกิน 5 MB นะคะ กรุณาบีบอัดรูปภาพแล้วอัปโหลดใหม่อีกครั้งค่ะ",
-      );
+      alert("File size cannot exceed 5 MB.");
       input.value = "";
       return;
     }
@@ -155,12 +148,12 @@ export default function Admin() {
         if (type === "avatar") setConfig("avatarUrl", resData.url);
         else if (type === "banner") setConfig("bannerUrl", resData.url);
         else if (type === "bg") setConfig("bgUrl", resData.url);
-        alert(`🎉 อัปโหลดรูปภาพประเภท ${type} สำเร็จแล้วค่ะ!`);
+        alert(`Successfully uploaded ${type} image.`);
       } else {
-        alert(resData.error || "อัปโหลดไม่สำเร็จค่ะ");
+        alert(resData.error || "Upload failed.");
       }
     } catch {
-      alert("เซิร์ฟเวอร์ขัดข้องชั่วคราวค่ะ");
+      alert("Temporary server error. Please try again.");
     } finally {
       if (type === "avatar") setAvatarLoading(false);
       else if (type === "banner") setBannerLoading(false);
@@ -182,12 +175,12 @@ export default function Admin() {
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
-        alert("🎉 จัดเก็บรูปแบบดีไซน์ลงบนระบบคลาวด์สำเร็จเรียบร้อยแล้วค่ะ!");
+        alert("Configuration saved successfully.");
       } else {
-        alert(resData.error || "จัดเก็บล้มเหลว กรุณาลองใหม่อีกครั้งค่ะ");
+        alert(resData.error || "Save failed.");
       }
     } catch {
-      alert("ระบบเชื่อมต่อหลังบ้านล้มเหลวชั่วคราวค่ะ");
+      alert("Server connection failed.");
     } finally {
       setSaveLoading(false);
     }
@@ -205,17 +198,15 @@ export default function Admin() {
         )}
       </For>
 
-      {/* บล็อกล็อกอินแอดมินดีไซน์ Cozy ใหม่เชื่อมตรงกับ Netlify Identity OAuth */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl text-center">
             <div>
-              <span class="text-4xl">☕</span>
               <h1 class="text-xl font-black mt-3 text-[#2C2520]">
                 Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                กรุณาเข้าสู่ระบบด้วยบัญชีโซเชียลเพื่อความปลอดภัยสูงสุดค่ะ
+                Please log in with Google to manage settings.
               </p>
             </div>
 
@@ -234,45 +225,29 @@ export default function Admin() {
                 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.54 0-6.425-2.885-6.425-6.425s2.885-6.425 6.425-6.425c1.6 0 3.06.59 4.19 1.55l3.1-3.1C19.29 2.22 15.93 1 12.24 1 5.92 1 12s4.92 11 11.24 11c6.53 0 10.86-4.6 10.86-11 0-.74-.07-1.46-.2-2.115H12.24z" />
                 </svg>
-                ลงชื่อเข้าใช้ด้วย Google
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleOAuthLogin("github")}
-                class="w-full py-3.5 bg-[#24292e] hover:bg-[#1a1e22] text-white font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-2 text-sm"
-              >
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-                </svg>
-                ลงชื่อเข้าใช้ด้วย GitHub
+                Sign in with Google
               </button>
             </div>
 
             <p class="text-[10px] text-[#7C6E65] leading-relaxed">
-              *หมายเหตุ:
-              สิทธิ์การจัดเก็บข้อมูลและการอัปโหลดถูกล็อกไว้ให้กับอีเมลที่ระบุในไฟล์สภาพแวดล้อม{" "}
-              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5]">
+              *Only email addresses whitelisted inside the
+              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5] ml-1">
                 ADMIN_EMAILS
               </code>{" "}
-              เท่านั้นค่ะ
+              env can successfully log in.
             </p>
           </div>
         </div>
       </Show>
 
-      {/* พื้นที่แกนควบคุมหลังบ้านหลัก */}
       <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🎨</span>
             <div>
               <h1 class="font-black text-sm sm:text-base text-[#1F160E] tracking-tight">
-                VTuber Secure Donation Settings
+                Secure Support Portal Administration
               </h1>
-              <p class="text-[10px] text-[#7C6E65]">
-                ระบบแต่งเติมสไตล์ธีมแบบสตรีมมิ่งไร้พิกัดค้างแคช
-              </p>
             </div>
           </div>
           <button
@@ -280,16 +255,15 @@ export default function Admin() {
             disabled={saveLoading()}
             class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl cursor-pointer transition disabled:opacity-50 text-xs tracking-wider"
           >
-            {saveLoading() ? "กำลังบันทึก... ⏳" : "💾 บันทึกการตกแต่งทั้งหมด"}
+            {saveLoading() ? "Saving... ⏳" : "💾 Save Changes"}
           </button>
         </header>
 
         <div class="flex-1 max-w-7xl w-full mx-auto p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* คอลัมน์ที่ 1: การเขียนปรับแต่งข้อความและอัปโหลด Avatar / Banner */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>👤</span> Profile & Welcome Text
+                <span>👤</span> Profile & Content Configuration
               </h2>
 
               <div class="space-y-4">
@@ -322,7 +296,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Streamer / VTuber Name
+                      Streamer / Brand Name
                     </label>
                     <input
                       type="text"
@@ -360,7 +334,7 @@ export default function Admin() {
 
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    Welcome Text (About)
+                    Welcome Text
                   </label>
                   <textarea
                     class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
@@ -372,12 +346,10 @@ export default function Admin() {
                   ></textarea>
                 </div>
 
-                {/* ส่วนงานอัปโหลด Avatar และ Banner */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      อัปโหลดรูปโปรไฟล์ (Avatar){" "}
-                      <span class="text-rose-500 font-bold">*ไม่เกิน 5 MB</span>
+                      Upload Profile Image (Avatar)
                     </label>
                     <input
                       type="file"
@@ -389,7 +361,7 @@ export default function Admin() {
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
-                          ✓ พร้อมใช้งาน
+                          ✓ Active
                         </span>
                         <img
                           src={config.avatarUrl}
@@ -401,8 +373,7 @@ export default function Admin() {
 
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      อัปโหลดรูปแบนเนอร์ (Banner){" "}
-                      <span class="text-rose-500 font-bold">*ไม่เกิน 5 MB</span>
+                      Upload Banner Image
                     </label>
                     <input
                       type="file"
@@ -414,7 +385,7 @@ export default function Admin() {
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
-                          ✓ พร้อมใช้งาน
+                          ✓ Active
                         </span>
                         <img
                           src={config.bannerUrl}
@@ -427,7 +398,7 @@ export default function Admin() {
 
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
-                    🔗 Social Media Links (Optional)
+                    🔗 Social Media Links
                   </h3>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -486,15 +457,56 @@ export default function Admin() {
                         }
                       />
                     </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Facebook
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://facebook.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.facebookUrl || ""}
+                        onInput={(e) =>
+                          setConfig("facebookUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        Instagram
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://instagram.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.instagramUrl || ""}
+                        onInput={(e) =>
+                          setConfig("instagramUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                        TikTok
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tiktok.com/@..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.tiktokUrl || ""}
+                        onInput={(e) =>
+                          setConfig("tiktokUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* คอลัมน์ที่ 2: สไตล์และวอลเปเปอร์พื้นหลังอัปโหลด */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>🎨</span> Styling & Support Presets
+                <span>🎨</span> Color Palette & Donation Presets
               </h2>
 
               <div class="space-y-4">
@@ -524,7 +536,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Card & Box Background Color
+                      Container Background Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -618,10 +630,9 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* อัปโหลด Background Wallpapers */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
-                    🖼/ Page Background Style
+                    🖼 Page Background Style
                   </label>
                   <div class="grid grid-cols-2 gap-3">
                     <button
@@ -662,10 +673,7 @@ export default function Admin() {
                   >
                     <div>
                       <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        อัปโหลดรูปพื้นหลัง (Wallpaper){" "}
-                        <span class="text-rose-500 font-bold">
-                          *ไม่เกิน 5 MB
-                        </span>
+                        Upload Page Background Image (Max 5 MB)
                       </label>
                       <input
                         type="file"
@@ -677,7 +685,7 @@ export default function Admin() {
                       <Show when={config.bgUrl}>
                         <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                           <span class="text-[10px] text-emerald-600 font-bold">
-                            ✓ พร้อมใช้งาน
+                            ✓ Active
                           </span>
                           <img
                             src={config.bgUrl}

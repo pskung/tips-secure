@@ -1,9 +1,7 @@
-// src/routes/api/admin/save.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
 import { getStore } from "@netlify/blobs";
 import { ThemeSchema } from "~/lib/utils/schemas";
-
 import { verifyAdminJWT } from "~/lib/utils/auth";
 
 export async function POST(event: APIEvent) {
@@ -26,12 +24,11 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // ยืนยันสิทธิ์ความปลอดภัยด้วย JWT + Email Whitelist
     const isAuthenticated = await verifyAdminJWT(event);
     if (!isAuthenticated) {
       return new Response(
         JSON.stringify({
-          error: "ไม่มีสิทธิ์เข้าถึงหรือเซสชันหมดอายุ กรุณาล็อกอินใหม่ค่ะ",
+          error: "Unauthorized or session expired. Please log in again.",
         }),
         { status: 401 },
       );
@@ -39,12 +36,11 @@ export async function POST(event: APIEvent) {
 
     const { config: newTheme } = await event.request.json();
 
-    // กรองความถูกต้องพารามิเตอร์ตกแต่งด้วย Zod
     const result = ThemeSchema.safeParse(newTheme);
     if (!result.success) {
       const firstError = result.error.issues[0].message;
       return new Response(
-        JSON.stringify({ error: `การตั้งค่าไม่ถูกต้อง: ${firstError}` }),
+        JSON.stringify({ error: `Invalid configuration: ${firstError}` }),
         { status: 400 },
       );
     }
@@ -64,7 +60,7 @@ export async function POST(event: APIEvent) {
       err,
     );
     return new Response(
-      JSON.stringify({ error: "เกิดปัญหาขัดข้องขณะจัดเก็บข้อมูลธีม" }),
+      JSON.stringify({ error: "Failed to save configuration settings." }),
       { status: 500 },
     );
   }

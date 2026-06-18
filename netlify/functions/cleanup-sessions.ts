@@ -11,7 +11,6 @@ export default async (req: Request, context: Context) => {
     let logDeleted = 0;
     const now = Date.now();
 
-    // 🟢 ปรับเปลี่ยนระยะเวลาหมดอายุประวัติธุรกรรมเหลือ 7 วัน ตามข้อตกลงนโยบาย
     const sevenDaysAgo = now - 1000 * 60 * 60 * 24 * 7;
 
     const deletePromises: Promise<any>[] = [];
@@ -79,6 +78,5 @@ export default async (req: Request, context: Context) => {
 };
 
 export const config: Config = {
-  // 🟢 ปรับแต่งเวลารันรายสัปดาห์ (รันอัตโนมัติเวลาเที่ยงคืนของทุกวันอาทิตย์)
   schedule: "0 0 * * 0",
 };

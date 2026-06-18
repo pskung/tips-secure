@@ -6,7 +6,6 @@ export default async (request: Request, context: Context) => {
   if (request.method === "POST" && url.pathname === "/api/donate") {
     const cookies = request.headers.get("cookie") || "";
 
-    // [Layer 2] สกัดกั้นผู้ชมทั่วไปที่กดเบิ้ลซ้ำด้วย Cookie Cooldown (ความเร็ว 0ms)
     if (cookies.includes("cooldown_active=true")) {
       return new Response(
         JSON.stringify({
@@ -25,10 +24,9 @@ export default async (request: Request, context: Context) => {
 
 export const config: Config = {
   path: ["/api/donate", "/api/admin/save"],
-  // [Layer 1] บล็อกคลื่นพายุสแปม DDoS ไม่ให้เข้าถึงเซิร์ฟเวอร์หลังบ้าน
   rateLimit: {
-    windowLimit: 180, // ลิมิตสูงสุด 180 คำขอ
-    windowSize: 60, // ต่อ 60 วินาที
-    aggregateBy: ["ip", "domain"], // จัดกลุ่มและตรวจสอบผ่าน IP รายตัว
+    windowLimit: 180,
+    windowSize: 60,
+    aggregateBy: ["ip", "domain"],
   },
 };

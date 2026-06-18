@@ -31,9 +31,8 @@ export async function GET(event: APIEvent) {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        // 🟢 เพิ่มเกราะป้องกันการรันโค้ดและสแปมผ่านช่องโหว่รูปภาพ
-        "X-Content-Type-Options": "nosniff", // สั่งให้เบราว์เซอร์ห้ามประมวลผลไฟล์เป็นสคริปต์
-        "Content-Security-Policy": "default-src 'none'", // ห้ามการทำงานของโค้ดสคริปต์ภายนอก
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

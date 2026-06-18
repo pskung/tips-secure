@@ -8,8 +8,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     ssr: {
-      // บังคับให้ Vite ทำการมัดรวม (Bundle) โมดูลของ Netlify Blobs ป้องกันปัญหาตอนคอมไพล์ฝั่งเซิร์ฟเวอร์
-      noExternal: ["@netlify/blobs"]
-    }
-  }
+      noExternal: ["@netlify/blobs"],
+    },
+  },
 });

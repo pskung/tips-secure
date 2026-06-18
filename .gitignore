@@ -1,4 +1,4 @@
-# 💻 1. OS System Files (ไฟล์ระบบปฏิบัติการที่ไม่มีผลต่อโค้ด)
+# OS System Files
 .DS_Store
 Thumbs.db
 db.json
@@ -9,36 +9,35 @@ desktop.ini
 *.sln
 *.swp
 
-# 📦 2. Dependency Directories (ไฟล์ไลบรารีภายนอก)
+# Dependency Directories
 **/node_modules/
 
-# ⚡ 3. SolidStart, Vinxi & Nitro Build Outputs (แคชและโค้ดคอมไพล์ห้ามอัปขึ้น Git)
+# SolidStart, Vinxi & Nitro Build Outputs
 .vinxi/
 .output/
 .solid/
 /dist/
 .turbo/
 
-# 🛠️ 4. Vite Temporary Files (ไฟล์ชั่วคราวตอน Vite เริ่มทำงาน)
+# Vite Temporary Files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 app.config.ts.timestamp-*
 
-# ☁️ 5. Netlify CLI Cache & State (ข้อมูลแคชระดับแพลตฟอร์ม)
+# Netlify CLI Cache & State
 .netlify/
 
-# 🛡️ 6. Environment Variables & Secrets (⚠️ ข้อมูลลับที่สุด ห้ามหลุดขึ้น Git เด็ดขาด!)
+# Environment Variables & Secrets
 .env
 .env.*
 !.env.example
 
-# 📝 7. Log Files (ไฟล์ประวัติข้อผิดพลาดส่วนบุคคล)
+# Log Files
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-
-*CodeFlattened_Output*
+CodeFlattened_Output
 .vscode

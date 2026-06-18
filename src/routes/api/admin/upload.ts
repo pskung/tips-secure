@@ -1,8 +1,6 @@
-// src/routes/api/admin/upload.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { getStore } from "@netlify/blobs";
 import { safeLog } from "~/lib/utils/logger";
-
 import { verifyAdminJWT } from "~/lib/utils/auth";
 
 export async function POST(event: APIEvent) {
@@ -11,7 +9,7 @@ export async function POST(event: APIEvent) {
     if (!isAuthenticated) {
       return new Response(
         JSON.stringify({
-          error: "ไม่มีสิทธิ์เข้าถึงหรือเซสชันหมดอายุ กรุณาล็อกอินใหม่ค่ะ",
+          error: "Unauthorized or session expired. Please log in again.",
         }),
         { status: 401 },
       );
@@ -23,23 +21,24 @@ export async function POST(event: APIEvent) {
 
     if (!file || !type) {
       return new Response(
-        JSON.stringify({ error: "กรุณาแนบไฟล์ภาพและระบุประเภทนะคะ" }),
+        JSON.stringify({
+          error: "Please attach an image file and specify its type.",
+        }),
         { status: 400 },
       );
     }
 
-    // จำกัดขนาดไฟล์ห้ามเกิน 5MB หลังบ้าน (5 * 1024 * 1024 bytes)
     const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return new Response(
-        JSON.stringify({ error: "ขนาดไฟล์ภาพต้องไม่เกิน 5 MB นะคะ" }),
+        JSON.stringify({ error: "File size cannot exceed 5 MB." }),
         { status: 400 },
       );
     }
 
     if (!file.type.startsWith("image/")) {
       return new Response(
-        JSON.stringify({ error: "กรุณาอัปโหลดเฉพาะไฟล์รูปภาพนะคะ" }),
+        JSON.stringify({ error: "Please upload image files only." }),
         { status: 400 },
       );
     }
@@ -70,7 +69,7 @@ export async function POST(event: APIEvent) {
   } catch (err) {
     safeLog("Fatal crash during image upload processing", "ERROR", err);
     return new Response(
-      JSON.stringify({ error: "ระบบอัปโหลดรูปภาพขัดข้องชั่วคราว" }),
+      JSON.stringify({ error: "Failed to process image upload." }),
       { status: 500 },
     );
   }

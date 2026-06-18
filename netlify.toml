@@ -3,7 +3,7 @@
   publish = "dist"
 
 [template.environment]
-  ADMIN_EMAILS = "ระบุอีเมล Google ของคุณที่จะใช้เป็นแอดมิน (เช่น vtuber.main@gmail.com, graphic.designer@gmail.com, moderator.team@gmail.com)"
+  ADMIN_EMAILS = "Google account for admin (vtuber.main@gmail.com, graphic.designer@gmail.com, moderator.team@gmail.com)"
   BEAM_API_KEY = "[REDACTED]"
   BEAM_WEBHOOK_SECRET = "[REDACTED]"
   BEAM_API_URL = "https://playground.api.beamcheckout.com"
