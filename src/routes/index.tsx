@@ -3,28 +3,17 @@ import {
   createMemo,
   onMount,
   createEffect,
-  onCleanup,
   For,
   Show,
 } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
 import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
-import { getRequestEvent } from "solid-js/web";
-import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
-const getInitialData = query(async () => {
+const getAdminData = query(async () => {
   "use server";
-  const event = getRequestEvent();
-  if (event) {
-    setHeader(
-      event.nativeEvent,
-      "Cache-Control",
-      "public, max-age=0, s-maxage=600, stale-while-revalidate=60",
-    );
-  }
-
   try {
     const store = getStore("donation_store");
     const theme = await store.get("vtuber_personalized_theme", {
@@ -32,217 +21,69 @@ const getInitialData = query(async () => {
     });
     return {
       theme: theme || defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   } catch {
     return {
       theme: defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   }
-}, "initialData");
+}, "adminData");
 
-function getSocialIcon(platform: string) {
-  const p = platform.toLowerCase();
-  if (p.includes("youtube")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-      </svg>
-    );
-  }
-  if (p.includes("twitch")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
-      </svg>
-    );
-  }
-  if (p.includes("discord")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.121-.63-.24-1.224-.534-1.783-.876a.079.079 0 0 1-.008-.13c.12-.09.239-.185.353-.28a.077.077 0 0 1 .081-.011c3.963 1.817 8.27 1.817 12.185 0a.078.078 0 0 1 .082.01c.114.095.233.19.353.281a.078.078 0 0 1-.007.13 12.19 12.19 0 0 1-1.784.877c-.033.013-.044.062-.024.12.355.698.766 1.365 1.225 1.993a.082.082 0 0 0 .085.029 19.9 19.9 0 0 0 6.002-3.03.076.076 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
-      </svg>
-    );
-  }
-  if (p.includes("x")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-      </svg>
-    );
-  }
-  if (p.includes("facebook")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" />
-      </svg>
-    );
-  }
-  if (p.includes("instagram")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204 0 3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
-      </svg>
-    );
-  }
-  if (p.includes("tiktok")) {
-    return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.1.12.2.24.3.35v3.98c-.14-.02-.27-.06-.41-.09-1.2-.28-2.28-.97-3.04-1.92-.04-.05-.07-.11-.12-.18v7.22c.04 5.37-4.43 9.42-9.74 8.91-4.04-.39-7.16-3.86-7.14-7.9.03-3.84 2.87-7.07 6.69-7.46.61-.06 1.22-.04 1.83.05v3.94c-.4-.08-.81-.11-1.22-.09-1.85.08-3.34 1.64-3.29 3.51.05 1.84 1.57 3.31 3.42 3.27 1.8-.04 3.23-1.52 3.21-3.32V0c.34.01.67.01 1 .02z" />
-      </svg>
-    );
-  }
-  return (
-    <svg
-      class="w-5 h-5 stroke-current fill-none"
-      viewBox="0 0 24 24"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-}
+export default function Admin() {
+  const data = createAsync(() => getAdminData());
 
-export default function Home() {
-  const data = createAsync(() => getInitialData());
-
-  const [name, setName] = createSignal("");
-  const [amount, setAmount] = createSignal("");
-  const [message, setMessage] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
-  const [honeypot, setHoneypot] = createSignal("");
-  const [renderTime, setRenderTime] = createSignal(0);
-  const [cooldownRemaining, setCooldownRemaining] = createSignal(0);
-  const [customActive, setCustomActive] = createSignal(false);
-  const [customAmountVal, setCustomAmountVal] = createSignal("");
-  const [turnstileToken, setTurnstileToken] = createSignal("");
-  const [isTosExpanded, setIsTosExpanded] = createSignal(false);
-  const [turnstileReady, setTurnstileReady] = createSignal(false);
-
-  let turnstileWidgetId: string | null = null;
-
-  const config = createMemo(() => {
-    const theme = data()?.theme || {};
-    return {
-      ...theme,
-      bgColor: theme.bgColor ?? "#FFFDF6",
-      inputBgColor: theme.inputBgColor ?? "#f4f4f5",
-      inputTextColor: theme.inputTextColor ?? "#111111",
-      inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
-      cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
-      cardBgColor: theme.cardBgColor ?? "#ffffff",
-      vtuberName: theme.vtuberName ?? "Teacher Stefano",
-      nameColor: theme.nameColor ?? "#111111",
-      generalTextColor: theme.generalTextColor ?? "#222222",
-      mainFontFamily: theme.mainFontFamily ?? "Kanit",
-      welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
-      nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
-      messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
-      amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
-      youtubeUrl: theme.youtubeUrl ?? "",
-      twitchUrl: theme.twitchUrl ?? "",
-      discordUrl: theme.discordUrl ?? "",
-      xUrl: theme.xUrl ?? "",
-      facebookUrl: theme.facebookUrl ?? "",
-      instagramUrl: theme.instagramUrl ?? "",
-      tiktokUrl: theme.tiktokUrl ?? "",
-      presetAmounts:
-        theme.presetAmounts && theme.presetAmounts.length === 4
-          ? theme.presetAmounts
-          : [100, 300, 500, 1000],
-      presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
-      submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
-      submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "AGREE & SUPPORT ME",
-    };
+  const [config, setConfig] = createStore<any>({
+    presetAmounts: [100, 300, 500, 1000],
+    youtubeUrl: "",
+    twitchUrl: "",
+    discordUrl: "",
+    xUrl: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    tiktokUrl: "",
   });
 
-  const socialLinks = createMemo(() => {
-    const conf = config();
-    return [
-      { platform: "youtube", url: conf.youtubeUrl },
-      { platform: "twitch", url: conf.twitchUrl },
-      { platform: "discord", url: conf.discordUrl },
-      { platform: "x", url: conf.xUrl },
-      { platform: "facebook", url: conf.facebookUrl },
-      { platform: "instagram", url: conf.instagramUrl },
-      { platform: "tiktok", url: conf.tiktokUrl },
-    ].filter((link) => link.url && link.url.trim() !== "");
+  const [isAuthenticated, setIsAuthenticated] = createSignal(false);
+  const [authError, setAuthError] = createSignal("");
+  const [saveLoading, setSaveLoading] = createSignal(false);
+
+  const [avatarLoading, setAvatarLoading] = createSignal(false);
+  const [bannerLoading, setBannerLoading] = createSignal(false);
+  const [bgLoading, setBgLoading] = createSignal(false);
+
+  const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
+
+  createEffect(() => {
+    const theme = data()?.theme;
+    if (theme) {
+      setConfig(
+        reconcile({
+          ...theme,
+          presetAmounts:
+            theme.presetAmounts && theme.presetAmounts.length === 4
+              ? [...theme.presetAmounts]
+              : [100, 300, 500, 1000],
+          youtubeUrl: theme.youtubeUrl ?? "",
+          twitchUrl: theme.twitchUrl ?? "",
+          discordUrl: theme.discordUrl ?? "",
+          xUrl: theme.xUrl ?? "",
+          facebookUrl: theme.facebookUrl ?? "",
+          instagramUrl: theme.instagramUrl ?? "",
+          tiktokUrl: theme.tiktokUrl ?? "",
+        }),
+      );
+    }
   });
 
   const uniqueFonts = createMemo(() => {
-    const conf = config();
     return [
       ...new Set(
-        [conf.mainFontFamily].filter(
+        [config.mainFontFamily].filter(
           (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
         ),
       ),
     ];
   });
-
-  const hexToRgba = (hex: string, opacity: number): string => {
-    if (!hex) return `rgba(255, 255, 255, ${opacity})`;
-    let cleanHex = hex.trim().replace("#", "");
-    if (cleanHex.length === 3) {
-      cleanHex = cleanHex
-        .split("")
-        .map((char) => char + char)
-        .join("");
-    }
-    if (cleanHex.length !== 6) return hex;
-    const r = parseInt(cleanHex.substring(0, 2), 16);
-    const g = parseInt(cleanHex.substring(2, 4), 16);
-    const b = parseInt(cleanHex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-
-  const optimizeImage = (
-    url: string | undefined,
-    width: number,
-    quality: number = 70,
-  ): string => {
-    if (!url) return "";
-    const cleanUrl = url.trim();
-    if (cleanUrl === "") return "";
-    return `/.netlify/images?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality}`;
-  };
-
-  const initTurnstile = () => {
-    if (typeof window === "undefined" || !(window as any).turnstile) return;
-    const siteKey = data()?.turnstileSiteKey;
-    if (!siteKey || !document.getElementById("turnstile-container")) return;
-
-    try {
-      if (turnstileWidgetId) {
-        (window as any).turnstile.remove(turnstileWidgetId);
-      }
-
-      turnstileWidgetId = (window as any).turnstile.render(
-        "#turnstile-container",
-        {
-          sitekey: siteKey,
-          theme: "light",
-          size: "flexible",
-          callback: (token: string) => {
-            setTurnstileToken(token);
-          },
-          "expired-callback": () => {
-            setTurnstileToken("");
-          },
-          "error-callback": () => {
-            setTurnstileToken("");
-          },
-        },
-      );
-    } catch (err) {
-      console.error("Failed to initialize Turnstile:", err);
-    }
-  };
 
   onMount(() => {
     const hash = window.location.hash;
@@ -252,464 +93,667 @@ export default function Home() {
       if (accessToken) {
         sessionStorage.setItem("admin_verified", "true");
         sessionStorage.setItem("admin_jwt", accessToken);
-        window.location.href = "/admin";
-        return;
+        window.history.replaceState(null, "", window.location.pathname);
+        setIsAuthenticated(true);
       }
-    }
-
-    setRenderTime(Date.now());
-    setAmount("");
-    setCustomAmountVal("");
-
-    const lastRequest = localStorage.getItem("last_donate_request");
-    if (lastRequest) {
-      const elapsed = Date.now() - Number(lastRequest);
-      if (elapsed < 60000) {
-        setCooldownRemaining(Math.ceil((60000 - elapsed) / 1000));
+    } else {
+      const isVerified = sessionStorage.getItem("admin_verified") === "true";
+      const storedToken = sessionStorage.getItem("admin_jwt");
+      if (isVerified && storedToken) {
+        setIsAuthenticated(true);
       }
-    }
-
-    const checkInterval = setInterval(() => {
-      if ((window as any).turnstile) {
-        clearInterval(checkInterval);
-        setTurnstileReady(true);
-      }
-    }, 100);
-
-    onCleanup(() => {
-      clearInterval(checkInterval);
-    });
-  });
-
-  createEffect(() => {
-    const siteKey = data()?.turnstileSiteKey;
-    if (siteKey && turnstileReady()) {
-      initTurnstile();
     }
   });
 
-  createEffect(() => {
-    if (cooldownRemaining() > 0) {
-      const timer = setTimeout(() => {
-        setCooldownRemaining((prev) => prev - 1);
-      }, 1000);
-      onCleanup(() => clearTimeout(timer));
-    }
-  });
+  const handleOAuthLogin = (provider: "google") => {
+    setAuthError("");
+    const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
+    window.location.href = authorizeUrl;
+  };
 
-  const handleDonate = async (e: Event) => {
-    e.preventDefault();
-    if (cooldownRemaining() > 0) return;
+  const handleFileUpload = async (
+    e: Event,
+    type: "avatar" | "banner" | "bg",
+  ) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
 
-    if (data()?.turnstileSiteKey && !turnstileToken()) {
-      alert("Please complete the security challenge first 🔒");
+    const file = input.files[0];
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("File size cannot exceed 5 MB.");
+      input.value = "";
       return;
     }
 
-    setLoading(true);
+    if (type === "avatar") setAvatarLoading(true);
+    else if (type === "banner") setBannerLoading(true);
+    else if (type === "bg") setBgLoading(true);
 
     try {
-      const res = await fetch("/api/donate", {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/admin/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name(),
-          amount: Number(amount()),
-          message: message(),
-          email_confirm: honeypot(),
-          render_time: renderTime(),
-          turnstile_token: turnstileToken(),
-          is_consented: true,
-        }),
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: formData,
       });
 
-      const resData = await res.json();
-      if (res.ok && resData.invoice_url) {
-        localStorage.setItem("last_donate_request", String(Date.now()));
-        window.location.href = resData.invoice_url;
-      } else {
-        alert(resData.error || "A temporary payment error occurred.");
-        setLoading(false);
-
-        if (
-          typeof (window as any).turnstile !== "undefined" &&
-          turnstileWidgetId
-        ) {
-          (window as any).turnstile.reset(turnstileWidgetId);
-          setTurnstileToken("");
-        }
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_verified");
+        sessionStorage.removeItem("admin_jwt");
+        setIsAuthenticated(false);
+        alert("Session expired or unauthorized. Please log in again.");
+        return;
       }
-    } catch (err) {
-      alert("Payment system is temporarily unavailable.");
-      setLoading(false);
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        if (type === "avatar") setConfig("avatarUrl", resData.url);
+        else if (type === "banner") setConfig("bannerUrl", resData.url);
+        else if (type === "bg") setConfig("bgUrl", resData.url);
+        alert(`Successfully uploaded ${type} image.`);
+      } else {
+        alert(resData.error || "Upload failed.");
+      }
+    } catch {
+      alert("Temporary server error. Please try again.");
+    } finally {
+      if (type === "avatar") setAvatarLoading(false);
+      else if (type === "banner") setBannerLoading(false);
+      else if (type === "bg") setBgLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaveLoading(true);
+    try {
+      const rawConfig = JSON.parse(JSON.stringify(config));
+      const res = await fetch("/api/admin/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ config: rawConfig }),
+      });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_verified");
+        sessionStorage.removeItem("admin_jwt");
+        setIsAuthenticated(false);
+        alert("Session expired or unauthorized. Please log in again.");
+        return;
+      }
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        alert("Configuration saved successfully.");
+      } else {
+        alert(resData.error || "Save failed.");
+      }
+    } catch {
+      alert("Server connection failed.");
+    } finally {
+      setSaveLoading(false);
     }
   };
 
   return (
     <>
-      <Title>Support {config().vtuberName} 💖</Title>
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
-          .custom-font-root,
-          .custom-font-root input,
-          .custom-font-root textarea,
-          .custom-font-root button,
-          .custom-font-root select {
-            font-family: '${config().mainFontFamily}', sans-serif !important;
-          }
-        `}
-      </style>
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        async
-        defer
-      ></script>
+      <Title>Admin Dashboard 🎨</Title>
+      <For each={uniqueFonts()}>
+        {(font) => (
+          <Link
+            rel="stylesheet"
+            href={`https://fonts.googleapis.com/css2?family=${font.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
+          />
+        )}
+      </For>
 
-      <main
-        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
-        style={{
-          "background-image":
-            config().bgType === "image" && config().bgUrl
-              ? `url(${optimizeImage(config().bgUrl, 1200)})`
-              : "none",
-          "background-color": config().bgColor,
-          "font-family": `'${config().mainFontFamily}', sans-serif`,
-        }}
-      >
-        <div class="absolute inset-0 bg-black/2 -z-10"></div>
+      <Show when={!isAuthenticated()}>
+        <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl text-center">
+            <div>
+              <h1 class="text-xl font-black mt-3 text-[#2C2520]">
+                Admin Dashboard
+              </h1>
+              <p class="text-xs text-[#7C6E65] mt-1">
+                Please log in with Google to manage settings.
+              </p>
+            </div>
 
-        <div
-          class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
-          style={{
-            "background-image": `url(${
-              config().bannerUrl
-                ? optimizeImage(config().bannerUrl, 800)
-                : "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"
-            })`,
-            "border-color": config().cardBorderColor,
-          }}
-        >
-          <div class="absolute inset-0 bg-black/4"></div>
-        </div>
+            <Show when={authError()}>
+              <div class="p-3 bg-red-50 border border-red-200 text-red-600 text-xs text-center rounded-xl font-bold">
+                {authError()}
+              </div>
+            </Show>
 
-        <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            <div class="flex-1 w-full space-y-4 flex flex-col">
-              <div
-                class="p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col space-y-4 text-left"
-                style={{
-                  "border-color": config().cardBorderColor,
-                  "background-color": config().cardBgColor,
-                }}
+            <div class="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                class="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-bold border border-gray-300 rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-3 text-sm"
               >
-                <div class="flex items-center gap-4 w-full">
-                  <div class="flex-shrink-0">
-                    <img
-                      src={
-                        config().avatarUrl
-                          ? optimizeImage(config().avatarUrl, 120)
-                          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.61 0 3.06.55 4.2 1.64l3.15-3.15C17.45 1.74 14.89 1 12 1 7.37 1 3.4 3.65 1.44 7.5l3.8 2.95C6.18 7.3 8.87 5.04 12 5.04z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.27H12v4.51h6.46c-.28 1.48-1.07 2.74-2.33 3.59l3.61 2.8c2.11-1.95 3.75-4.82 3.75-8.63z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c3.24 0 5.97-1.08 7.96-2.91l-3.61-2.8c-1.11.75-2.53 1.19-4.35 1.19-3.13 0-5.82-2.26-6.76-5.41L1.44 16.5C3.4 20.35 7.37 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.24 13.07a6.972 6.972 0 0 1 0-2.14L1.44 7.98a11.974 11.974 0 0 0 0 8.04l3.8-2.95z"
+                  />
+                </svg>
+                Sign in with Google
+              </button>
+            </div>
+
+            <p class="text-[10px] text-[#7C6E65] leading-relaxed">
+              *Only email addresses whitelisted inside the
+              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5] ml-1">
+                ADMIN_EMAILS
+              </code>{" "}
+              env can successfully log in.
+            </p>
+          </div>
+        </div>
+      </Show>
+
+      <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
+        <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🎨</span>
+            <div>
+              <h1 class="font-black text-sm sm:text-base text-[#1F160E] tracking-tight">
+                Secure Support Portal Administration
+              </h1>
+            </div>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saveLoading()}
+            class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl cursor-pointer transition disabled:opacity-50 text-xs tracking-wider"
+          >
+            {saveLoading() ? "Saving... ⏳" : "💾 Save Changes"}
+          </button>
+        </header>
+
+        <div class="flex-1 max-w-7xl w-full mx-auto p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
+              <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
+                <span>👤</span> Profile & Content Configuration
+              </h2>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                    Main Font Family
+                  </label>
+                  <select
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    value={config.mainFontFamily || "Kanit"}
+                    onChange={(e) =>
+                      setConfig("mainFontFamily", e.currentTarget.value)
+                    }
+                  >
+                    <option value="Kanit">Kanit</option>
+                    <option value="IBM Plex Sans Thai">
+                      IBM Plex Sans Thai
+                    </option>
+                    <option value="Noto Sans Thai">Noto Sans Thai</option>
+                    <option value="Mali">Mali</option>
+                    <option value="Chonburi">Chonburi</option>
+                    <option value="Pattaya">Pattaya</option>
+                    <option value="Mitr">Mitr</option>
+                    <option value="Prompt">Prompt</option>
+                    <option value="Athiti">Athiti</option>
+                    <option value="Sriracha">Sriracha</option>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Streamer / Brand Name
+                    </label>
+                    <input
+                      type="text"
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold"
+                      value={config.vtuberName || ""}
+                      onInput={(e) =>
+                        setConfig("vtuberName", e.currentTarget.value)
                       }
-                      alt="Avatar"
-                      class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
                     />
                   </div>
-                  <div class="space-y-1.5 min-w-0 flex-1">
-                    <h1
-                      class="text-xl sm:text-2xl font-black tracking-tight truncate"
-                      style={{ color: config().nameColor }}
-                    >
-                      {config().vtuberName}
-                    </h1>
-
-                    <div class="flex items-center gap-2 pt-0.5">
-                      <For each={socialLinks()}>
-                        {(link) => (
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
-                            style={{ color: config().generalTextColor }}
-                            title={link.platform}
-                            aria-label={`Visit social channel: ${link.platform}`}
-                          >
-                            {getSocialIcon(link.platform)}
-                          </a>
-                        )}
-                      </For>
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Name Text Color
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.nameColor || ""}
+                        onInput={(e) =>
+                          setConfig("nameColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.nameColor || ""}
+                        onInput={(e) =>
+                          setConfig("nameColor", e.currentTarget.value)
+                        }
+                      />
                     </div>
                   </div>
                 </div>
 
-                <div
-                  class="border-t w-full"
-                  style={{ "border-color": config().cardBorderColor }}
-                ></div>
-
                 <div>
-                  <h2
-                    class="text-xs font-black uppercase tracking-widest mb-2"
-                    style={{ color: config().generalTextColor }}
-                  >
-                    About {config().vtuberName}
-                  </h2>
-                  <p
-                    class="text-xs sm:text-sm leading-relaxed whitespace-pre-line"
-                    style={{ color: config().generalTextColor }}
-                  >
-                    {config().welcomeText}
-                  </p>
+                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                    Welcome Text
+                  </label>
+                  <textarea
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
+                    rows={4}
+                    value={config.welcomeText || ""}
+                    onInput={(e) =>
+                      setConfig("welcomeText", e.currentTarget.value)
+                    }
+                  ></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Upload Profile Image (Avatar)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={avatarLoading()}
+                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                      onChange={(e) => handleFileUpload(e, "avatar")}
+                    />
+                    <Show when={config.avatarUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ Active
+                        </span>
+                        <img
+                          src={config.avatarUrl}
+                          class="w-10 h-10 rounded-full object-cover border"
+                        />
+                      </div>
+                    </Show>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Upload Banner Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={bannerLoading()}
+                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                      onChange={(e) => handleFileUpload(e, "banner")}
+                    />
+                    <Show when={config.bannerUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ Active
+                        </span>
+                        <img
+                          src={config.bannerUrl}
+                          class="w-16 h-8 rounded-lg object-cover border"
+                        />
+                      </div>
+                    </Show>
+                  </div>
+                </div>
+
+                <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
+                  <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
+                    🔗 Social Media Links
+                  </h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#FF0000]" viewBox="0 0 24 24">
+                          <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                        </svg>
+                        YouTube
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://youtube.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.youtubeUrl || ""}
+                        onInput={(e) =>
+                          setConfig("youtubeUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#9146FF]" viewBox="0 0 24 24">
+                          <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+                        </svg>
+                        Twitch
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://twitch.tv/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.twitchUrl || ""}
+                        onInput={(e) =>
+                          setConfig("twitchUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#5865F2]" viewBox="0 0 24 24">
+                          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.121-.63-.24-1.224-.534-1.783-.876a.079.079 0 0 1-.008-.13c.12-.09.239-.185.353-.28a.077.077 0 0 1 .081-.011c3.963 1.817 8.27 1.817 12.185 0a.078.078 0 0 1 .082.01c.114.095.233.19.353.281a.078.078 0 0 1-.007.13 12.19 12.19 0 0 1-1.784.877c-.033.013-.044.062-.024.12.355.698.766 1.365 1.225 1.993a.082.082 0 0 0 .085.029 19.9 19.9 0 0 0 6.002-3.03.076.076 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
+                        </svg>
+                        Discord
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://discord.gg/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.discordUrl || ""}
+                        onInput={(e) =>
+                          setConfig("discordUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#0F1419]" viewBox="0 0 24 24">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                        X (Twitter)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://x.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.xUrl || ""}
+                        onInput={(e) =>
+                          setConfig("xUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#1877F2]" viewBox="0 0 24 24">
+                          <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" />
+                        </svg>
+                        Facebook
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://facebook.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.facebookUrl || ""}
+                        onInput={(e) =>
+                          setConfig("facebookUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#E4405F]" viewBox="0 0 24 24">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204 0 3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+                        </svg>
+                        Instagram
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://instagram.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.instagramUrl || ""}
+                        onInput={(e) =>
+                          setConfig("instagramUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="flex items-center gap-1.5 text-[10px] font-bold text-[#5C4F45] mb-1">
+                        <svg class="w-4 h-4 fill-[#000000]" viewBox="0 0 24 24">
+                          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.1.12.2.24.3.35v3.98c-.14-.02-.27-.06-.41-.09-1.2-.28-2.28-.97-3.04-1.92-.04-.05-.07-.11-.12-.18v7.22c.04 5.37-4.43 9.42-9.74 8.91-4.04-.39-7.16-3.86-7.14-7.9.03-3.84 2.87-7.07 6.69-7.46.61-.06 1.22-.04 1.83.05v3.94c-.4-.08-.81-.11-1.22-.09-1.85.08-3.34 1.64-3.29 3.51.05 1.84 1.57 3.31 3.42 3.27 1.8-.04 3.23-1.52 3.21-3.32V0c.34.01.67.01 1 .02" />
+                        </svg>
+                        TikTok
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tiktok.com/@..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        value={config.tiktokUrl || ""}
+                        onInput={(e) =>
+                          setConfig("tiktokUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="w-full lg:w-[340px] flex-shrink-0">
-              <form
-                onSubmit={handleDonate}
-                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col gap-3.5 relative overflow-hidden"
-                style={{
-                  "border-color": config().cardBorderColor,
-                  "background-color": config().cardBgColor,
-                  "--placeholder-color": hexToRgba(
-                    config().inputTextColor,
-                    0.6,
-                  ),
-                  "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
-                }}
-              >
-                <input
-                  type="text"
-                  name="email_confirm"
-                  value={honeypot()}
-                  onInput={(e) => setHoneypot(e.currentTarget.value)}
-                  tabindex={-1}
-                  autocomplete="off"
-                  class="hidden"
-                />
+            <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
+              <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
+                <span>🎨</span> Color Palette & Donation Presets
+              </h2>
 
-                <div class="flex flex-col gap-2.5">
-                  <div class="grid grid-cols-4 gap-1.5">
-                    <For each={config().presetAmounts}>
-                      {(amt) => (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAmount(String(amt));
-                            setCustomAmountVal(String(amt));
-                            setCustomActive(false);
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      General Text & Icons Color
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.generalTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("generalTextColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.generalTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("generalTextColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Container Background Color
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.cardBgColor || ""}
+                        onInput={(e) =>
+                          setConfig("cardBgColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.cardBgColor || ""}
+                        onInput={(e) =>
+                          setConfig("cardBgColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Submit Button Color
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.submitBtnColor || ""}
+                        onInput={(e) =>
+                          setConfig("submitBtnColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.submitBtnColor || ""}
+                        onInput={(e) =>
+                          setConfig("submitBtnColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                      Submit Button Text Color
+                    </label>
+                    <div class="flex gap-2">
+                      <input
+                        type="color"
+                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                        value={config.submitBtnTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("submitBtnTextColor", e.currentTarget.value)
+                        }
+                      />
+                      <input
+                        type="text"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        value={config.submitBtnTextColor || ""}
+                        onInput={(e) =>
+                          setConfig("submitBtnTextColor", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="border-t border-[#F0EAE1] pt-4">
+                  <label class="block text-xs font-black text-[#E87A5D] uppercase tracking-wider mb-2">
+                    💵 Quick Preset Support Amounts (THB)
+                  </label>
+                  <div class="grid grid-cols-4 gap-2">
+                    <For each={[0, 1, 2, 3]}>
+                      {(idx) => (
+                        <input
+                          type="number"
+                          class="w-full px-2 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-center text-sm font-black"
+                          value={config.presetAmounts?.[idx] || 0}
+                          onInput={(e) => {
+                            const nextAmounts = [...config.presetAmounts];
+                            nextAmounts[idx] = Number(e.currentTarget.value);
+                            setConfig("presetAmounts", nextAmounts);
                           }}
-                          class="py-3 text-base font-normal border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
-                          style={{
-                            "background-color":
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnColor
-                                : config().inputBgColor,
-                            "border-color":
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnColor
-                                : config().presetBorderColor,
-                            color:
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnTextColor
-                                : config().inputTextColor,
-                          }}
-                        >
-                          {amt}฿
-                        </button>
+                        />
                       )}
                     </For>
                   </div>
-
-                  <label for="custom-amount" class="sr-only">
-                    Amount
-                  </label>
-                  <input
-                    id="custom-amount"
-                    type="number"
-                    min="10"
-                    max="5000"
-                    step="0.01"
-                    placeholder={config().amountPlaceholder}
-                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => {
-                      let val = e.currentTarget.value;
-                      if (val.includes(".")) {
-                        const [intPart, decPart] = val.split(".");
-                        if (decPart && decPart.length > 2) {
-                          val = `${intPart}.${decPart.substring(0, 2)}`;
-                          e.currentTarget.value = val;
-                        }
-                      }
-                      setCustomActive(true);
-                      setAmount(val);
-                      setCustomAmountVal(val);
-                    }}
-                    value={customAmountVal()}
-                  />
                 </div>
 
-                <div class="flex flex-col">
-                  <label for="nickname" class="sr-only">
-                    Nickname
+                <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
+                  <label class="block text-xs font-bold text-[#5C4F45]">
+                    🖼 Page Background Style
                   </label>
-                  <input
-                    id="nickname"
-                    type="text"
-                    required
-                    placeholder={config().nicknamePlaceholder}
-                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => setName(e.currentTarget.value)}
-                    value={name()}
-                  />
-                </div>
-
-                <div class="relative w-full">
-                  <label for="donor-msg" class="sr-only">
-                    Message
-                  </label>
-                  <textarea
-                    id="donor-msg"
-                    placeholder={config().messagePlaceholder}
-                    maxlength={255}
-                    class="w-full px-4 py-3 pb-8 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal resize-none overflow-y-hidden min-h-[72px]"
-                    rows={2}
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => {
-                      setMessage(e.currentTarget.value);
-                      e.currentTarget.style.height = "auto";
-                      e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
-                    }}
-                    value={message()}
-                  ></textarea>
-
-                  <div
-                    class="absolute bottom-2.5 right-4 text-[10px] select-none"
-                    style={{ color: hexToRgba(config().inputTextColor, 0.6) }}
-                  >
-                    {255 - message().length}
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsTosExpanded(!isTosExpanded())}
-                    class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                    }}
-                    aria-expanded={isTosExpanded()}
-                    aria-controls="tos-collapsed-content"
-                  >
-                    <span>Terms & Privacy Policy</span>
-                    <span class="text-[8px]">
-                      {isTosExpanded() ? "▲" : "▼"}
-                    </span>
-                  </button>
-
-                  <Show when={isTosExpanded()}>
-                    <div
-                      id="tos-collapsed-content"
-                      class="p-2.5 rounded-xl border space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
-                      style={{
-                        "background-color": config().cardBgColor,
-                        "border-color": config().cardBorderColor,
-                        color: config().generalTextColor,
-                      }}
-                    >
-                      <p>
-                        <strong>1. Non-Refundable:</strong> All support payments
-                        are voluntary and strictly non-refundable.
-                      </p>
-                      <p>
-                        <strong>2. Display Consent:</strong> By submitting, you
-                        consent to displaying your nickname and message on the
-                        live streaming overlay.
-                      </p>
-                    </div>
-                  </Show>
-
-                  <div
-                    class="text-[10px] leading-normal text-center px-1"
-                    style={{ color: hexToRgba(config().generalTextColor, 0.7) }}
-                  >
-                    By supporting, you agree to our{" "}
+                  <div class="grid grid-cols-2 gap-3">
                     <button
-                      type="button"
-                      onClick={() => setIsTosExpanded(!isTosExpanded())}
-                      class="font-bold underline cursor-pointer text-[10px]"
-                      style={{ color: config().generalTextColor }}
+                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "solid" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
+                      onClick={() => setConfig("bgType", "solid")}
                     >
-                      Terms & Privacy Policy
+                      Solid Color
                     </button>
-                    .
+                    <button
+                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "image" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
+                      onClick={() => setConfig("bgType", "image")}
+                    >
+                      Wallpaper Image
+                    </button>
                   </div>
-                </div>
-
-                <Show when={data()?.turnstileSiteKey}>
-                  <div
-                    id="turnstile-container"
-                    class="w-full flex justify-center transition-all duration-300 py-1"
-                    style={{
-                      display: turnstileToken() ? "none" : "flex",
-                      "min-height": "65px",
-                    }}
-                  ></div>
-                </Show>
-
-                <button
-                  type="submit"
-                  disabled={
-                    loading() ||
-                    cooldownRemaining() > 0 ||
-                    (data()?.turnstileSiteKey !== "" && !turnstileToken())
-                  }
-                  class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
-                  style={{
-                    "background-color":
-                      cooldownRemaining() > 0
-                        ? "#64748b"
-                        : config().submitBtnColor,
-                    color: config().submitBtnTextColor || "#ffffff",
-                  }}
-                >
                   <Show
-                    when={cooldownRemaining() > 0}
+                    when={config.bgType === "image"}
                     fallback={
-                      <Show when={loading()} fallback={config().submitBtnText}>
-                        Generating QR Code...
-                      </Show>
+                      <div class="flex gap-2">
+                        <input
+                          type="color"
+                          class="w-10 h-10 border-0 rounded-lg cursor-pointer"
+                          value={config.bgColor || ""}
+                          onInput={(e) =>
+                            setConfig("bgColor", e.currentTarget.value)
+                          }
+                        />
+                        <input
+                          type="text"
+                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                          value={config.bgColor || ""}
+                          onInput={(e) =>
+                            setConfig("bgColor", e.currentTarget.value)
+                          }
+                        />
+                      </div>
                     }
                   >
-                    Wait {cooldownRemaining()}s... ⏳
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Upload Page Background Image (Max 5 MB)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={bgLoading()}
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                        onChange={(e) => handleFileUpload(e, "bg")}
+                      />
+                      <Show when={config.bgUrl}>
+                        <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                          <span class="text-[10px] text-emerald-600 font-bold">
+                            ✓ Active
+                          </span>
+                          <img
+                            src={config.bgUrl}
+                            class="w-16 h-8 rounded-lg object-cover border"
+                          />
+                        </div>
+                      </Show>
+                    </div>
                   </Show>
-                </button>
-              </form>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }
