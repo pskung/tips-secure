@@ -7,7 +7,8 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
 
   const token = authHeader.substring(7);
   const url = new URL(event.request.url);
-  const host = event.request.headers.get("host") || url.host;
+  const headers = event.request.headers;
+  let host = headers.get("x-forwarded-host") || headers.get("host") || url.host;
   const protocol =
     event.request.headers.get("x-forwarded-proto") || url.protocol;
 
