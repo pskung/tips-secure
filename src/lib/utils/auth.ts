@@ -7,17 +7,34 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
 
   const token = authHeader.substring(7);
   const url = new URL(event.request.url);
-  const host = event.request.headers.get("host") || url.host;
-  const protocol =
-    event.request.headers.get("x-forwarded-proto") || url.protocol;
+  const headers = event.request.headers;
+
+  let host = headers.get("x-forwarded-host") || headers.get("host") || url.host;
+
+  if (!host || host.includes("localhost") || host.includes("127.0.0.1")) {
+    const fallbackUrl = process.env.DEPLOY_PRIME_URL || process.env.URL;
+    if (fallbackUrl) {
+      try {
+        const parsedFallback = new URL(fallbackUrl);
+        host = parsedFallback.host;
+      } catch {
+        host = fallbackUrl.replace(/^https?:\/\//, "");
+      }
+    }
+  }
+
+  const isLocal =
+    host.includes("localhost") ||
+    host.includes("127.0.0.1") ||
+    host.includes("localhost:3000");
+  const protocol = isLocal ? "http" : "https";
+
+  const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
 
   try {
-    const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
-
     const res = await fetch(identityUrl, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
     });
 
     if (res.ok) {
