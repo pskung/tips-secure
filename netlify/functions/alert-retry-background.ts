@@ -1,11 +1,38 @@
-// netlify/functions/alert-retry-background.ts
 import { getStore } from "@netlify/blobs";
+import { createDecipheriv, createHash } from "crypto";
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
   STREAMELEMENTS_TIPS: (channelId: string) =>
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
+
+function decryptPII(encryptedText: string): string {
+  if (!encryptedText) return "";
+  try {
+    const parts = encryptedText.split(":");
+    if (parts.length !== 3) return encryptedText;
+
+    const iv = Buffer.from(parts[0], "hex");
+    const encrypted = parts[1];
+    const tag = Buffer.from(parts[2], "hex");
+
+    const secret =
+      process.env.PII_ENCRYPTION_KEY ||
+      process.env.BEAM_WEBHOOK_SECRET ||
+      "fallback-stable-32bytes-secret-key-system!";
+    const key = createHash("sha256").update(secret).digest();
+
+    const decipher = createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+
+    let decrypted = decipher.update(encrypted, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch {
+    return "Anonymous";
+  }
+}
 
 export default async (req: Request) => {
   if (req.method !== "POST") {
@@ -33,11 +60,13 @@ export default async (req: Request) => {
       return new Response("Done", { status: 200 });
     }
 
-    const { donorName, donorMessage, amountInThb, currency } = alertData;
+    const donorName = decryptPII(alertData.donorName);
+    const donorMessage = decryptPII(alertData.donorMessage);
+    const { amountInThb, currency } = alertData;
+
     let slSuccess = false;
     let seSuccess = false;
 
-    // รันวนซ้ำสูงสุด 3 รอบ พร้อมทำ Exponential Backoff ป้องกันระบบภายนอกล่ม
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(
@@ -58,7 +87,7 @@ export default async (req: Request) => {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: params.toString(),
-            signal: AbortSignal.timeout(5000), // ให้เวลาสูงสุด 5 วินาทีต่อครั้ง
+            signal: AbortSignal.timeout(5000),
           })
             .then((res) => {
               if (res.ok) slSuccess = true;
@@ -115,25 +144,23 @@ export default async (req: Request) => {
       if (slSuccess && seSuccess) break;
 
       if (attempt < maxRetries) {
-        const backoffTime = Math.pow(2, attempt) * 1000; // รอบที่ 1 รอ 2s, รอบที่ 2 รอ 4s
+        const backoffTime = Math.pow(2, attempt) * 1000;
         await new Promise((r) => setTimeout(r, backoffTime));
       }
     }
 
     const now = Date.now();
     if (slSuccess && seSuccess) {
-      // 1. สำเร็จ ➔ ลบตัวคิวชั่วคราวทิ้ง และบันทึกคีย์คู่แฝดสำเร็จ
       await store.set(`processed_tx:${transactionId}`, "success");
       await store.set(`tx_log:${now}:${transactionId}`, "success");
-      await store.delete(`failed_alert:${transactionId}`); // ล้างขยะออกจาก Active Queue ทันที
+      await store.delete(`failed_alert:${transactionId}`);
       console.log(
         `[Background Retry] Alert successfully completed for ${transactionId}`,
       );
     } else {
-      // 2. ล้มเหลวถาวร ➔ ลบตัวคิวชั่วคราวทิ้ง และบันทึกคีย์คู่แฝดล้มเหลว เพื่อสกัดการ retries ในอนาคต
       await store.set(`processed_tx:${transactionId}`, "failed");
       await store.set(`tx_log:${now}:${transactionId}`, "failed");
-      await store.delete(`failed_alert:${transactionId}`); // ป้องกันไม่ให้คิวดำเนินงานค้างคลัง
+      await store.delete(`failed_alert:${transactionId}`);
       console.error(
         `[Background Retry] Permanently failed for ${transactionId}`,
       );
@@ -147,5 +174,5 @@ export default async (req: Request) => {
 };
 
 export const config = {
-  background: true, // ประกาศให้ทำงานแบบ Long-running background ใน Netlify
+  background: true,
 };

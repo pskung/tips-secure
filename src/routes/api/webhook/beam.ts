@@ -1,7 +1,6 @@
-// src/routes/api/webhook/beam.ts
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
-import { timingSafeCompare } from "~/lib/utils/crypto";
+import { timingSafeCompare, encryptPII } from "~/lib/utils/crypto";
 import { getStore } from "@netlify/blobs";
 
 const EXTERNAL_API = {
@@ -15,7 +14,6 @@ export async function POST(event: APIEvent) {
     const body = await event.request.json();
     const headers = event.request.headers;
 
-    // 1. ตรวจสอบความถูกต้องของ Webhook Token
     const callbackToken = headers.get("x-beam-webhook-token");
     const expectedToken = process.env.BEAM_WEBHOOK_SECRET;
 
@@ -38,13 +36,11 @@ export async function POST(event: APIEvent) {
       });
     }
 
-    // 2. ตรวจสอบสถานะการจ่ายเงินที่สำเร็จ
     const isPaymentLinkPaid =
       body.status === "PAID" || body.status === "SUCCEEDED";
     const isTransactionSuccess = body.transactionType === "PAYMENT";
 
     if (isPaymentLinkPaid || isTransactionSuccess) {
-      const store = getStore("donation_store");
       const transactionId =
         body.transactionId || body.chargeId || body.paymentLinkId;
 
@@ -55,7 +51,8 @@ export async function POST(event: APIEvent) {
         );
       }
 
-      // 1. ตรวจสอบสถานะความซ้ำซ้อนผ่านคีย์หลัก O(1)
+      const store = getStore({ name: "donation_store", consistency: "strong" });
+
       const isAlreadyProcessed = await store.get(
         `processed_tx:${transactionId}`,
       );
@@ -66,7 +63,6 @@ export async function POST(event: APIEvent) {
         );
       }
 
-      // 4. Single-Sided Extraction: แกะข้อมูลดิบจาก Payload ทันที (ตัด Back-channel HTTP GET)
       let donorName = "Anonymous";
       let donorMessage = "";
       const amountInThb = (body.grossAmount || body.amount || 0) / 100;
@@ -82,7 +78,6 @@ export async function POST(event: APIEvent) {
           donorName = orderNote || "Anonymous";
         }
       } else {
-        // Fallback สุดท้ายจริงๆ ค่อย GET กลับไปเช็คที่ Beam
         const paymentLinkId = body.sourceId || body.paymentLinkId;
         if (paymentLinkId) {
           const beamUrl =
@@ -101,9 +96,13 @@ export async function POST(event: APIEvent) {
               const plData = await plResponse.json();
               const noteStr = plData.order?.internalNote;
               if (noteStr) {
-                const parsedNote = JSON.parse(noteStr);
-                donorName = parsedNote.donor_name || "Anonymous";
-                donorMessage = parsedNote.donor_message || "";
+                try {
+                  const parsedNote = JSON.parse(noteStr);
+                  donorName = parsedNote.donor_name || "Anonymous";
+                  donorMessage = parsedNote.donor_message || "";
+                } catch {
+                  donorName = noteStr || "Anonymous";
+                }
               }
             }
           } catch (err) {
@@ -112,7 +111,6 @@ export async function POST(event: APIEvent) {
         }
       }
 
-      // 5. [SYNCHRONOUS FAST-PATH] ยิงขึ้นสตรีมสากลอย่างรวดเร็ว บีบเวลาสุดๆ ใน 800ms
       let slSuccess = false;
       let seSuccess = false;
       const fastPathPromises: Promise<any>[] = [];
@@ -179,26 +177,23 @@ export async function POST(event: APIEvent) {
         await Promise.all(fastPathPromises);
       }
 
-      // 2. ตรวจประเมินผลการรัน Fast-Path
       const now = Date.now();
       if (slSuccess && seSuccess) {
-        // Fast-Path สำเร็จ ➔ เขียนบันทึกคีย์คู่แฝดทันที
         await store.set(`processed_tx:${transactionId}`, "success");
-        await store.set(`tx_log:${now}:${transactionId}`, "success"); // คีย์สารบัญล้างข้อมูล
+        await store.set(`tx_log:${now}:${transactionId}`, "success");
         safeLog(`Fast-Path success and indexed: ${transactionId}`, "INFO");
       } else {
-        // Fast-Path ล้มเหลว ➔ ส่งเข้าคิวจัดเก็บปกติ
         const alertTask = {
           transactionId,
-          donorName,
-          donorMessage,
+          donorName: encryptPII(donorName),
+          donorMessage: encryptPII(donorMessage),
           amountInThb,
           currency,
           createdAt: now,
+          isEncrypted: true,
         };
         await store.setJSON(`failed_alert:${transactionId}`, alertTask);
 
-        // ยิง Async Wakeup ไปปลุก Background Function
         const url = new URL(event.request.url);
         const host = headers.get("host") || url.host;
         const protocol = headers.get("x-forwarded-proto") || url.protocol;

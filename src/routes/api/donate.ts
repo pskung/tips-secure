@@ -1,7 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { getCookie, setCookie } from "vinxi/http";
+import { setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
-import { DonateInputSchema } from "~/lib/utils/schemas"; // 🟢 นำเข้า Zod Schema เรียบร้อยแล้ว
+import { DonateInputSchema } from "~/lib/utils/schemas";
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
@@ -36,17 +36,14 @@ export async function POST(event: APIEvent) {
 
     const body = await event.request.json();
 
-    // 🟢 1. ใช้ Zod ทำการตรวจสอบประเภทตัวแปร ความยาว และโครงสร้างทั้งหมดในขั้นตอนเดียว
     const result = DonateInputSchema.safeParse(body);
     if (!result.success) {
-      // ดึงเอาข้อความแจ้งเตือนข้อผิดพลาดแรกสุดส่งกลับหน้าจอทันที เช่น "ยอดเงินโดเนทขั้นต่ำต้องอยู่ระหว่าง 10 - 5,000 บาทค่ะ"
       const firstError = result.error.issues[0].message;
       return new Response(JSON.stringify({ error: firstError }), {
         status: 400,
       });
     }
 
-    // ตัวแปรทุกตัวผ่านการรับประกันประเภทข้อมูลรันไทม์ (Type-Safe) จาก Zod เรียบร้อยแล้วค่ะ
     const {
       name,
       amount,
@@ -56,7 +53,6 @@ export async function POST(event: APIEvent) {
       turnstile_token,
     } = result.data;
 
-    // 🟢 2. ระบบตรวจสอบสแปมบอทและอัตราความเร็วการพิมพ์
     if (email_confirm) {
       safeLog("Spam Bot Detected: Invisible honeypot trap triggered.", "WARN", {
         email_confirm,
@@ -74,7 +70,6 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // 🟢 3. ตรวจสอบ Cloudflare Turnstile Verification
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
       safeLog(
@@ -84,7 +79,7 @@ export async function POST(event: APIEvent) {
       return new Response(
         JSON.stringify({
           error:
-            "ระบบความปลอดภัยไม่ได้เปิดใช้งานอย่างสมบูรณ์ กรุณาติดต่อสตรีมเมอร์ค่ะ",
+            "Security system is not fully initialized. Please contact administrator.",
         }),
         { status: 500 },
       );
@@ -106,41 +101,27 @@ export async function POST(event: APIEvent) {
     if (!verifyData.success) {
       return new Response(
         JSON.stringify({
-          error: "ด่านตรวจพบว่ามีพฤติกรรมเป็นบอท กรุณาลองใหม่อีกครั้งค่ะ",
+          error: "Security verification failed. Please try again.",
         }),
         { status: 400 },
       );
     }
 
-    // 🟢 4. ตรวจสอบคุกกี้สกัดการโอนซ้ำรัวๆ
-    const cooldownActive = getCookie(event.nativeEvent, "cooldown_active");
-    if (cooldownActive === "true") {
-      return new Response(
-        JSON.stringify({ error: "กรุณารอ 1 นาทีก่อนทำรายการถัดไปน้า" }),
-        { status: 429 },
-      );
-    }
-
-    // 🟢 5. สกัดการเริ่มเปิดธุรกรรมหากเกตเวย์ Beam ข้อมูลไม่สมบูรณ์ [1]
     if (!process.env.BEAM_API_KEY) {
       return new Response(
         JSON.stringify({
-          error: "ระบบยังไม่ได้ตั้งค่าคีย์รับเงินของ Beam หลังบ้านค่ะ",
+          error: "Payment gateway credentials are not configured.",
         }),
         { status: 501 },
       );
     }
 
-    // ทำการแปลงหน่วย THB เป็น Satang (สตางค์) และปัดเศษป้องการจุดทศนิยมผิดเพี้ยน [1]
     const netAmountInSatang = Math.round(amount * 100);
-
     const siteUrl = `${protocol}://${host}/`;
     const beamUrl =
       process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
-
     const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
 
-    // ส่งคำขอสร้างลิงก์ชำระเงินกับ Beam API [1]
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
       headers: {
@@ -151,8 +132,8 @@ export async function POST(event: APIEvent) {
         redirectUrl: siteUrl,
         order: {
           currency: "THB",
-          netAmount: netAmountInSatang, // ส่งหน่วยสตางค์
-          description: `VTuber tip by ${name}`,
+          netAmount: netAmountInSatang,
+          description: `Support payment by ${name}`,
           referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
           internalNote: JSON.stringify({
             donor_name: name,
@@ -166,7 +147,7 @@ export async function POST(event: APIEvent) {
     if (!response.ok) {
       safeLog("Failed to generate Beam payment link", "ERROR", data);
       return new Response(
-        JSON.stringify({ error: "ไม่สามารถติดต่อเกตเวย์รับเงินภายนอกได้ค่ะ" }),
+        JSON.stringify({ error: "Failed to generate payment link." }),
         { status: response.status },
       );
     }
@@ -184,9 +165,8 @@ export async function POST(event: APIEvent) {
     });
   } catch (error) {
     safeLog("Internal Fatal Exception in Payment Controller", "ERROR", error);
-    return new Response(
-      JSON.stringify({ error: "ระบบทำงานหลังบ้านประมวลผลล้มเหลว" }),
-      { status: 500 },
-    );
+    return new Response(JSON.stringify({ error: "Internal server error." }), {
+      status: 500,
+    });
   }
 }

@@ -7,14 +7,13 @@ import {
   For,
   Show,
 } from "solid-js";
-import { Title, Link, Style } from "@solidjs/meta"; // 🟢 นำเข้า Style เพื่อเขียนกฎควบคุมฟอนต์สากลค่ะ
+import { Title, Link } from "@solidjs/meta";
 import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ตรรกะฝั่งเซิร์ฟเวอร์: แคชสด 5 วินาที ดึงเบื้องหลัง 5 วินาที
 const getInitialData = query(async () => {
   "use server";
   const event = getRequestEvent();
@@ -22,7 +21,7 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=5, stale-while-revalidate=5",
+      "public, max-age=0, s-maxage=600, stale-while-revalidate=60",
     );
   }
 
@@ -43,7 +42,6 @@ const getInitialData = query(async () => {
   }
 }, "initialData");
 
-// ฟังก์ชันจัดทำดีไซน์ชุดไอคอนโซเชียลแบบละเอียดครอบคลุม 7 เครือข่าย
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
@@ -67,7 +65,7 @@ function getSocialIcon(platform: string) {
       </svg>
     );
   }
-  if (p.includes("twitter") || p === "x") {
+  if (p.includes("x")) {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -77,21 +75,21 @@ function getSocialIcon(platform: string) {
   if (p.includes("facebook")) {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" />
       </svg>
     );
   }
   if (p.includes("instagram")) {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.79.073 7.151.014 8.431 0 8.839 0 12s.014 3.569.072 4.849c.2 4.36 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.848.072 3.159 0 3.568-.014 4.848-.072 4.361-.2 6.78-2.618 6.979-6.98.059-1.28.073-1.689.073-4.848 0-3.159-.014-3.568-.072-4.849-.2-4.36-2.618-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204 0 3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
       </svg>
     );
   }
   if (p.includes("tiktok")) {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.54-4.06-1.5-1.24-1.07-2.01-2.61-2.18-4.22-.03-.02-.06-.03-.08-.05-.04 1.7-.01 3.41-.03 5.11-.03 3.64-.17 7.42-2.16 10.51-1.62 2.58-4.43 4.23-7.53 4.23-3.14-.04-6.15-1.84-7.55-4.73-1.44-2.81-1.2-6.52.75-9.14 1.68-2.36 4.6-3.72 7.54-3.51V10c-1.47-.14-3.04.42-3.85 1.71-.87 1.3-.87 3.12-.07 4.45.74 1.34 2.29 2.14 3.83 2.01 1.55-.02 3.02-1.01 3.46-2.5.39-1.2.22-2.52.26-3.76V.02z" />
+        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.1.12.2.24.3.35v3.98c-.14-.02-.27-.06-.41-.09-1.2-.28-2.28-.97-3.04-1.92-.04-.05-.07-.11-.12-.18v7.22c.04 5.37-4.43 9.42-9.74 8.91-4.04-.39-7.16-3.86-7.14-7.9.03-3.84 2.87-7.07 6.69-7.46.61-.06 1.22-.04 1.83.05v3.94c-.4-.08-.81-.11-1.22-.09-1.85.08-3.34 1.64-3.29 3.51.05 1.84 1.57 3.31 3.42 3.27 1.8-.04 3.23-1.52 3.21-3.32V0c.34.01.67.01 1 .02z" />
       </svg>
     );
   }
@@ -123,6 +121,7 @@ export default function Home() {
   const [customAmountVal, setCustomAmountVal] = createSignal("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
   const [isTosExpanded, setIsTosExpanded] = createSignal(false);
+  const [turnstileReady, setTurnstileReady] = createSignal(false);
 
   let turnstileWidgetId: string | null = null;
 
@@ -179,7 +178,7 @@ export default function Home() {
     const conf = config();
     return [
       ...new Set(
-        [conf.mainFontFamily, conf.placeholderFontFamily].filter(
+        [conf.mainFontFamily].filter(
           (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
         ),
       ),
@@ -202,11 +201,15 @@ export default function Home() {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const sanitizeUrl = (url: string | undefined): string => {
+  const optimizeImage = (
+    url: string | undefined,
+    width: number,
+    quality: number = 70,
+  ): string => {
     if (!url) return "";
     const cleanUrl = url.trim();
-    if (cleanUrl.match(/^https?:\/\/[^\s$.?#].[^\s]*$/i)) return cleanUrl;
-    return "";
+    if (cleanUrl === "") return "";
+    return `/.netlify/images?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality}`;
   };
 
   const initTurnstile = () => {
@@ -242,6 +245,18 @@ export default function Home() {
   };
 
   onMount(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        sessionStorage.setItem("admin_verified", "true");
+        sessionStorage.setItem("admin_jwt", accessToken);
+        window.location.href = "/admin";
+        return;
+      }
+    }
+
     setRenderTime(Date.now());
     setAmount("");
     setCustomAmountVal("");
@@ -257,13 +272,20 @@ export default function Home() {
     const checkInterval = setInterval(() => {
       if ((window as any).turnstile) {
         clearInterval(checkInterval);
-        initTurnstile();
+        setTurnstileReady(true);
       }
     }, 100);
 
     onCleanup(() => {
       clearInterval(checkInterval);
     });
+  });
+
+  createEffect(() => {
+    const siteKey = data()?.turnstileSiteKey;
+    if (siteKey && turnstileReady()) {
+      initTurnstile();
+    }
   });
 
   createEffect(() => {
@@ -326,16 +348,13 @@ export default function Home() {
   return (
     <>
       <Title>Support {config().vtuberName} 💖</Title>
-      {/* 🟢 โหลด Google Font แบบ Dynamic และบังคับใช้ฟอนต์แบบ 100% Reactive ด้วย Standard HTML <style> */}
       <style>
         {`
           @import url('https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
-          
-          /* บังคับใช้ฟอนต์กับทุกอินพุต ปุ่ม และข้อความภายในคอนเทนเนอร์ */
-          .custom-font-root, 
-          .custom-font-root input, 
-          .custom-font-root textarea, 
-          .custom-font-root button, 
+          .custom-font-root,
+          .custom-font-root input,
+          .custom-font-root textarea,
+          .custom-font-root button,
           .custom-font-root select {
             font-family: '${config().mainFontFamily}', sans-serif !important;
           }
@@ -352,7 +371,7 @@ export default function Home() {
         style={{
           "background-image":
             config().bgType === "image" && config().bgUrl
-              ? `url(${config().bgUrl})`
+              ? `url(${optimizeImage(config().bgUrl, 1200)})`
               : "none",
           "background-color": config().bgColor,
           "font-family": `'${config().mainFontFamily}', sans-serif`,
@@ -360,21 +379,22 @@ export default function Home() {
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
-        {/* Banner Zone */}
         <div
           class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
           style={{
-            "background-image": `url(${config().bannerUrl || "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"})`,
+            "background-image": `url(${
+              config().bannerUrl
+                ? optimizeImage(config().bannerUrl, 800)
+                : "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"
+            })`,
             "border-color": config().cardBorderColor,
           }}
         >
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        {/* Content Area Wrapper */}
         <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
           <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            {/* COLUMN 1 (About - Left Side) */}
             <div class="flex-1 w-full space-y-4 flex flex-col">
               <div
                 class="p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col space-y-4 text-left"
@@ -387,8 +407,9 @@ export default function Home() {
                   <div class="flex-shrink-0">
                     <img
                       src={
-                        sanitizeUrl(config().avatarUrl) ||
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                        config().avatarUrl
+                          ? optimizeImage(config().avatarUrl, 120)
+                          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
                       }
                       alt="Avatar"
                       class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
@@ -412,6 +433,7 @@ export default function Home() {
                             class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
                             style={{ color: config().generalTextColor }}
                             title={link.platform}
+                            aria-label={`Visit social channel: ${link.platform}`}
                           >
                             {getSocialIcon(link.platform)}
                           </a>
@@ -443,7 +465,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* COLUMN 2 (Donation Panel - Right Side) */}
             <div class="w-full lg:w-[340px] flex-shrink-0">
               <form
                 onSubmit={handleDonate}
@@ -458,7 +479,6 @@ export default function Home() {
                   "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
                 }}
               >
-                {/* 1. บล็อก Honeypot ซ่อนตัว (เมื่อเปลี่ยนเป็น Flex Gap จะไม่มีแรงดัน margin-top เหลืออยู่ด้านบนหน้าต่างกรอกเงินเลยค่ะ) */}
                 <input
                   type="text"
                   name="email_confirm"
@@ -469,7 +489,6 @@ export default function Home() {
                   class="hidden"
                 />
 
-                {/* 2. ส่วนของ Preset ยอดเงินสนับสนุน */}
                 <div class="flex flex-col gap-2.5">
                   <div class="grid grid-cols-4 gap-1.5">
                     <For each={config().presetAmounts}>
@@ -537,7 +556,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* 3. ช่องกรอกชื่อเล่น */}
                 <div class="flex flex-col">
                   <label for="nickname" class="sr-only">
                     Nickname
@@ -559,7 +577,6 @@ export default function Home() {
                   />
                 </div>
 
-                {/* 4. ช่องกรอกข้อความ ยืดหยุ่นดันตัวลงล่างอัตโนมัติ */}
                 <div class="relative w-full">
                   <label for="donor-msg" class="sr-only">
                     Message
@@ -592,7 +609,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 5. แถบเปิดแสดง TOS */}
                 <div class="flex flex-col gap-2">
                   <button
                     type="button"
@@ -603,8 +619,10 @@ export default function Home() {
                       "border-color": config().inputBorderColor,
                       color: config().inputTextColor,
                     }}
+                    aria-expanded={isTosExpanded()}
+                    aria-controls="tos-collapsed-content"
                   >
-                    <span>Terms & Privacy Policy (TOS & PDPA)</span>
+                    <span>Terms & Privacy Policy</span>
                     <span class="text-[8px]">
                       {isTosExpanded() ? "▲" : "▼"}
                     </span>
@@ -612,6 +630,7 @@ export default function Home() {
 
                   <Show when={isTosExpanded()}>
                     <div
+                      id="tos-collapsed-content"
                       class="p-2.5 rounded-xl border space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
                       style={{
                         "background-color": config().cardBgColor,
@@ -620,12 +639,13 @@ export default function Home() {
                       }}
                     >
                       <p>
-                        <strong>1. Non-Refundable:</strong> All support is
-                        voluntary and non-refundable.
+                        <strong>1. Non-Refundable:</strong> All support payments
+                        are voluntary and strictly non-refundable.
                       </p>
                       <p>
-                        <strong>2. Live Alerts:</strong> We display your
-                        nickname and message on stream based on your consent.
+                        <strong>2. Display Consent:</strong> By submitting, you
+                        consent to displaying your nickname and message on the
+                        live streaming overlay.
                       </p>
                     </div>
                   </Show>
@@ -641,13 +661,12 @@ export default function Home() {
                       class="font-bold underline cursor-pointer text-[10px]"
                       style={{ color: config().generalTextColor }}
                     >
-                      Terms & Policy
+                      Terms & Privacy Policy
                     </button>
                     .
                   </div>
                 </div>
 
-                {/* 6. Cloudflare Turnstile */}
                 <Show when={data()?.turnstileSiteKey}>
                   <div
                     id="turnstile-container"
@@ -659,7 +678,6 @@ export default function Home() {
                   ></div>
                 </Show>
 
-                {/* 7. ปุ่มหลักยินยอมและสนับสนุน */}
                 <button
                   type="submit"
                   disabled={
@@ -678,7 +696,11 @@ export default function Home() {
                 >
                   <Show
                     when={cooldownRemaining() > 0}
-                    fallback={ShowWhenLoader()}
+                    fallback={
+                      <Show when={loading()} fallback={config().submitBtnText}>
+                        Generating QR Code...
+                      </Show>
+                    }
                   >
                     Wait {cooldownRemaining()}s... ⏳
                   </Show>
@@ -690,12 +712,4 @@ export default function Home() {
       </main>
     </>
   );
-
-  function ShowWhenLoader() {
-    return (
-      <Show when={loading()} fallback={config().submitBtnText}>
-        Generating QR Code...
-      </Show>
-    );
-  }
 }

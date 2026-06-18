@@ -1,4 +1,3 @@
-// src/routes/admin/index.tsx
 import {
   createSignal,
   createMemo,
@@ -6,7 +5,6 @@ import {
   createEffect,
   For,
   Show,
-  onCleanup,
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
@@ -14,7 +12,6 @@ import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import defaultTheme from "~/lib/config/theme.json";
 
-// ⚡ ดึงค่าดีไซน์สตรีมเมอร์จากคลาวด์เพื่อป้อนเข้าเป็นค่าเริ่มต้นของ Admin Form
 const getAdminData = query(async () => {
   "use server";
   try {
@@ -24,12 +21,10 @@ const getAdminData = query(async () => {
     });
     return {
       theme: theme || defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "", // ส่งคีย์ตรวจบอตไปยังแผงหน้าจอแอดมิน
     };
   } catch {
     return {
       theme: defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   }
 }, "adminData");
@@ -49,14 +44,14 @@ export default function Admin() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
-  const [password, setPassword] = createSignal("");
   const [authError, setAuthError] = createSignal("");
-  const [authLoading, setAuthLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
 
-  // 🟢 สำหรับประตูด่านความปลอดภัยแอดมิน
-  const [adminTurnstileToken, setAdminTurnstileToken] = createSignal("");
-  let adminTurnstileWidgetId: string | null = null;
+  const [avatarLoading, setAvatarLoading] = createSignal(false);
+  const [bannerLoading, setBannerLoading] = createSignal(false);
+  const [bgLoading, setBgLoading] = createSignal(false);
+
+  const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
 
   createEffect(() => {
     const theme = data()?.theme;
@@ -90,90 +85,79 @@ export default function Admin() {
     ];
   });
 
-  // 🟢 แก้ไขสัญญาณแข่งกัน (Race Condition) ด้วยการเฝ้าดู reactive สัญญาณของ Turnstile Site Key
-  createEffect(() => {
-    const siteKey = data()?.turnstileSiteKey;
-    if (!siteKey) return; // 1. เฝ้ารอจนกว่าข้อมูลดึงมาจากระบบหลังบ้านสำเร็จ
-
-    // 2. เฝ้าจับสังเกตตัวสคริปต์สากลบนเบราว์เซอร์
-    const initInterval = setInterval(() => {
-      if (typeof window !== "undefined" && (window as any).turnstile) {
-        clearInterval(initInterval);
-
-        const container = document.getElementById("admin-turnstile-container");
-        if (container) {
-          try {
-            if (adminTurnstileWidgetId) {
-              (window as any).turnstile.remove(adminTurnstileWidgetId);
-            }
-
-            adminTurnstileWidgetId = (window as any).turnstile.render(
-              "#admin-turnstile-container",
-              {
-                sitekey: siteKey,
-                theme: "light",
-                size: "flexible",
-                callback: (token: string) => setAdminTurnstileToken(token),
-                "expired-callback": () => setAdminTurnstileToken(""),
-                "error-callback": () => setAdminTurnstileToken(""),
-              },
-            );
-          } catch (err) {
-            console.error("Failed to render admin Turnstile widget:", err);
-          }
-        }
-      }
-    }, 100);
-
-    onCleanup(() => clearInterval(initInterval));
-  });
-
   onMount(() => {
-    const isVerified = sessionStorage.getItem("admin_verified") === "true";
-    const storedPass = sessionStorage.getItem("admin_pass_key");
-    if (isVerified && storedPass) {
-      setPassword(storedPass);
-      setIsAuthenticated(true);
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        sessionStorage.setItem("admin_verified", "true");
+        sessionStorage.setItem("admin_jwt", accessToken);
+        window.history.replaceState(null, "", window.location.pathname);
+        setIsAuthenticated(true);
+      }
+    } else {
+      const isVerified = sessionStorage.getItem("admin_verified") === "true";
+      const storedToken = sessionStorage.getItem("admin_jwt");
+      if (isVerified && storedToken) {
+        setIsAuthenticated(true);
+      }
     }
   });
 
-  const handleVerify = async (e: Event) => {
-    e.preventDefault();
-    setAuthLoading(true);
+  const handleOAuthLogin = (provider: "google") => {
     setAuthError("");
+    const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
+    window.location.href = authorizeUrl;
+  };
 
-    // ระบบจะสั่งล็อกอินผ่านทันทีหากเซิร์ฟเวอร์ยังไม่ได้ตั้งค่าคีย์ Turnstile (ช่วยอำนวยความสะดวกในการดีพลอยครั้งแรกแบบ open-source)
-    if (data()?.turnstileSiteKey && !adminTurnstileToken()) {
-      setAuthError("Please complete the security challenge first 🔒");
-      setAuthLoading(false);
+  const handleFileUpload = async (
+    e: Event,
+    type: "avatar" | "banner" | "bg",
+  ) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("File size cannot exceed 5 MB.");
+      input.value = "";
       return;
     }
 
+    if (type === "avatar") setAvatarLoading(true);
+    else if (type === "banner") setBannerLoading(true);
+    else if (type === "bg") setBgLoading(true);
+
     try {
-      const res = await fetch("/api/admin/verify", {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/admin/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: password(),
-          turnstile_token: adminTurnstileToken(),
-        }),
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: formData,
       });
+
       const resData = await res.json();
       if (res.ok && resData.success) {
-        sessionStorage.setItem("admin_verified", "true");
-        sessionStorage.setItem("admin_pass_key", password());
-        setIsAuthenticated(true);
+        if (type === "avatar") setConfig("avatarUrl", resData.url);
+        else if (type === "banner") setConfig("bannerUrl", resData.url);
+        else if (type === "bg") setConfig("bgUrl", resData.url);
+        alert(`Successfully uploaded ${type} image.`);
       } else {
-        setAuthError(resData.error || "Incorrect password. Please try again.");
-        if ((window as any).turnstile && adminTurnstileWidgetId) {
-          (window as any).turnstile.reset(adminTurnstileWidgetId);
-          setAdminTurnstileToken("");
-        }
+        alert(resData.error || "Upload failed.");
       }
     } catch {
-      setAuthError("Auth server connection timeout.");
+      alert("Temporary server error. Please try again.");
     } finally {
-      setAuthLoading(false);
+      if (type === "avatar") setAvatarLoading(false);
+      else if (type === "banner") setBannerLoading(false);
+      else if (type === "bg") setBgLoading(false);
     }
   };
 
@@ -183,19 +167,20 @@ export default function Admin() {
       const rawConfig = JSON.parse(JSON.stringify(config));
       const res = await fetch("/api/admin/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: password(), config: rawConfig }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ config: rawConfig }),
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
-        alert("🎉 Styles updated and saved to the cloud successfully!");
+        alert("Configuration saved successfully.");
       } else {
-        alert(
-          resData.error || "Save failed. Invalid style parameters detected.",
-        );
+        alert(resData.error || "Save failed.");
       }
     } catch {
-      alert("System error. Please try again later.");
+      alert("Server connection failed.");
     } finally {
       setSaveLoading(false);
     }
@@ -213,90 +198,56 @@ export default function Admin() {
         )}
       </For>
 
-      {/* 🟢 การโหลดสคริปต์สากลของ Cloudflare Turnstile เพื่อประมวลผลบนหน้าล็อกอินแอดมิน */}
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        async
-        defer
-      ></script>
-
-      {/* 🔐 Admin Password Verification Gateway (Cozy English Version) */}
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleVerify}
-            class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl"
-          >
-            <div class="text-center">
-              <span class="text-4xl">☕</span>
+          <div class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl text-center">
+            <div>
               <h1 class="text-xl font-black mt-3 text-[#2C2520]">
                 Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                Enter your password to customize system styles.
+                Please log in with Google to manage settings.
               </p>
             </div>
+
             <Show when={authError()}>
               <div class="p-3 bg-red-50 border border-red-200 text-red-600 text-xs text-center rounded-xl font-bold">
                 {authError()}
               </div>
             </Show>
-            <div class="space-y-1.5">
-              <label
-                for="pwd"
-                class="text-[10px] font-black text-[#5C4F45] uppercase tracking-wider"
+
+            <div class="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                class="w-full py-3.5 bg-[#EA4335] hover:bg-[#d63c2e] text-white font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-2 text-sm"
               >
-                ADMIN PASSWORD
-              </label>
-              <input
-                id="pwd"
-                type="password"
-                required
-                placeholder="••••••••••••"
-                class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl focus:ring-1 focus:ring-[#E87A5D] focus:outline-none text-[#2C2520] text-sm font-bold"
-                value={password()}
-                onInput={(e) => setPassword(e.currentTarget.value)}
-              />
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.54 0-6.425-2.885-6.425-6.425s2.885-6.425 6.425-6.425c1.6 0 3.06.59 4.19 1.55l3.1-3.1C19.29 2.22 15.93 1 12.24 1 5.92 1 12s4.92 11 11.24 11c6.53 0 10.86-4.6 10.86-11 0-.74-.07-1.46-.2-2.115H12.24z" />
+                </svg>
+                Sign in with Google
+              </button>
             </div>
 
-            {/* 🟢 ตัวเรนเดอร์กล่องความปลอดภัย Turnstile ส่วนแอดมิน */}
-            <Show when={data()?.turnstileSiteKey}>
-              <div
-                id="admin-turnstile-container"
-                class="w-full flex justify-center py-1"
-                style={{
-                  display: adminTurnstileToken() ? "none" : "flex",
-                  "min-height": "65px",
-                }}
-              ></div>
-            </Show>
-
-            <button
-              type="submit"
-              disabled={
-                authLoading() ||
-                (data()?.turnstileSiteKey !== "" && !adminTurnstileToken())
-              }
-              class="w-full py-3.5 bg-[#FFDD00] hover:bg-[#F2D200] text-[#1F160E] font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs disabled:opacity-50"
-            >
-              {authLoading() ? "Logging in... ⏳" : "Login to Dashboard"}
-            </button>
-          </form>
+            <p class="text-[10px] text-[#7C6E65] leading-relaxed">
+              *Only email addresses whitelisted inside the
+              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5] ml-1">
+                ADMIN_EMAILS
+              </code>{" "}
+              env can successfully log in.
+            </p>
+          </div>
         </div>
       </Show>
 
-      {/* 💻 Admin Core Workspace Panel (Cozy English Version) */}
       <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🎨</span>
             <div>
               <h1 class="font-black text-sm sm:text-base text-[#1F160E] tracking-tight">
-                VTuber Secure Donation Settings
+                Secure Support Portal Administration
               </h1>
-              <p class="text-[10px] text-[#7C6E65]">
-                Customize styles and manage options seamlessly.
-              </p>
             </div>
           </div>
           <button
@@ -304,17 +255,15 @@ export default function Admin() {
             disabled={saveLoading()}
             class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl cursor-pointer transition disabled:opacity-50 text-xs tracking-wider"
           >
-            {saveLoading() ? "Saving... ⏳" : "💾 Save All Styles"}
+            {saveLoading() ? "Saving... ⏳" : "💾 Save Changes"}
           </button>
         </header>
 
-        {/* 2-Column Responsive Workspace Grid */}
         <div class="flex-1 max-w-7xl w-full mx-auto p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* COLUMN 1: Profile & Texts Settings */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>👤</span> Profile & Welcome Text
+                <span>👤</span> Profile & Content Configuration
               </h2>
 
               <div class="space-y-4">
@@ -347,7 +296,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Streamer / VTuber Name
+                      Streamer / Brand Name
                     </label>
                     <input
                       type="text"
@@ -385,7 +334,7 @@ export default function Admin() {
 
                 <div>
                   <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                    Welcome Text (About)
+                    Welcome Text
                   </label>
                   <textarea
                     class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm"
@@ -400,36 +349,56 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Avatar Image Link (URL)
+                      Upload Profile Image (Avatar)
                     </label>
                     <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.avatarUrl || ""}
-                      onInput={(e) =>
-                        setConfig("avatarUrl", e.currentTarget.value)
-                      }
+                      type="file"
+                      accept="image/*"
+                      disabled={avatarLoading()}
+                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                      onChange={(e) => handleFileUpload(e, "avatar")}
                     />
+                    <Show when={config.avatarUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ Active
+                        </span>
+                        <img
+                          src={config.avatarUrl}
+                          class="w-10 h-10 rounded-full object-cover border"
+                        />
+                      </div>
+                    </Show>
                   </div>
+
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Banner Image Link (URL)
+                      Upload Banner Image
                     </label>
                     <input
-                      type="text"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.bannerUrl || ""}
-                      onInput={(e) =>
-                        setConfig("bannerUrl", e.currentTarget.value)
-                      }
+                      type="file"
+                      accept="image/*"
+                      disabled={bannerLoading()}
+                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                      onChange={(e) => handleFileUpload(e, "banner")}
                     />
+                    <Show when={config.bannerUrl}>
+                      <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                        <span class="text-[10px] text-emerald-600 font-bold">
+                          ✓ Active
+                        </span>
+                        <img
+                          src={config.bannerUrl}
+                          class="w-16 h-8 rounded-lg object-cover border"
+                        />
+                      </div>
+                    </Show>
                   </div>
                 </div>
 
-                {/* 🟢 ส่วนกล่องตั้งค่าลิงก์ Social Media (Optional) แบบแยกชิ้นกรอกง่าย */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
-                    🔗 Social Media Links (Optional)
+                    🔗 Social Media Links
                   </h3>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -516,7 +485,7 @@ export default function Admin() {
                         }
                       />
                     </div>
-                    <div class="sm:col-span-2">
+                    <div>
                       <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
                         TikTok
                       </label>
@@ -535,14 +504,12 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* COLUMN 2: Styling & Support Presets */}
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>🎨</span> Styling & Support Presets
+                <span>🎨</span> Color Palette & Donation Presets
               </h2>
 
               <div class="space-y-4">
-                {/* Row 1: General text color & card background color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -569,7 +536,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Card & Box Background Color
+                      Container Background Color
                     </label>
                     <div class="flex gap-2">
                       <input
@@ -592,57 +559,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Row 2: Input background color & Input Text Color */}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Input Field Background Color
-                    </label>
-                    <div class="flex gap-2">
-                      <input
-                        type="color"
-                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
-                        value={config.inputBgColor || ""}
-                        onInput={(e) =>
-                          setConfig("inputBgColor", e.currentTarget.value)
-                        }
-                      />
-                      <input
-                        type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
-                        value={config.inputBgColor || ""}
-                        onInput={(e) =>
-                          setConfig("inputBgColor", e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Input Text Color
-                    </label>
-                    <div class="flex gap-2">
-                      <input
-                        type="color"
-                        class="w-10 h-10 border-0 rounded-lg cursor-pointer"
-                        value={config.inputTextColor || ""}
-                        onInput={(e) =>
-                          setConfig("inputTextColor", e.currentTarget.value)
-                        }
-                      />
-                      <input
-                        type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
-                        value={config.inputTextColor || ""}
-                        onInput={(e) =>
-                          setConfig("inputTextColor", e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 3: Submit button color & Button text color */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -692,7 +608,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Quick preset amounts (THB) */}
                 <div class="border-t border-[#F0EAE1] pt-4">
                   <label class="block text-xs font-black text-[#E87A5D] uppercase tracking-wider mb-2">
                     💵 Quick Preset Support Amounts (THB)
@@ -715,10 +630,9 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Page background style settings */}
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
-                    🖼/ Page Background Style
+                    🖼 Page Background Style
                   </label>
                   <div class="grid grid-cols-2 gap-3">
                     <button
@@ -757,13 +671,29 @@ export default function Admin() {
                       </div>
                     }
                   >
-                    <input
-                      type="text"
-                      placeholder="Background Image URL (https://...)"
-                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                      value={config.bgUrl || ""}
-                      onInput={(e) => setConfig("bgUrl", e.currentTarget.value)}
-                    />
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Upload Page Background Image (Max 5 MB)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={bgLoading()}
+                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
+                        onChange={(e) => handleFileUpload(e, "bg")}
+                      />
+                      <Show when={config.bgUrl}>
+                        <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                          <span class="text-[10px] text-emerald-600 font-bold">
+                            ✓ Active
+                          </span>
+                          <img
+                            src={config.bgUrl}
+                            class="w-16 h-8 rounded-lg object-cover border"
+                          />
+                        </div>
+                      </Show>
+                    </div>
                   </Show>
                 </div>
               </div>
