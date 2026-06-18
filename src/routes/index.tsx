@@ -406,6 +406,8 @@ export default function Home() {
                             class="p-1 rounded-lg transition-colors hover:bg-black/5 flex items-center justify-center"
                             style={{ color: config().generalTextColor }}
                             title={link.platform}
+                            // 🟢 เติมแต่ง ARIA Label เพื่อรองรับโปรแกรมช่วยอ่าน
+                            aria-label={`เยี่ยมชมช่องทาง ${link.platform} ของสตรีมเมอร์`}
                           >
                             {getSocialIcon(link.platform)}
                           </a>
@@ -596,6 +598,9 @@ export default function Home() {
                       "border-color": config().inputBorderColor,
                       color: config().inputTextColor,
                     }}
+                    // 🟢 ระบุคุณสมบัติ aria-expanded และควบคุมกลุ่มเพื่อให้สอดคล้องกับมาตรฐาน WCAG 2.1
+                    aria-expanded={isTosExpanded()}
+                    aria-controls="tos-collapsed-content"
                   >
                     <span>Terms & Privacy Policy (TOS & PDPA)</span>
                     <span class="text-[8px]">
@@ -605,6 +610,7 @@ export default function Home() {
 
                   <Show when={isTosExpanded()}>
                     <div
+                      id="tos-collapsed-content" // 🟢 เพิ่มไอดีควบคุมการแสดงสถานะตามปุ่มกด
                       class="p-2.5 rounded-xl border space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
                       style={{
                         "background-color": config().cardBgColor,

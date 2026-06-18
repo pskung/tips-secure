@@ -5,19 +5,20 @@ const getStore = (blobs as any).getStore;
 
 export default async (req: Request, context: Context) => {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] Starting monthly transaction storage cleanup...`);
+  console.log(`[${timestamp}] Starting weekly transaction storage cleanup...`);
 
   try {
     const store = getStore("donation_store");
     let logChecked = 0;
     let logDeleted = 0;
     const now = Date.now();
-    const thirtyDaysAgo = now - 1000 * 60 * 60 * 24 * 30; // 30 วัน
+
+    // 🟢 ปรับเปลี่ยนระยะเวลาหมดอายุประวัติธุรกรรมเหลือ 7 วัน ตามข้อตกลงนโยบาย
+    const sevenDaysAgo = now - 1000 * 60 * 60 * 24 * 7;
 
     const deletePromises: Promise<any>[] = [];
     const deleteLimit = 50;
 
-    // ล้างประวัติธุรกรรมโดเนทที่เก่าเกิน 30 วันเท่านั้น (ไม่มีคิวเซสชันของแอดมินมาเกะกะระบบอีกต่อไปค่ะ)
     for await (const entry of store.list({
       prefix: "tx_log:",
       paginate: true,
@@ -31,7 +32,7 @@ export default async (req: Request, context: Context) => {
             const txTimestamp = Number(parts[1]);
             const transactionId = parts[2];
 
-            if (!isNaN(txTimestamp) && txTimestamp < thirtyDaysAgo) {
+            if (!isNaN(txTimestamp) && txTimestamp < sevenDaysAgo) {
               deletePromises.push(
                 (async () => {
                   await store.delete(`processed_tx:${transactionId}`);
@@ -60,7 +61,7 @@ export default async (req: Request, context: Context) => {
     }
 
     console.log(
-      `[${timestamp}] Cleanup completed. Checked ${logChecked}, Deleted ${logDeleted}`,
+      `[${timestamp}] Weekly Cleanup completed. Checked ${logChecked}, Deleted ${logDeleted}`,
     );
 
     return new Response(
@@ -80,5 +81,6 @@ export default async (req: Request, context: Context) => {
 };
 
 export const config: Config = {
-  schedule: "0 0 1 * *",
+  // 🟢 ปรับแต่งเวลารันรายสัปดาห์ (รันอัตโนมัติเวลาเที่ยงคืนของทุกวันอาทิตย์)
+  schedule: "0 0 * * 0",
 };

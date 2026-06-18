@@ -1,4 +1,3 @@
-// src/routes/api/images/[name].ts
 import type { APIEvent } from "@solidjs/start/server";
 import { getStore } from "@netlify/blobs";
 import { safeLog } from "~/lib/utils/logger";
@@ -32,7 +31,9 @@ export async function GET(event: APIEvent) {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        // แคชรูปภาพเป็นอมตะบนเครื่องผู้ใช้และ CDN เนื่องจากชื่อไฟล์ของเราเปลี่ยนตามมิติกาลเวลา Timestamp อยู่แล้วค่ะ
+        // 🟢 เพิ่มเกราะป้องกันการรันโค้ดและสแปมผ่านช่องโหว่รูปภาพ
+        "X-Content-Type-Options": "nosniff", // สั่งให้เบราว์เซอร์ห้ามประมวลผลไฟล์เป็นสคริปต์
+        "Content-Security-Policy": "default-src 'none'", // ห้ามการทำงานของโค้ดสคริปต์ภายนอก
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
