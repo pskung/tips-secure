@@ -1,7 +1,8 @@
+// src/routes/api/donate.ts
 import type { APIEvent } from "@solidjs/start/server";
-import { getCookie, setCookie } from "vinxi/http";
+import { setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
-import { DonateInputSchema } from "~/lib/utils/schemas"; // 🟢 นำเข้า Zod Schema เรียบร้อยแล้ว
+import { DonateInputSchema } from "~/lib/utils/schemas";
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
@@ -39,7 +40,6 @@ export async function POST(event: APIEvent) {
     // 🟢 1. ใช้ Zod ทำการตรวจสอบประเภทตัวแปร ความยาว และโครงสร้างทั้งหมดในขั้นตอนเดียว
     const result = DonateInputSchema.safeParse(body);
     if (!result.success) {
-      // ดึงเอาข้อความแจ้งเตือนข้อผิดพลาดแรกสุดส่งกลับหน้าจอทันที เช่น "ยอดเงินโดเนทขั้นต่ำต้องอยู่ระหว่าง 10 - 5,000 บาทค่ะ"
       const firstError = result.error.issues[0].message;
       return new Response(JSON.stringify({ error: firstError }), {
         status: 400,
@@ -112,16 +112,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    // 🟢 4. ตรวจสอบคุกกี้สกัดการโอนซ้ำรัวๆ
-    const cooldownActive = getCookie(event.nativeEvent, "cooldown_active");
-    if (cooldownActive === "true") {
-      return new Response(
-        JSON.stringify({ error: "กรุณารอ 1 นาทีก่อนทำรายการถัดไปน้า" }),
-        { status: 429 },
-      );
-    }
-
-    // 🟢 5. สกัดการเริ่มเปิดธุรกรรมหากเกตเวย์ Beam ข้อมูลไม่สมบูรณ์ [1]
+    // 🟢 4. สกัดการเริ่มเปิดธุรกรรมหากเกตเวย์ Beam ข้อมูลไม่สมบูรณ์ [1]
     if (!process.env.BEAM_API_KEY) {
       return new Response(
         JSON.stringify({
@@ -171,6 +162,7 @@ export async function POST(event: APIEvent) {
       );
     }
 
+    // 🟢 [Layer 2] ส่งคุกกี้ Cooldown กลับไปปิดกั้นเบราว์เซอร์ล่วงหน้าเป็นเวลา 60 วินาที
     setCookie(event.nativeEvent, "cooldown_active", "true", {
       maxAge: 60,
       path: "/",

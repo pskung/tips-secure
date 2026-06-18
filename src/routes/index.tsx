@@ -151,7 +151,7 @@ export default function Home() {
     const conf = config();
     return [
       ...new Set(
-        [conf.mainFontFamily, conf.placeholderFontFamily].filter(
+        [conf.mainFontFamily].filter(
           (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
         ),
       ),

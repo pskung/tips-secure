@@ -99,9 +99,14 @@ export async function POST(event: APIEvent) {
               const plData = await plResponse.json();
               const noteStr = plData.order?.internalNote;
               if (noteStr) {
-                const parsedNote = noteStr;
-                donorName = parsedNote.donor_name || "Anonymous";
-                donorMessage = parsedNote.donor_message || "";
+                // 🟢 [แก้ไขตรรกะบั๊กสำเร็จ] ทำการแยกแยะ JSON String ออกมาเป็นอ็อบเจกต์ก่อนดึงข้อมูลใช้งานฟิลด์
+                try {
+                  const parsedNote = JSON.parse(noteStr);
+                  donorName = parsedNote.donor_name || "Anonymous";
+                  donorMessage = parsedNote.donor_message || "";
+                } catch {
+                  donorName = noteStr || "Anonymous";
+                }
               }
             }
           } catch (err) {

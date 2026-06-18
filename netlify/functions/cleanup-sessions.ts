@@ -1,7 +1,5 @@
 import type { Config, Context } from "@netlify/functions";
-import * as blobs from "@netlify/blobs";
-
-const getStore = (blobs as any).getStore;
+import { getStore } from "@netlify/blobs";
 
 export default async (req: Request, context: Context) => {
   const timestamp = new Date().toISOString();

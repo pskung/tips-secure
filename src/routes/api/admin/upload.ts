@@ -3,69 +3,7 @@ import type { APIEvent } from "@solidjs/start/server";
 import { getStore } from "@netlify/blobs";
 import { safeLog } from "~/lib/utils/logger";
 
-// ฟังก์ชันดึงและยืนยันสิทธิ์ JWT ไร้สถานะร่วมกับการระบุกลุ่มแอดมิน
-async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
-  const authHeader = event.request.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return false;
-
-  const token = authHeader.substring(7);
-  const url = new URL(event.request.url);
-  const host = event.request.headers.get("host") || url.host;
-  const protocol =
-    event.request.headers.get("x-forwarded-proto") || url.protocol;
-
-  try {
-    const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
-    const res = await fetch(identityUrl, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.ok) {
-      const user = await res.json();
-
-      // 🔒 ด่านตรวจสอบกลุ่มอีเมลแอดมินที่ได้รับอนุญาตขั้นสูง
-      const allowedEmailsEnv = process.env.ADMIN_EMAILS;
-      if (!allowedEmailsEnv || allowedEmailsEnv.trim() === "") {
-        safeLog(
-          "Security Block: ADMIN_EMAILS environment variable is missing on Netlify.",
-          "ERROR",
-        );
-        return false;
-      }
-
-      // แปลงข้อความ Comma-separated ให้กลายเป็น Array และล้างช่องว่างส่วนเกินออกทั้งหมด
-      const allowedEmails = allowedEmailsEnv
-        .split(",")
-        .map((email) => email.trim().toLowerCase())
-        .filter((email) => email !== "");
-
-      if (allowedEmails.length === 0) {
-        safeLog("Security Block: Parsed ADMIN_EMAILS list is empty.", "ERROR");
-        return false;
-      }
-
-      // ตรวจสอบว่าอีเมลของบัญชีที่ล็อกอินมาด้วย OAuth อยู่ในรายชื่อที่ได้รับสิทธิ์หรือไม่
-      const userEmail = (user.email || "").trim().toLowerCase();
-      const isAuthorized =
-        userEmail !== "" && allowedEmails.includes(userEmail);
-
-      if (!isAuthorized) {
-        safeLog(
-          `Security Block: Unauthorized OAuth user attempt. Email: ${user.email}`,
-          "WARN",
-        );
-        return false;
-      }
-
-      return !!user.id;
-    }
-  } catch (err) {
-    safeLog("Failed to verify JWT with Netlify Identity Gateway", "ERROR", err);
-    return false;
-  }
-  return false;
-}
+import { verifyAdminJWT } from "~/lib/utils/auth";
 
 export async function POST(event: APIEvent) {
   try {
