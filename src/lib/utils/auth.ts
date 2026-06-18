@@ -18,6 +18,7 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
     const res = await fetch(identityUrl, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
     });
 
     if (res.ok) {

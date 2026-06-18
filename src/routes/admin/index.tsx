@@ -253,7 +253,7 @@ export default function Admin() {
               *หมายเหตุ:
               สิทธิ์การจัดเก็บข้อมูลและการอัปโหลดถูกล็อกไว้ให้กับอีเมลที่ระบุในไฟล์สภาพแวดล้อม{" "}
               <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5]">
-                ADMIN_EMAIL
+                ADMIN_EMAILS
               </code>{" "}
               เท่านั้นค่ะ
             </p>

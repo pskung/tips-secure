@@ -95,6 +95,7 @@ export default function Home() {
   const [customAmountVal, setCustomAmountVal] = createSignal("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
   const [isTosExpanded, setIsTosExpanded] = createSignal(false);
+  const [turnstileReady, setTurnstileReady] = createSignal(false);
 
   let turnstileWidgetId: string | null = null;
 
@@ -249,13 +250,20 @@ export default function Home() {
     const checkInterval = setInterval(() => {
       if ((window as any).turnstile) {
         clearInterval(checkInterval);
-        initTurnstile();
+        setTurnstileReady(true);
       }
     }, 100);
 
     onCleanup(() => {
       clearInterval(checkInterval);
     });
+  });
+
+  createEffect(() => {
+    const siteKey = data()?.turnstileSiteKey;
+    if (siteKey && turnstileReady()) {
+      initTurnstile();
+    }
   });
 
   createEffect(() => {
