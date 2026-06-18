@@ -7,33 +7,6 @@ export async function POST(event: APIEvent) {
   const now = Date.now();
 
   try {
-    const origin = event.request.headers.get("origin");
-    const url = new URL(event.request.url);
-    const host = event.request.headers.get("host") || url.host;
-    const protocol =
-      event.request.headers.get("x-forwarded-proto") || url.protocol;
-    const expectedOrigin = `${protocol}://${host}`;
-
-    if (!origin) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required Origin verification header",
-        }),
-        { status: 400 },
-      );
-    }
-
-    if (origin !== expectedOrigin) {
-      safeLog(
-        `Security Alert: Blocked Cross-Origin request from ${origin}`,
-        "WARN",
-      );
-      return new Response(
-        JSON.stringify({ error: "Untrusted network origin rejected" }),
-        { status: 403 },
-      );
-    }
-
     const body = await event.request.json();
 
     const result = DonateInputSchema.safeParse(body);
@@ -117,7 +90,12 @@ export async function POST(event: APIEvent) {
     }
 
     const netAmountInSatang = Math.round(amount * 100);
+    const url = new URL(event.request.url);
+    const host = event.request.headers.get("host") || url.host;
+    const protocol =
+      event.request.headers.get("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
+
     const beamUrl =
       process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
     const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);

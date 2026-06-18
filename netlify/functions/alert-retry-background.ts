@@ -1,38 +1,11 @@
 import { getStore } from "@netlify/blobs";
-import { createDecipheriv, createHash } from "crypto";
+import { decryptPII } from "../../src/lib/utils/crypto";
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
   STREAMELEMENTS_TIPS: (channelId: string) =>
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
-
-function decryptPII(encryptedText: string): string {
-  if (!encryptedText) return "";
-  try {
-    const parts = encryptedText.split(":");
-    if (parts.length !== 3) return encryptedText;
-
-    const iv = Buffer.from(parts[0], "hex");
-    const encrypted = parts[1];
-    const tag = Buffer.from(parts[2], "hex");
-
-    const secret =
-      process.env.PII_ENCRYPTION_KEY ||
-      process.env.BEAM_WEBHOOK_SECRET ||
-      "fallback-stable-32bytes-secret-key-system!";
-    const key = createHash("sha256").update(secret).digest();
-
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(tag);
-
-    let decrypted = decipher.update(encrypted, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch {
-    return "Anonymous";
-  }
-}
 
 export default async (req: Request) => {
   if (req.method !== "POST") {
