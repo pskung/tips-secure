@@ -192,7 +192,7 @@ export default function Admin() {
 
   return (
     <>
-      <Title>Admin Dashboard 🎨</Title>
+      <Title>Admin Dashboard</Title>
       <For each={uniqueFonts()}>
         {(font) => (
           <Link
@@ -368,7 +368,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Upload Profile Image (Avatar)
+                      Profile Image (Avatar) 300x300 (Max 5 MB)
                     </label>
                     <input
                       type="file"
@@ -392,7 +392,7 @@ export default function Admin() {
 
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Upload Banner Image
+                      Banner Image 1200x480 (Max 5 MB)
                     </label>
                     <input
                       type="file"
@@ -692,7 +692,7 @@ export default function Admin() {
                   >
                     <div>
                       <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Upload Page Background Image (Max 5 MB)
+                        Page Background Image 1920x1080 (Max 5 MB)
                       </label>
                       <input
                         type="file"

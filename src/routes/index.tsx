@@ -314,7 +314,7 @@ export default function Home() {
 
   return (
     <>
-      <Title>Support {config().vtuberName} 💖</Title>
+      <Title>Support {config().vtuberName}</Title>
 
       <Link
         rel="stylesheet"
@@ -341,8 +341,12 @@ export default function Home() {
         class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
         style={{
           "background-image":
-            config().bgType === "image" && config().bgUrl
-              ? `url(${optimizeImage(config().bgUrl, 1200)})`
+            config().bgType === "image"
+              ? `url(${
+                  config().bgUrl
+                    ? optimizeImage(config().bgUrl, 1200)
+                    : "https://placehold.co/1920x1080/cbd5e1/1e293b?text=Background"
+                })`
               : "none",
           "background-color": config().bgColor,
           "font-family": `'${config().mainFontFamily}', sans-serif`,
@@ -356,7 +360,7 @@ export default function Home() {
             "background-image": `url(${
               config().bannerUrl
                 ? optimizeImage(config().bannerUrl, 800)
-                : "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"
+                : "https://placehold.co/1200x480/e2e8f0/0f172a?text=Banner"
             })`,
             "border-color": config().cardBorderColor,
           }}
@@ -380,7 +384,7 @@ export default function Home() {
                       src={
                         config().avatarUrl
                           ? optimizeImage(config().avatarUrl, 120)
-                          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                          : "https://placehold.co/300x300/e2e8f0/0f172a?text=Avatar"
                       }
                       alt="Avatar"
                       class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"

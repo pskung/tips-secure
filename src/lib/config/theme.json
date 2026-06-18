@@ -1,7 +1,7 @@
 {
   "avatarUrl": "",
   "bannerUrl": "",
-  "bgType": "solid",
+  "bgType": "image",
   "bgColor": "#FFFDF6",
   "bgUrl": "",
   "inputBgColor": "#f4f4f5",
