@@ -21,7 +21,7 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=600, stale-while-revalidate=60",
+      "public, max-age=0, s-maxage=5, stale-while-revalidate=5",
     );
   }
 
@@ -282,18 +282,18 @@ export default function Home() {
   });
 
   createEffect(() => {
-    const siteKey = data()?.turnstileSiteKey;
-    if (siteKey && turnstileReady()) {
-      initTurnstile();
-    }
-  });
-
-  createEffect(() => {
     if (cooldownRemaining() > 0) {
       const timer = setTimeout(() => {
         setCooldownRemaining((prev) => prev - 1);
       }, 1000);
       onCleanup(() => clearTimeout(timer));
+    }
+  });
+
+  createEffect(() => {
+    const siteKey = data()?.turnstileSiteKey;
+    if (siteKey && turnstileReady()) {
+      initTurnstile();
     }
   });
 
