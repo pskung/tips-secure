@@ -27,11 +27,14 @@ const getInitialData = query(async () => {
 
   try {
     const store = getStore("donation_store");
-    const theme = await store.get("vtuber_personalized_theme", {
+    const theme = (await store.get("personalized_theme", {
       type: "json",
-    });
+    })) as any;
+
+    const mergedTheme = { ...defaultTheme, ...(theme || {}) };
+
     return {
-      theme: theme || defaultTheme,
+      theme: mergedTheme,
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   } catch {
@@ -126,38 +129,13 @@ export default function Home() {
   let turnstileWidgetId: string | null = null;
 
   const config = createMemo(() => {
-    const theme = data()?.theme || {};
+    const theme = data()?.theme || defaultTheme;
     return {
       ...theme,
-      bgColor: theme.bgColor ?? "#FFFDF6",
-      inputBgColor: theme.inputBgColor ?? "#f4f4f5",
-      inputTextColor: theme.inputTextColor ?? "#111111",
-      inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
-      cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
-      cardBgColor: theme.cardBgColor ?? "#ffffff",
-      vtuberName: theme.vtuberName ?? "Teacher Stefano",
-      nameColor: theme.nameColor ?? "#111111",
-      generalTextColor: theme.generalTextColor ?? "#222222",
-      mainFontFamily: theme.mainFontFamily ?? "Kanit",
-      welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
-      nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
-      messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
-      amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
-      youtubeUrl: theme.youtubeUrl ?? "",
-      twitchUrl: theme.twitchUrl ?? "",
-      discordUrl: theme.discordUrl ?? "",
-      xUrl: theme.xUrl ?? "",
-      facebookUrl: theme.facebookUrl ?? "",
-      instagramUrl: theme.instagramUrl ?? "",
-      tiktokUrl: theme.tiktokUrl ?? "",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
           : [100, 300, 500, 1000],
-      presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
-      submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
-      submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "AGREE & SUPPORT ME",
     };
   });
 
@@ -172,17 +150,6 @@ export default function Home() {
       { platform: "instagram", url: conf.instagramUrl },
       { platform: "tiktok", url: conf.tiktokUrl },
     ].filter((link) => link.url && link.url.trim() !== "");
-  });
-
-  const uniqueFonts = createMemo(() => {
-    const conf = config();
-    return [
-      ...new Set(
-        [conf.mainFontFamily].filter(
-          (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
-        ),
-      ),
-    ];
   });
 
   const hexToRgba = (hex: string, opacity: number): string => {
@@ -348,9 +315,13 @@ export default function Home() {
   return (
     <>
       <Title>Support {config().vtuberName} 💖</Title>
+
+      <Link
+        rel="stylesheet"
+        href={`https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
+      />
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
           .custom-font-root,
           .custom-font-root input,
           .custom-font-root textarea,

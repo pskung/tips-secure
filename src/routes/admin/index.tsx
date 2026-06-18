@@ -16,11 +16,13 @@ const getAdminData = query(async () => {
   "use server";
   try {
     const store = getStore("donation_store");
-    const theme = await store.get("vtuber_personalized_theme", {
+    const theme = (await store.get("personalized_theme", {
       type: "json",
-    });
+    })) as any;
+
+    // Server-side Deep-Merge ป้องกันสภาวะตัวแปรสีตกหล่นเมื่อ Build ใหม่
     return {
-      theme: theme || defaultTheme,
+      theme: { ...defaultTheme, ...(theme || {}) },
     };
   } catch {
     return {
@@ -56,22 +58,7 @@ export default function Admin() {
   createEffect(() => {
     const theme = data()?.theme;
     if (theme) {
-      setConfig(
-        reconcile({
-          ...theme,
-          presetAmounts:
-            theme.presetAmounts && theme.presetAmounts.length === 4
-              ? [...theme.presetAmounts]
-              : [100, 300, 500, 1000],
-          youtubeUrl: theme.youtubeUrl ?? "",
-          twitchUrl: theme.twitchUrl ?? "",
-          discordUrl: theme.discordUrl ?? "",
-          xUrl: theme.xUrl ?? "",
-          facebookUrl: theme.facebookUrl ?? "",
-          instagramUrl: theme.instagramUrl ?? "",
-          tiktokUrl: theme.tiktokUrl ?? "",
-        }),
-      );
+      setConfig(reconcile(theme));
     }
   });
 
