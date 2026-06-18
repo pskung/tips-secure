@@ -30,16 +30,11 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
   const protocol = isLocal ? "http" : "https";
 
   const identityUrl = `${protocol}://${host}/.netlify/identity/user`;
-  safeLog(
-    `Admin authentication request routed to Gateway: ${identityUrl}`,
-    "INFO",
-  );
 
   try {
     const res = await fetch(identityUrl, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
     });
 
     if (res.ok) {
@@ -72,18 +67,9 @@ export async function verifyAdminJWT(event: APIEvent): Promise<boolean> {
       }
 
       return !!user.id;
-    } else {
-      safeLog(
-        `Identity Gateway returned status code ${res.status} for address: ${identityUrl}`,
-        "WARN",
-      );
     }
   } catch (err) {
-    safeLog(
-      `Failed to verify JWT with Netlify Identity Gateway at ${identityUrl}`,
-      "ERROR",
-      err,
-    );
+    safeLog("Failed to verify JWT with Netlify Identity Gateway", "ERROR", err);
     return false;
   }
   return false;
