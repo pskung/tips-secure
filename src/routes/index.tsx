@@ -258,6 +258,12 @@ export default function Home() {
   });
 
   createEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = `Support ${config().vtuberName}`;
+    }
+  });
+
+  createEffect(() => {
     const siteKey = data()?.turnstileSiteKey;
     if (siteKey && turnstileReady()) {
       initTurnstile();
@@ -338,7 +344,7 @@ export default function Home() {
       ></script>
 
       <main
-        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
+        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           "background-image":
             config().bgType === "image"
