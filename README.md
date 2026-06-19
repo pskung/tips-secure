@@ -79,17 +79,17 @@ tips-secure/
 
 สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Site configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้องค่ะ:
 
-| ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ตัวอย่างค่าที่ใส่ (Example Value) |
-| :--- | :--- | :--- |
-| `ADMIN_EMAILS` | รายชื่ออีเมล Google ของสตรีมเมอร์หรือทีมงานที่มีสิทธิ์ล็อกอินเข้าหน้าควบคุมแอดมิน (คั่นด้วยจุลภาค `,` เสมอ) | `streamer@gmail.com, graphic.designer@gmail.com` |
-| `BEAM_API_KEY` | รหัส API Key สำหรับเชื่อมต่อสร้างบิลเรียกเก็บเงินผ่าน Beam Checkout | `api_prod_xxxxxxxxxxxxxx` |
-| `BEAM_WEBHOOK_SECRET` | รหัสตรวจสอบความถูกต้องในการรับผลชำระเงินที่ได้รับจาก Beam Console (ใช้ดึงไปสร้างกุญแจ KDF ด้วย) | `whsec_xxxxxxxxxxxxxx` |
-| `BEAM_API_URL` | ลิงก์ที่อยู่ผู้รับชำระเงิน Beam (ให้เปลี่ยนเป็นตัวจริงเมื่อระบบพร้อมรับเงินจริง) | `https://api.beamcheckout.com` |
-| `TURNSTILE_SITE_KEY` | รหัสฝั่งหน้าเว็บสำหรับแสดงผลปุ่มเลื่อนท้าทายสแปม Cloudflare Turnstile | `0x4AAAAAA...` |
-| `TURNSTILE_SECRET_KEY` | รหัสลับหลังบ้านสำหรับเรียกตรวจสอบผลการผ่านการสแกน Cloudflare Turnstile | `0x4AAAAAA...` |
-| `STREAMLABS_ACCESS_TOKEN` | โทเคนผู้พัฒนาสิทธิ์สำหรับเข้าถึง API แสดงผลกระดิ่งแจ้งเตือนบน Streamlabs | `eyJhbGciOiJIUzI1NiIsIn...` |
-| `STREAMELEMENTS_JWT` | รหัสเข้าใช้งาน JWT เพื่อส่งแจ้งเตือนขึ้นหน้าจอซ้ำสำหรับ StreamElements | `eyJhbGciOiJIUzI1NiIsIn...` |
-| `STREAMELEMENTS_CHANNEL_ID` | รหัส ID ช่องของคุณที่ลงทะเบียนไว้ใน StreamElements | `65f8a00bc9xxxxxxxxxxxx` |
+| ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify | ตัวอย่างค่าที่ใส่ (Example Value) |
+| :--- | :--- | :--- | :--- | :--- |
+| `ADMIN_EMAILS` | รายชื่ออีเมล Google ของสตรีมเมอร์หรือทีมงานที่มีสิทธิ์ล็อกอินเข้าหน้าควบคุมแอดมิน (คั่นด้วยจุลภาค `,` เสมอ) | **Public** | **All scopes** | `streamer@gmail.com, graphic.designer@gmail.com` |
+| `BEAM_API_KEY` | รหัส API Key สำหรับเชื่อมต่อสร้างบิลเรียกเก็บเงินผ่าน Beam Checkout | **Secret** | **Production** | `api_prod_xxxxxxxxxxxxxx` |
+| `BEAM_WEBHOOK_SECRET` | รหัสตรวจสอบความถูกต้องในการรับผลชำระเงินที่ได้รับจาก Beam Console (ใช้ดึงไปสร้างกุญแจ KDF ด้วย) | **Secret** | **Production** | `whsec_xxxxxxxxxxxxxx` |
+| `BEAM_API_URL` | ลิงก์ที่อยู่ผู้รับชำระเงิน Beam (ให้เปลี่ยนเป็นตัวจริงเมื่อระบบพร้อมรับเงินจริง) | **Public** | **All scopes** | `https://api.beamcheckout.com` |
+| `TURNSTILE_SITE_KEY` | รหัสฝั่งหน้าเว็บสำหรับแสดงผลปุ่มเลื่อนท้าทายสแปม Cloudflare Turnstile | **Public** | **All scopes** | `0x4AAAAAA...` |
+| `TURNSTILE_SECRET_KEY` | รหัสลับหลังบ้านสำหรับเรียกตรวจสอบผลการผ่านการสแกน Cloudflare Turnstile | **Secret** | **Production** | `0x4AAAAAA...` |
+| `STREAMLABS_ACCESS_TOKEN` | โทเคนผู้พัฒนาสิทธิ์สำหรับเข้าถึง API แสดงผลกระดิ่งแจ้งเตือนบน Streamlabs | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
+| `STREAMELEMENTS_JWT` | รหัสเข้าใช้งาน JWT เพื่อส่งแจ้งเตือนขึ้นหน้าจอซ้ำสำหรับ StreamElements | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
+| `STREAMELEMENTS_CHANNEL_ID` | รหัส ID ช่องของคุณที่ลงทะเบียนไว้ใน StreamElements | **Secret** | **Production** | `65f8a00bc9xxxxxxxxxxxx` |
 
 
 | ชื่อตัวแปรสภาพแวดล้อม (Key) | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify |
