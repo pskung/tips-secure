@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { decryptPII } from "../../src/lib/utils/crypto";
+import { decryptPII, timingSafeCompare } from "../../src/lib/utils/crypto";
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
@@ -11,6 +11,8 @@ export default async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+
+  const clientToken = req.headers.get("X-Background-Token");
 
   try {
     const { transactionId } = await req.json();
@@ -31,6 +33,19 @@ export default async (req: Request) => {
         `[Background Retry] Alert not found or already finished: ${transactionId}`,
       );
       return new Response("Done", { status: 200 });
+    }
+
+    // ตรวจสอบลายเซ็น Token ป้องกันเกรียนคีย์บอร์ดเดา ID เข้ามาถล่ม
+    const storedToken = alertData.oneTimeToken;
+    if (
+      !storedToken ||
+      !clientToken ||
+      !timingSafeCompare(clientToken, storedToken)
+    ) {
+      console.error(
+        `[Background Retry] Security Alert: Token mismatch or unauthorized attempt on ${transactionId}`,
+      );
+      return new Response("Unauthorized process block", { status: 401 });
     }
 
     const donorName = decryptPII(alertData.donorName);

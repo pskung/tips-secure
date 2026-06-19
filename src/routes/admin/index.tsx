@@ -15,12 +15,11 @@ import defaultTheme from "~/lib/config/theme.json";
 const getAdminData = query(async () => {
   "use server";
   try {
-    const store = getStore("donation_store");
+    const store = getStore({ name: "donation_store" });
     const theme = (await store.get("personalized_theme", {
       type: "json",
     })) as any;
 
-    // Server-side Deep-Merge ป้องกันสภาวะตัวแปรสีตกหล่นเมื่อ Build ใหม่
     return {
       theme: { ...defaultTheme, ...(theme || {}) },
     };
@@ -30,6 +29,35 @@ const getAdminData = query(async () => {
     };
   }
 }, "adminData");
+
+// ฟังก์ชันแปลงโค้ดฝังตัว ImgBB เป็น Direct Link ล่าสุด
+function parseDirectImageUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  // 1. ดึงลิงก์จากรูป <img src="..." /> HTML แท็ก
+  const imgHtmlRegex = /<img[^>]+src=["']([^"']+)["']/i;
+  const htmlMatch = trimmed.match(imgHtmlRegex);
+  if (htmlMatch && htmlMatch[1]) {
+    return htmlMatch[1];
+  }
+
+  // 2. ดึงลิงก์จากโค้ดรูป [img]...[/img] BBCode แท็ก
+  const bbcodeRegex = /\[img\](.*?)\[\/img\]/i;
+  const bbMatch = trimmed.match(bbcodeRegex);
+  if (bbMatch && bbMatch[1]) {
+    return bbMatch[1];
+  }
+
+  // 3. กวาดหาลิงก์ URL ตัวแรกสุด
+  const urlRegex = /(https?:\/\/[^\s"'<>]+)/;
+  const urlMatch = trimmed.match(urlRegex);
+  if (urlMatch && urlMatch[1]) {
+    return urlMatch[1];
+  }
+
+  return trimmed;
+}
 
 export default function Admin() {
   const data = createAsync(() => getAdminData());
@@ -43,15 +71,14 @@ export default function Admin() {
     facebookUrl: "",
     instagramUrl: "",
     tiktokUrl: "",
+    avatarUrl: "",
+    bannerUrl: "",
+    bgUrl: "",
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
   const [authError, setAuthError] = createSignal("");
   const [saveLoading, setSaveLoading] = createSignal(false);
-
-  const [avatarLoading, setAvatarLoading] = createSignal(false);
-  const [bannerLoading, setBannerLoading] = createSignal(false);
-  const [bgLoading, setBgLoading] = createSignal(false);
 
   const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
 
@@ -96,64 +123,6 @@ export default function Admin() {
     setAuthError("");
     const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
     window.location.href = authorizeUrl;
-  };
-
-  const handleFileUpload = async (
-    e: Event,
-    type: "avatar" | "banner" | "bg",
-  ) => {
-    const input = e.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    const MAX_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      alert("File size cannot exceed 5 MB.");
-      input.value = "";
-      return;
-    }
-
-    if (type === "avatar") setAvatarLoading(true);
-    else if (type === "banner") setBannerLoading(true);
-    else if (type === "bg") setBgLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: formData,
-      });
-
-      if (res.status === 401) {
-        sessionStorage.removeItem("admin_verified");
-        sessionStorage.removeItem("admin_jwt");
-        setIsAuthenticated(false);
-        alert("Session expired or unauthorized. Please log in again.");
-        return;
-      }
-
-      const resData = await res.json();
-      if (res.ok && resData.success) {
-        if (type === "avatar") setConfig("avatarUrl", resData.url);
-        else if (type === "banner") setConfig("bannerUrl", resData.url);
-        else if (type === "bg") setConfig("bgUrl", resData.url);
-        alert(`Successfully uploaded ${type} image.`);
-      } else {
-        alert(resData.error || "Upload failed.");
-      }
-    } catch {
-      alert("Temporary server error. Please try again.");
-    } finally {
-      if (type === "avatar") setAvatarLoading(false);
-      else if (type === "banner") setBannerLoading(false);
-      else if (type === "bg") setBgLoading(false);
-    }
   };
 
   const handleSave = async () => {
@@ -368,15 +337,25 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Profile Image (Avatar) 300x300 (Max 5 MB)
+                      Profile Image URL (Avatar)
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      disabled={avatarLoading()}
-                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                      onChange={(e) => handleFileUpload(e, "avatar")}
+                      type="text"
+                      placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                      value={config.avatarUrl || ""}
+                      onInput={(e) => {
+                        const parsed = parseDirectImageUrl(
+                          e.currentTarget.value,
+                        );
+                        setConfig("avatarUrl", parsed);
+                      }}
                     />
+                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                      *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
+                      แล้วดึง "Direct link" หรือแปะโค้ด HTML
+                      ลงในช่องนี้ได้เลยค่ะ
+                    </p>
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -392,15 +371,25 @@ export default function Admin() {
 
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Banner Image 1200x480 (Max 5 MB)
+                      Banner Image URL (1200x480)
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      disabled={bannerLoading()}
-                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                      onChange={(e) => handleFileUpload(e, "banner")}
+                      type="text"
+                      placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                      value={config.bannerUrl || ""}
+                      onInput={(e) => {
+                        const parsed = parseDirectImageUrl(
+                          e.currentTarget.value,
+                        );
+                        setConfig("bannerUrl", parsed);
+                      }}
                     />
+                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                      *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
+                      แล้วดึง "Direct link" หรือแปะโค้ด HTML
+                      ลงในช่องนี้ได้เลยค่ะ
+                    </p>
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -692,15 +681,25 @@ export default function Admin() {
                   >
                     <div>
                       <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Page Background Image 1920x1080 (Max 5 MB)
+                        Page Background Image URL (1920x1080)
                       </label>
                       <input
-                        type="file"
-                        accept="image/*"
-                        disabled={bgLoading()}
-                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                        onChange={(e) => handleFileUpload(e, "bg")}
+                        type="text"
+                        placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                        class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                        value={config.bgUrl || ""}
+                        onInput={(e) => {
+                          const parsed = parseDirectImageUrl(
+                            e.currentTarget.value,
+                          );
+                          setConfig("bgUrl", parsed);
+                        }}
                       />
+                      <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                        *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
+                        แล้วดึง "Direct link" หรือแปะโค้ด HTML
+                        ลงในช่องนี้ได้เลยค่ะ
+                      </p>
                       <Show when={config.bgUrl}>
                         <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                           <span class="text-[10px] text-emerald-600 font-bold">

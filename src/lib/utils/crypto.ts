@@ -13,18 +13,27 @@ export function timingSafeCompare(
   const strA = a ?? "";
   const strB = b ?? "";
 
-  // แปลงทั้งสองฟิลด์เป็น SHA-256 เพื่อการันตีขนาด 32 ไบต์ ป้องกัน timingSafeEqual แครชจากความยาวต่างกัน
   const hashA = createHash("sha256").update(strA).digest();
   const hashB = createHash("sha256").update(strB).digest();
 
   return timingSafeEqual(hashA, hashB) && strA.length === strB.length;
 }
 
+// ฟังก์ชันสร้าง One-Time Token สำหรับส่งให้งาน Retry เบื้องหลังโดยอัตโนมัติ
+export function generateOneTimeToken(): string {
+  return randomBytes(16).toString("hex");
+}
+
 const getEncryptionKey = (): Buffer => {
   const secret =
-    process.env.PII_ENCRYPTION_KEY ||
-    process.env.BEAM_WEBHOOK_SECRET ||
-    "fallback-stable-32bytes-secret-key-system!";
+    process.env.PII_ENCRYPTION_KEY || process.env.BEAM_WEBHOOK_SECRET;
+
+  if (!secret || secret.trim() === "") {
+    throw new Error(
+      "CRITICAL SECURITY FAILURE: PII_ENCRYPTION_KEY or BEAM_WEBHOOK_SECRET is not configured. Encryption is halted.",
+    );
+  }
+
   return createHash("sha256").update(secret).digest();
 };
 
@@ -40,7 +49,8 @@ export function encryptPII(text: string): string {
     const tag = cipher.getAuthTag().toString("hex");
 
     return `${iv.toString("hex")}:${encrypted}:${tag}`;
-  } catch {
+  } catch (error) {
+    console.error("[Crypto] Encryption failed:", error);
     return text;
   }
 }
@@ -62,7 +72,8 @@ export function decryptPII(encryptedText: string): string {
     let decrypted = decipher.update(encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
     return decrypted;
-  } catch {
+  } catch (error) {
+    console.error("[Crypto] Decryption failed:", error);
     return "Anonymous";
   }
 }
