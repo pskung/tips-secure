@@ -16,7 +16,7 @@ import defaultTheme from "~/lib/config/theme.json";
 
 let cachedTheme: any = null;
 let lastCacheFetch = 0;
-const CACHE_TTL = 10000;
+const CACHE_TTL = 30000;
 
 const getInitialData = query(async () => {
   "use server";
@@ -25,7 +25,7 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=10, stale-while-revalidate=10",
+      "public, max-age=0, s-maxage=15, stale-while-revalidate=15",
     );
   }
 
