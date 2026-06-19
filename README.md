@@ -77,7 +77,7 @@ tips-secure/
 
 ## คู่มือตัวแปรสภาพแวดล้อม (Environment Variables Guide)
 
-สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Site configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้องค่ะ:
+สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Project configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้องค่ะ:
 
 | ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify | ตัวอย่างค่าที่ใส่ (Example Value) |
 | :--- | :--- | :--- | :--- | :--- |
