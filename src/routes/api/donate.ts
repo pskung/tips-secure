@@ -67,6 +67,7 @@ export async function POST(event: APIEvent) {
           secret: turnstileSecret,
           response: turnstile_token,
         }),
+        signal: AbortSignal.timeout(5000),
       },
     );
 
@@ -119,6 +120,7 @@ export async function POST(event: APIEvent) {
           }),
         },
       }),
+      signal: AbortSignal.timeout(5000),
     });
 
     const data = await response.json();

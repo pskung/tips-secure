@@ -14,6 +14,10 @@ import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
 
+let cachedTheme: any = null;
+let lastCacheFetch = 0;
+const CACHE_TTL = 30000;
+
 const getInitialData = query(async () => {
   "use server";
   const event = getRequestEvent();
@@ -21,8 +25,16 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=5, stale-while-revalidate=5",
+      "public, max-age=0, s-maxage=15, stale-while-revalidate=15",
     );
+  }
+
+  const now = Date.now();
+  if (cachedTheme && now - lastCacheFetch < CACHE_TTL) {
+    return {
+      theme: cachedTheme,
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
+    };
   }
 
   try {
@@ -32,6 +44,9 @@ const getInitialData = query(async () => {
     })) as any;
 
     const mergedTheme = { ...defaultTheme, ...(theme || {}) };
+
+    cachedTheme = mergedTheme;
+    lastCacheFetch = now;
 
     return {
       theme: mergedTheme,
