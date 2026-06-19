@@ -5,6 +5,7 @@
 [หากชื่นชอบสามารถโดเนทให้กันได้](https://tips-secure.netlify.app/)
 
 [ติดต่อสอบถามข้อสงสัย](https://x.com/ps_kung11)
+
 ---
 
 ## ฟังก์ชันการทำงานเด่น (Core Highlights)
