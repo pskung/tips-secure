@@ -75,6 +75,7 @@ export default function Admin() {
     bannerUrl: "",
     bgUrl: "",
     mainFontFamily: "Kanit",
+    minDonationAmount: 10,
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -656,6 +657,29 @@ export default function Admin() {
                       )}
                     </For>
                   </div>
+                </div>
+
+                <div class="border-t border-[#F0EAE1] pt-4">
+                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                    Minimum Donation Amount (THB)
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="100000"
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    value={config.minDonationAmount || 10}
+                    onInput={(e) =>
+                      setConfig(
+                        "minDonationAmount",
+                        Number(e.currentTarget.value),
+                      )
+                    }
+                  />
+                  <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                    *ยอดเงินขั้นต่ำที่ผู้สนับสนุนต้องป้อน (ต้องไม่ต่ำกว่า 10 บาท
+                    เพื่อเสถียรภาพของเกตเวย์ชำระเงินค่ะ)
+                  </p>
                 </div>
 
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">

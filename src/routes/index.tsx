@@ -523,10 +523,10 @@ export default function Home() {
                   <input
                     id="custom-amount"
                     type="number"
-                    min="10"
-                    max="5000"
+                    min={config().minDonationAmount || 10}
+                    max="100000"
                     step="0.01"
-                    placeholder={config().amountPlaceholder}
+                    placeholder={`Min ${config().minDonationAmount || 10} THB...`}
                     class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                     style={{
                       "background-color": config().inputBgColor,

@@ -2,6 +2,7 @@ import type { APIEvent } from "@solidjs/start/server";
 import { setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { DonateInputSchema } from "~/lib/utils/schemas";
+import { getStore } from "@netlify/blobs";
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
@@ -39,6 +40,32 @@ export async function POST(event: APIEvent) {
       safeLog("Spam Bot Detected: Trigger speed abnormal.", "WARN");
       return new Response(
         JSON.stringify({ error: "Operation rate limit exceeded" }),
+        { status: 400 },
+      );
+    }
+
+    let minDonationAmount = 10;
+    try {
+      const store = getStore("donation_store");
+      const theme = (await store.get("personalized_theme", {
+        type: "json",
+      })) as any;
+      if (theme && theme.minDonationAmount) {
+        minDonationAmount = Number(theme.minDonationAmount);
+      }
+    } catch (err) {
+      safeLog(
+        "Dynamic validation fallback to 10 THB due to fetch failure",
+        "WARN",
+        err,
+      );
+    }
+
+    if (amount < minDonationAmount) {
+      return new Response(
+        JSON.stringify({
+          error: `Donation amount must be at least ${minDonationAmount} THB.`,
+        }),
         { status: 400 },
       );
     }

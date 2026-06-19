@@ -13,8 +13,8 @@ export const DonateInputSchema = z.object({
     ),
   amount: z.coerce
     .number()
-    .min(10.0, "Donation amount must be between 10 and 5,000 THB.")
-    .max(5000.0, "Donation amount must be between 10 and 5,000 THB."),
+    .min(10.0, "Donation amount must be between 10 and 100,000 THB.")
+    .max(100000.0, "Donation amount must be between 10 and 100,000 THB."),
   message: z
     .string()
     .max(255, "Message cannot exceed 255 characters.")
@@ -77,8 +77,9 @@ export const ThemeSchema = z.object({
   instagramUrl: z.string().optional().or(z.literal("")),
   tiktokUrl: z.string().optional().or(z.literal("")),
   presetAmounts: z
-    .array(z.number().min(10).max(5000))
+    .array(z.number().min(10).max(100000))
     .length(4, "Must specify exactly 4 preset amounts."),
+  minDonationAmount: z.number().min(10).max(100000).optional(),
 });
 
 export type DonateInput = z.infer<typeof DonateInputSchema>;
