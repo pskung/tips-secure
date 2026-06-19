@@ -143,7 +143,7 @@ Beam Checkout เป็นช่องทางรับเงิน:
 
 ## คู่มือตัวแปรสภาพแวดล้อม (Environment Variables Guide)
 
-สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Project configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้อง หลังจากกำหนดค่าตัวแปร (Environment Variables) แล้ว ต้องทำการ **Deploys** > **Trigger deploy** > **Deploy project** ใหม่ทุกครั้ง:
+สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Project configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้อง หลังจากกำหนดค่าตัวแปร (Environment Variables) แล้ว ต้องทำการ **Deploys > Trigger deploy > Deploy project** ใหม่ทุกครั้ง:
 
 | ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify | ตัวอย่างค่าที่ใส่ (Example Value) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -160,3 +160,7 @@ Beam Checkout เป็นช่องทางรับเงิน:
 **แนะนำให้เลือกลง Key แค่ Streamlabs หรือ StreamElements อย่างใดอย่างนึง**
 
 ---
+
+## คำถามที่น่าสนใจ
+*   **เปลี่ยนชื่อเว็บอย่างไร** ไปที่เมนู **Project configuration > Change project name**
+*   **ตกแต่งหน้าโดเนทอย่างไร** ใช้เว็บที่ได้และเติม admin ตามหลัง `https://your-app.netlify.app/admin`
