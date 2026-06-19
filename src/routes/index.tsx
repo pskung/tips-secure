@@ -333,7 +333,7 @@ export default function Home() {
           .custom-font-root textarea,
           .custom-font-root button,
           .custom-font-root select {
-            font-family: '${config().mainFontFamily}', sans-serif !important;
+            font-family: var(--main-font) !important;
           }
         `}
       </style>
@@ -355,7 +355,8 @@ export default function Home() {
                 })`
               : "none",
           "background-color": config().bgColor,
-          "font-family": `'${config().mainFontFamily}', sans-serif`,
+          "--main-font": `'${config().mainFontFamily}', sans-serif`,
+          "font-family": "var(--main-font)",
         }}
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
