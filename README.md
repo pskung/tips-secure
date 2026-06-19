@@ -75,27 +75,6 @@ tips-secure/
 
 ---
 
-## คู่มือตัวแปรสภาพแวดล้อม (Environment Variables Guide)
-
-สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Project configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้องค่ะ:
-
-| ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify | ตัวอย่างค่าที่ใส่ (Example Value) |
-| :--- | :--- | :--- | :--- | :--- |
-| `ADMIN_EMAILS` | รายชื่ออีเมล Google ของสตรีมเมอร์หรือทีมงานที่มีสิทธิ์ล็อกอินเข้าหน้าควบคุมแอดมิน (คั่นด้วยจุลภาค `,` เสมอ) | **Public** | **All scopes** | `streamer@gmail.com, graphic.designer@gmail.com` |
-| `BEAM_API_KEY` | รหัส API Key สำหรับเชื่อมต่อสร้างบิลเรียกเก็บเงินผ่าน Beam Checkout | **Secret** | **Production** | `api_prod_xxxxxxxxxxxxxx` |
-| `BEAM_WEBHOOK_SECRET` | รหัสตรวจสอบความถูกต้องในการรับผลชำระเงินที่ได้รับจาก Beam Console (ใช้ดึงไปสร้างกุญแจ KDF ด้วย) | **Secret** | **Production** | `whsec_xxxxxxxxxxxxxx` |
-| `BEAM_API_URL` | ลิงก์ที่อยู่ผู้รับชำระเงิน Beam (ให้เปลี่ยนเป็นตัวจริงเมื่อระบบพร้อมรับเงินจริง) | **Public** | **All scopes** | `https://api.beamcheckout.com` |
-| `TURNSTILE_SITE_KEY` | รหัสฝั่งหน้าเว็บสำหรับแสดงผลปุ่มเลื่อนท้าทายสแปม Cloudflare Turnstile | **Public** | **All scopes** | `0x4AAAAAA...` |
-| `TURNSTILE_SECRET_KEY` | รหัสลับหลังบ้านสำหรับเรียกตรวจสอบผลการผ่านการสแกน Cloudflare Turnstile | **Secret** | **Production** | `0x4AAAAAA...` |
-| `STREAMLABS_ACCESS_TOKEN` | โทเคนผู้พัฒนาสิทธิ์สำหรับเข้าถึง API แสดงผลกระดิ่งแจ้งเตือนบน Streamlabs | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
-| `STREAMELEMENTS_JWT` | รหัสเข้าใช้งาน JWT เพื่อส่งแจ้งเตือนขึ้นหน้าจอซ้ำสำหรับ StreamElements | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
-| `STREAMELEMENTS_CHANNEL_ID` | รหัส ID ช่องของคุณที่ลงทะเบียนไว้ใน StreamElements | **Secret** | **Production** | `65f8a00bc9xxxxxxxxxxxx` |
-
-
-# คู่มือการตั้งค่าความปลอดภัยและการขอคีย์ (Configuration & Secrets Guide)
-
----
-
 ## บริการที่ต้องสมัครใช้งานเบื้องต้น (Prerequisites)
 
 1.  **GitHub Account:** สำหรับเก็บซอร์สโค้ดส่วนตัวของเพจโดเนท
@@ -104,6 +83,26 @@ tips-secure/
 4.  **Beam Checkout Merchant Account:** แพลตฟอร์มรับชำระเงิน (รองรับ QR Prompt Pay ฟรีค่าธรรมเนียม)
 
 ---
+
+## วิธีเริ่มต้นใช้งาน (One-Click Deploy Setup)
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pskung/tips-secure)
+
+1. **คลิกปุ่มเชื่อมต่อ:** กดปุ่ม **Deploy to Netlify** ระบบจะนำทางคุณไปยังหน้าตั้งค่าของ Netlify
+2. **ยืนยันบัญชี Git:** กดเชื่อมต่อกับบัญชี GitHub ของคุณ ระบบจะทำการสร้างคลังรหัส (Repository) ส่วนตัวขึ้นมาในบัญชีของคุณโดยอัตโนมัติ
+3. **กรอกข้อมูลตัวแปร (Environment Variables):** ระบบจะดึงเทมเพลตตัวแปรทั้งหมดขึ้นมาแสดงผลเป็นกล่องข้อความให้คุณกรอกค่า API ของผู้ให้บริการชำระเงิน (Beam) และบริการแจ้งเตือน (Streamlabs/StreamElements) ได้ทันที สามารถว่างไว้ก่อนได้
+**แนะนำให้เลือกลง Key แค่ Streamlabs หรือ StreamElements อย่างใดอย่างนึง**
+5. **อนุมัติและติดตั้ง:** กดปุ่ม **Save and Deploy** รอระบบประมวลผลประมาณ 1-2 นาที
+
+### การเตรียมตัวเชื่อมและกำหนดสิทธิ์แอดมิน (Admin Portal Integration)
+ระบบใช้ฟังก์ชัน **Netlify Identity** ในการเข้าสู่ระบบผ่าน Google OAuth เพื่อป้องกันไม่ให้ผู้บริจาคทั่วไปสามารถลักลอบแอบเข้าแก้ไขการตั้งค่าหลังบ้านได้:
+1.  เข้าไปที่เมนู **Netlify Dashboard > Project configuration > Identity**
+2.  ทำการเปิดใช้งานระบบสิทธิการระบุตัวตน (Enable Identity)
+3.  ในเมนู **Identity > เลื่อนลงมา > External Providers** ให้ทำการเชื่อมโยงเข้ากับระบบบัญชี Google เลือกเป็น Default setting
+4.  ในเมนู **Environment variables** เพิ่มอีเมลตนเองและเพื่อนร่วมทีมในกล่อง `ADMIN_EMAILS` จึงจะสามารถปลดล็อกหน้าจอแอดมินสำเร็จได้
+
+---
+
 ## วิธีการรับคีย์ใช้งานจากผู้ให้บริการ (How to Get Your Keys)
 
 ### วิธีการสร้างคีย์ Cloudflare Turnstile
@@ -133,37 +132,28 @@ Beam Checkout เป็นช่องทางรับเงิน:
 3.  **การผูก Webhook และรับ Webhook Secret:**
     *   ไปที่เมนู **Webhooks** คลิกปุ่ม **Create Webhook**
     *   ในช่อง **Endpoint URL** ให้ระบุโดเมนเว็บโดเนทของคุณ และต่อท้ายด้วย `/api/webhook/beam` เช่น:
-        `https://your-app.netlify.app/api/webhook/beam`
+        `https://your-app.netlify.app/api/webhook/beam` 
     *   ติ๊กเลือกเงื่อนไขเหตุการณ์เป็นธุรกรรมสำเร็จ เช่น `payment.paid` หรือ `charge.succeeded` 
     *   หลังจากสร้างเสร็จ ระบบจะมอบรหัสลับยืนยันความปลอดภัยมา 1 รหัส ซึ่งจะขึ้นต้นด้วย `whsec_...` ให้คัดลอกรหัสนี้ไปใส่ในตัวแปร **`BEAM_WEBHOOK_SECRET`**
 
 ---
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pskung/tips-secure)
+## คู่มือตัวแปรสภาพแวดล้อม (Environment Variables Guide)
 
-## วิธีเริ่มต้นใช้งาน (One-Click Deploy Setup)
+สำหรับการติดตั้งระบบใช้งานจริงบนแพลตฟอร์ม Netlify จำเป็นต้องกำหนดค่าตัวแปร (Environment Variables) ต่อไปนี้ในเมนู **Project configuration > Environment variables** เพื่อให้ทุกฟังก์ชันทำงานได้อย่างปลอดภัยและถูกต้อง หลังจากกำหนดค่าตัวแปร (Environment Variables) แล้ว ต้องทำการ **Deploys** > **Trigger deploy** > **Deploy project** ใหม่ทุกครั้ง:
 
-1. **คลิกปุ่มเชื่อมต่อ:** กดปุ่ม **Deploy to Netlify** ระบบจะนำทางคุณไปยังหน้าตั้งค่าของ Netlify
-2. **ยืนยันบัญชี Git:** กดเชื่อมต่อกับบัญชี GitHub ของคุณ ระบบจะทำการสร้างคลังรหัส (Repository) ส่วนตัวขึ้นมาในบัญชีของคุณโดยอัตโนมัติ
-3. **กรอกข้อมูลตัวแปร (Environment Variables):** ระบบจะดึงเทมเพลตตัวแปรทั้งหมดขึ้นมาแสดงผลเป็นกล่องข้อความให้คุณกรอกค่า API ของผู้ให้บริการชำระเงิน (Beam) และบริการแจ้งเตือน (Streamlabs/StreamElements) ได้ทันที
-4. **อนุมัติและติดตั้ง:** กดปุ่ม **Save and Deploy** รอระบบประมวลผลประมาณ 1-2 นาที
+| ชื่อตัวแปร (Key) | จุดประสงค์ในการใช้งาน | ประเภทระดับความลับ | สิทธิ์ Scope ใน Netlify | ตัวอย่างค่าที่ใส่ (Example Value) |
+| :--- | :--- | :--- | :--- | :--- |
+| `ADMIN_EMAILS` | รายชื่ออีเมล Google ของสตรีมเมอร์หรือทีมงานที่มีสิทธิ์ล็อกอินเข้าหน้าควบคุมแอดมิน (คั่นด้วยจุลภาค `,` เสมอ) | **Public** | **All scopes** | `streamer@gmail.com, graphic.designer@gmail.com` |
+| `BEAM_API_KEY` | รหัส API Key สำหรับเชื่อมต่อสร้างบิลเรียกเก็บเงินผ่าน Beam Checkout | **Secret** | **Production** | `api_prod_xxxxxxxxxxxxxx` |
+| `BEAM_WEBHOOK_SECRET` | รหัสตรวจสอบความถูกต้องในการรับผลชำระเงินที่ได้รับจาก Beam Console (ใช้ดึงไปสร้างกุญแจ KDF ด้วย) | **Secret** | **Production** | `whsec_xxxxxxxxxxxxxx` |
+| `BEAM_API_URL` | ลิงก์ที่อยู่ผู้รับชำระเงิน Beam (ให้เปลี่ยนเป็นตัวจริงเมื่อระบบพร้อมรับเงินจริง) | **Public** | **All scopes** | `https://api.beamcheckout.com` |
+| `TURNSTILE_SITE_KEY` | รหัสฝั่งหน้าเว็บสำหรับแสดงผลปุ่มเลื่อนท้าทายสแปม Cloudflare Turnstile | **Public** | **All scopes** | `0x4AAAAAA...` |
+| `TURNSTILE_SECRET_KEY` | รหัสลับหลังบ้านสำหรับเรียกตรวจสอบผลการผ่านการสแกน Cloudflare Turnstile | **Secret** | **Production** | `0x4AAAAAA...` |
+| `STREAMLABS_ACCESS_TOKEN` | โทเคนผู้พัฒนาสิทธิ์สำหรับเข้าถึง API แสดงผลกระดิ่งแจ้งเตือนบน Streamlabs | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
+| `STREAMELEMENTS_JWT` | รหัสเข้าใช้งาน JWT เพื่อส่งแจ้งเตือนขึ้นหน้าจอซ้ำสำหรับ StreamElements | **Secret** | **Production** | `eyJhbGciOiJIUzI1NiIsIn...` |
+| `STREAMELEMENTS_CHANNEL_ID` | รหัส ID ช่องของคุณที่ลงทะเบียนไว้ใน StreamElements | **Secret** | **Production** | `65f8a00bc9xxxxxxxxxxxx` |
 
-
-### การเตรียมตัวเชื่อมและกำหนดสิทธิ์แอดมิน (Admin Portal Integration)
-ระบบใช้ฟังก์ชัน **Netlify Identity** ในการเข้าสู่ระบบผ่าน Google OAuth เพื่อป้องกันไม่ให้ผู้บริจาคทั่วไปสามารถลักลอบแอบเข้าแก้ไขการตั้งค่าหลังบ้านได้:
-1.  เข้าไปที่เมนู **Netlify Dashboard > Project configuration > Identity**
-2.  ทำการเปิดใช้งานระบบสิทธิการระบุตัวตน (Enable Identity)
-3.  ในเมนู **Identity > เลื่อนลงมา > External Providers** ให้ทำการเชื่อมโยงเข้ากับระบบบัญชี Google เลือกเป็น Default setting
-4.  ในเมนู **Environment variables** เพิ่มอีเมลตนเองและเพื่อนร่วมทีมในกล่อง `ADMIN_EMAILS` จึงจะสามารถปลดล็อกหน้าจอแอดมินสำเร็จได้
-
-
-### นำลิงก์ Webhook ไปผูกที่หน้าจัดการ Beam Console
-เพื่อให้ยอดเงินที่ชำระผ่านพร้อมเพย์/บัตรเครดิต วิ่งกลับมาส่งสัญญาณบนหน้าจอของคุณ:
-1.  นำลิงก์หน้าเว็บโดเนทของคุณจาก Netlify มาต่อท้ายด้วย /api/webhook/beam เช่น: https://tips-yourname.netlify.app/api/webhook/beam
-2.  นำที่อยู่นี้ไปวางในช่อง Webhook URL ในหน้าการจัดการบัญชีของระบบ Beam Checkout
-3.  นำคีย์ Webhook Secret Key ที่ได้จาก Beam มากรอกลงในตัวแปรระบบ BEAM_WEBHOOK_SECRET ของ Netlify เพื่อยืนยันสิทธิ์ความปลอดภัย
-
-
+**แนะนำให้เลือกลง Key แค่ Streamlabs หรือ StreamElements อย่างใดอย่างนึง**
 
 ---
-
