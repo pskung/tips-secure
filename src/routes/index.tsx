@@ -7,7 +7,7 @@ import {
   For,
   Show,
 } from "solid-js";
-import { Title, Link } from "@solidjs/meta";
+import { Title } from "@solidjs/meta";
 import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import { getRequestEvent } from "solid-js/web";
@@ -326,12 +326,7 @@ export default function Home() {
     <>
       <Title>Support {config().vtuberName}</Title>
 
-      <Link
-        rel="stylesheet"
-        href={`https://fonts.googleapis.com/css2?family=${activeFont().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
-      />
-
-      {/* ประยุกต์ใช้ตัวแปร CSS เพื่อให้ฟอนต์ทำงานกับ Form Controls และ Reactive สอดคล้องกัน 100% */}
+      {/* ใช้ตัวแปร CSS เพื่อให้ฟอนต์ทั้งหมดถูกบังคับใช้กับ UI รวมถึง Form Controls ทั้งสิ้นอย่างเรียลไทม์ */}
       <style>
         {`
           .custom-font-root,
