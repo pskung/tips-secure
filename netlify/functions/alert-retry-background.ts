@@ -35,7 +35,6 @@ export default async (req: Request) => {
       return new Response("Done", { status: 200 });
     }
 
-    // ตรวจสอบลายเซ็น Token ป้องกันเกรียนคีย์บอร์ดเดา ID เข้ามาถล่ม
     const storedToken = alertData.oneTimeToken;
     if (
       !storedToken ||

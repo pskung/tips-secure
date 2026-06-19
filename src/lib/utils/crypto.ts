@@ -19,22 +19,22 @@ export function timingSafeCompare(
   return timingSafeEqual(hashA, hashB) && strA.length === strB.length;
 }
 
-// ฟังก์ชันสร้าง One-Time Token สำหรับส่งให้งาน Retry เบื้องหลังโดยอัตโนมัติ
 export function generateOneTimeToken(): string {
   return randomBytes(16).toString("hex");
 }
 
 const getEncryptionKey = (): Buffer => {
-  const secret =
-    process.env.PII_ENCRYPTION_KEY || process.env.BEAM_WEBHOOK_SECRET;
+  const baseSecret = process.env.BEAM_WEBHOOK_SECRET;
 
-  if (!secret || secret.trim() === "") {
+  if (!baseSecret || baseSecret.trim() === "") {
     throw new Error(
-      "CRITICAL SECURITY FAILURE: PII_ENCRYPTION_KEY or BEAM_WEBHOOK_SECRET is not configured. Encryption is halted.",
+      "CRITICAL SECURITY FAILURE: BEAM_WEBHOOK_SECRET is not configured.",
     );
   }
 
-  return createHash("sha256").update(secret).digest();
+  return createHash("sha256")
+    .update(baseSecret + "::tips_secure_cryptographic_pii_salt_2026")
+    .digest();
 };
 
 export function encryptPII(text: string): string {

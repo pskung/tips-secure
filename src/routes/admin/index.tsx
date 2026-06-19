@@ -30,26 +30,22 @@ const getAdminData = query(async () => {
   }
 }, "adminData");
 
-// ฟังก์ชันแปลงโค้ดฝังตัว ImgBB เป็น Direct Link ล่าสุด
 function parseDirectImageUrl(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  // 1. ดึงลิงก์จากรูป <img src="..." /> HTML แท็ก
   const imgHtmlRegex = /<img[^>]+src=["']([^"']+)["']/i;
   const htmlMatch = trimmed.match(imgHtmlRegex);
   if (htmlMatch && htmlMatch[1]) {
     return htmlMatch[1];
   }
 
-  // 2. ดึงลิงก์จากโค้ดรูป [img]...[/img] BBCode แท็ก
   const bbcodeRegex = /\[img\](.*?)\[\/img\]/i;
   const bbMatch = trimmed.match(bbcodeRegex);
   if (bbMatch && bbMatch[1]) {
     return bbMatch[1];
   }
 
-  // 3. กวาดหาลิงก์ URL ตัวแรกสุด
   const urlRegex = /(https?:\/\/[^\s"'<>]+)/;
   const urlMatch = trimmed.match(urlRegex);
   if (urlMatch && urlMatch[1]) {
@@ -174,7 +170,6 @@ export default function Admin() {
         )}
       </For>
 
-      {/* ควบคุมฟอนต์ในฝั่ง Admin Panel ให้แสดงผลฟอนต์เปลี่ยนตามแอดมินเลือกทันที */}
       <style>
         {`
           .admin-font-root,
@@ -362,7 +357,7 @@ export default function Admin() {
                     </label>
                     <input
                       type="text"
-                      placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
                       class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
                       value={config.avatarUrl || ""}
                       onInput={(e) => {
@@ -373,9 +368,9 @@ export default function Admin() {
                       }}
                     />
                     <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                      *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
-                      แล้วดึง "Direct link" หรือแปะโค้ด HTML
-                      ลงในช่องนี้ได้เลยค่ะ
+                      *Recommend uploading to **imgbb.com**, selecting the Embed
+                      codes tab, and pasting the "Direct link" or HTML code
+                      here.
                     </p>
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
@@ -396,7 +391,7 @@ export default function Admin() {
                     </label>
                     <input
                       type="text"
-                      placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
                       class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
                       value={config.bannerUrl || ""}
                       onInput={(e) => {
@@ -407,9 +402,9 @@ export default function Admin() {
                       }}
                     />
                     <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                      *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
-                      แล้วดึง "Direct link" หรือแปะโค้ด HTML
-                      ลงในช่องนี้ได้เลยค่ะ
+                      *Recommend uploading to **imgbb.com**, selecting the Embed
+                      codes tab, and pasting the "Direct link" or HTML code
+                      here.
                     </p>
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
@@ -677,8 +672,7 @@ export default function Admin() {
                     }
                   />
                   <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                    *ยอดเงินขั้นต่ำที่ผู้สนับสนุนต้องป้อน (ต้องไม่ต่ำกว่า 10 บาท
-                    เพื่อเสถียรภาพของเกตเวย์ชำระเงินค่ะ)
+                    *Minimum donation amount (must be at least 10 THB).
                   </p>
                 </div>
 
@@ -729,7 +723,7 @@ export default function Admin() {
                       </label>
                       <input
                         type="text"
-                        placeholder="ใส่ลิงก์รูปภาพ เช่น https://i.ibb.co/..."
+                        placeholder="Enter image URL, e.g., https://i.ibb.co/..."
                         class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
                         value={config.bgUrl || ""}
                         onInput={(e) => {
@@ -740,9 +734,9 @@ export default function Admin() {
                         }}
                       />
                       <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                        *แนะนำฝากรูปที่ **imgbb.com** เลือกแท็บ Embed codes
-                        แล้วดึง "Direct link" หรือแปะโค้ด HTML
-                        ลงในช่องนี้ได้เลยค่ะ
+                        *Recommend uploading to **imgbb.com**, selecting the
+                        Embed codes tab, and pasting the "Direct link" or HTML
+                        code here.
                       </p>
                       <Show when={config.bgUrl}>
                         <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">

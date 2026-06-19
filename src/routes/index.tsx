@@ -339,7 +339,6 @@ export default function Home() {
     <>
       <Title>Support {config().vtuberName}</Title>
 
-      {/* ใช้ตัวแปร CSS เพื่อให้ฟอนต์ทั้งหมดถูกบังคับใช้กับ UI รวมถึง Form Controls ทั้งสิ้นอย่างเรียลไทม์ */}
       <style>
         {`
           .custom-font-root,
@@ -485,7 +484,11 @@ export default function Home() {
                 />
 
                 <div class="flex flex-col gap-2.5">
-                  <div class="grid grid-cols-4 gap-1.5">
+                  <div
+                    class="grid grid-cols-4 gap-1.5"
+                    role="group"
+                    aria-label="Donation preset amounts"
+                  >
                     <For each={config().presetAmounts}>
                       {(amt) => (
                         <button
@@ -495,6 +498,12 @@ export default function Home() {
                             setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
+                          aria-pressed={
+                            !customActive() && amount() === String(amt)
+                              ? "true"
+                              : "false"
+                          }
+                          aria-label={`Select preset amount of ${amt} Baht`}
                           class="py-3 text-base font-normal border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
                           style={{
                             "background-color":
@@ -608,14 +617,14 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
+                    aria-expanded={isTosExpanded() ? "true" : "false"}
+                    aria-controls="tos-collapsed-content"
                     class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
                       color: config().inputTextColor,
                     }}
-                    aria-expanded={isTosExpanded()}
-                    aria-controls="tos-collapsed-content"
                   >
                     <span>Terms & Privacy Policy</span>
                     <span class="text-[8px]">
@@ -653,6 +662,8 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
+                      aria-expanded={isTosExpanded() ? "true" : "false"}
+                      aria-controls="tos-collapsed-content"
                       class="font-bold underline cursor-pointer text-[10px]"
                       style={{ color: config().generalTextColor }}
                     >
@@ -680,6 +691,7 @@ export default function Home() {
                     cooldownRemaining() > 0 ||
                     (data()?.turnstileSiteKey !== "" && !turnstileToken())
                   }
+                  aria-busy={loading() ? "true" : "false"}
                   class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                   style={{
                     "background-color":
