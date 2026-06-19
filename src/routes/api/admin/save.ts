@@ -46,7 +46,7 @@ export async function POST(event: APIEvent) {
     }
 
     const store = getStore("donation_store");
-    await store.setJSON("vtuber_personalized_theme", result.data);
+    await store.setJSON("personalized_theme", result.data);
 
     safeLog(
       "Admin settings saved successfully via Netlify Identity JWT.",

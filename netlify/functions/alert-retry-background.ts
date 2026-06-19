@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { createDecipheriv, createHash } from "crypto";
+import { decryptPII, timingSafeCompare } from "../../src/lib/utils/crypto";
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
@@ -7,37 +7,12 @@ const EXTERNAL_API = {
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
 
-function decryptPII(encryptedText: string): string {
-  if (!encryptedText) return "";
-  try {
-    const parts = encryptedText.split(":");
-    if (parts.length !== 3) return encryptedText;
-
-    const iv = Buffer.from(parts[0], "hex");
-    const encrypted = parts[1];
-    const tag = Buffer.from(parts[2], "hex");
-
-    const secret =
-      process.env.PII_ENCRYPTION_KEY ||
-      process.env.BEAM_WEBHOOK_SECRET ||
-      "fallback-stable-32bytes-secret-key-system!";
-    const key = createHash("sha256").update(secret).digest();
-
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(tag);
-
-    let decrypted = decipher.update(encrypted, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch {
-    return "Anonymous";
-  }
-}
-
 export default async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+
+  const clientToken = req.headers.get("X-Background-Token");
 
   try {
     const { transactionId } = await req.json();
@@ -58,6 +33,18 @@ export default async (req: Request) => {
         `[Background Retry] Alert not found or already finished: ${transactionId}`,
       );
       return new Response("Done", { status: 200 });
+    }
+
+    const storedToken = alertData.oneTimeToken;
+    if (
+      !storedToken ||
+      !clientToken ||
+      !timingSafeCompare(clientToken, storedToken)
+    ) {
+      console.error(
+        `[Background Retry] Security Alert: Token mismatch or unauthorized attempt on ${transactionId}`,
+      );
+      return new Response("Unauthorized process block", { status: 401 });
     }
 
     const donorName = decryptPII(alertData.donorName);

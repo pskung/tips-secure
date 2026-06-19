@@ -1,6 +1,10 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
-import { timingSafeCompare, encryptPII } from "~/lib/utils/crypto";
+import {
+  timingSafeCompare,
+  encryptPII,
+  generateOneTimeToken,
+} from "~/lib/utils/crypto";
 import { getStore } from "@netlify/blobs";
 
 const EXTERNAL_API = {
@@ -183,6 +187,12 @@ export async function POST(event: APIEvent) {
         await store.set(`tx_log:${now}:${transactionId}`, "success");
         safeLog(`Fast-Path success and indexed: ${transactionId}`, "INFO");
       } else {
+        // [HOTFIX ADDED] ล็อกสถานะธุรกรรมทันทีเพื่อป้องกัน Race Condition ก่อนสุ่มส่งคิวงานซ้ำ
+        await store.set(`processed_tx:${transactionId}`, "retry_pending");
+
+        // สร้าง Token ไดนามิกรักษาระบบความปลอดภัยเบื้องหลัง
+        const oneTimeToken = generateOneTimeToken();
+
         const alertTask = {
           transactionId,
           donorName: encryptPII(donorName),
@@ -191,17 +201,23 @@ export async function POST(event: APIEvent) {
           currency,
           createdAt: now,
           isEncrypted: true,
+          oneTimeToken, // เซฟเก็บไว้คู่กับประวัติคิวงาน
         };
         await store.setJSON(`failed_alert:${transactionId}`, alertTask);
 
         const url = new URL(event.request.url);
         const host = headers.get("host") || url.host;
         const protocol = headers.get("x-forwarded-proto") || url.protocol;
+
+        // ยิงสั่งงาน background retry โดยแนบคีย์ Token ชุดสุ่มเฉพาะกิจไปทดสอบด่านสิทธิ์
         fetch(
           `${protocol}://${host}/.netlify/functions/alert-retry-background`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "X-Background-Token": oneTimeToken,
+            },
             body: JSON.stringify({ transactionId }),
             signal: AbortSignal.timeout(500),
           },

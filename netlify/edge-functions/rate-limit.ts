@@ -9,7 +9,8 @@ export default async (request: Request, context: Context) => {
     if (cookies.includes("cooldown_active=true")) {
       return new Response(
         JSON.stringify({
-          error: "กรุณารอ 1 นาทีก่อนทำรายการถัดไปน้า (Edge Blocked) 🔒",
+          error:
+            "Please wait 1 minute before making another transaction (Edge Blocked) 🔒",
         }),
         {
           status: 429,
@@ -17,13 +18,38 @@ export default async (request: Request, context: Context) => {
         },
       );
     }
+
+    if (!cookies || !cookies.includes("session_init=true")) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Unauthorized automated connection detected (Bypass Blocked) 🔒",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
   }
 
-  return context.next();
+  const response = await context.next();
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/" || url.pathname === "/index")
+  ) {
+    response.headers.append(
+      "Set-Cookie",
+      "session_init=true; Path=/; HttpOnly; SameSite=Strict; Secure",
+    );
+  }
+
+  return response;
 };
 
 export const config: Config = {
-  path: ["/api/donate", "/api/admin/save"],
+  path: ["/", "/index", "/api/donate", "/api/admin/save"],
   rateLimit: {
     windowLimit: 180,
     windowSize: 60,

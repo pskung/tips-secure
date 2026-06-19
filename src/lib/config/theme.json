@@ -1,7 +1,7 @@
 {
   "avatarUrl": "",
   "bannerUrl": "",
-  "bgType": "solid",
+  "bgType": "image",
   "bgColor": "#FFFDF6",
   "bgUrl": "",
   "inputBgColor": "#f4f4f5",
@@ -9,14 +9,13 @@
   "inputBorderColor": "#e4e4e4",
   "cardBorderColor": "#e4e4e4",
   "cardBgColor": "#ffffff",
-  "vtuberName": "Vtuber",
+  "vtuberName": "Streamer",
   "nameColor": "#111111",
   "generalTextColor": "#222222",
   "mainFontFamily": "Kanit",
   "welcomeText": "Welcome to my support page",
   "nicknamePlaceholder": "Your nickname...",
   "messagePlaceholder": "Write a message...",
-  "amountPlaceholder": "Min 10 THB...",
   "youtubeUrl": "",
   "twitchUrl": "",
   "discordUrl": "",
@@ -28,5 +27,6 @@
   "presetBorderColor": "#e4e4e4",
   "submitBtnColor": "#ffdd00",
   "submitBtnTextColor": "#000000",
-  "submitBtnText": "AGREE & SUPPORT ME"
+  "submitBtnText": "AGREE & SUPPORT ME",
+  "minDonationAmount": 10
 }

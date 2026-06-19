@@ -3,34 +3,38 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
+  timingSafeEqual,
 } from "crypto";
 
 export function timingSafeCompare(
   a: string | undefined | null,
   b: string | undefined | null,
 ): boolean {
-  const strA = typeof a === "string" ? a : "";
-  const strB = typeof b === "string" ? b : "";
+  const strA = a ?? "";
+  const strB = b ?? "";
 
   const hashA = createHash("sha256").update(strA).digest();
   const hashB = createHash("sha256").update(strB).digest();
 
-  if (hashA.length !== hashB.length) return false;
+  return timingSafeEqual(hashA, hashB) && strA.length === strB.length;
+}
 
-  let diff = 0;
-  for (let i = 0; i < hashA.length; i++) {
-    diff |= hashA[i] ^ hashB[i];
-  }
-
-  return diff === 0 && strA.length === strB.length;
+export function generateOneTimeToken(): string {
+  return randomBytes(16).toString("hex");
 }
 
 const getEncryptionKey = (): Buffer => {
-  const secret =
-    process.env.PII_ENCRYPTION_KEY ||
-    process.env.BEAM_WEBHOOK_SECRET ||
-    "fallback-stable-32bytes-secret-key-system!";
-  return createHash("sha256").update(secret).digest();
+  const baseSecret = process.env.BEAM_WEBHOOK_SECRET;
+
+  if (!baseSecret || baseSecret.trim() === "") {
+    throw new Error(
+      "CRITICAL SECURITY FAILURE: BEAM_WEBHOOK_SECRET is not configured.",
+    );
+  }
+
+  return createHash("sha256")
+    .update(baseSecret + "::tips_secure_cryptographic_pii_salt_2026")
+    .digest();
 };
 
 export function encryptPII(text: string): string {
@@ -45,7 +49,8 @@ export function encryptPII(text: string): string {
     const tag = cipher.getAuthTag().toString("hex");
 
     return `${iv.toString("hex")}:${encrypted}:${tag}`;
-  } catch {
+  } catch (error) {
+    console.error("[Crypto] Encryption failed:", error);
     return text;
   }
 }
@@ -67,7 +72,8 @@ export function decryptPII(encryptedText: string): string {
     let decrypted = decipher.update(encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
     return decrypted;
-  } catch {
+  } catch (error) {
+    console.error("[Crypto] Decryption failed:", error);
     return "Anonymous";
   }
 }

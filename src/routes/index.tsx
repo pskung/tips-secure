@@ -7,12 +7,16 @@ import {
   For,
   Show,
 } from "solid-js";
-import { Title, Link } from "@solidjs/meta";
+import { Title } from "@solidjs/meta";
 import { createAsync, query } from "@solidjs/router";
 import { getStore } from "@netlify/blobs";
 import { getRequestEvent } from "solid-js/web";
 import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
+
+let cachedTheme: any = null;
+let lastCacheFetch = 0;
+const CACHE_TTL = 30000;
 
 const getInitialData = query(async () => {
   "use server";
@@ -21,17 +25,31 @@ const getInitialData = query(async () => {
     setHeader(
       event.nativeEvent,
       "Cache-Control",
-      "public, max-age=0, s-maxage=600, stale-while-revalidate=60",
+      "public, max-age=0, s-maxage=15, stale-while-revalidate=15",
     );
   }
 
-  try {
-    const store = getStore("donation_store");
-    const theme = await store.get("vtuber_personalized_theme", {
-      type: "json",
-    });
+  const now = Date.now();
+  if (cachedTheme && now - lastCacheFetch < CACHE_TTL) {
     return {
-      theme: theme || defaultTheme,
+      theme: cachedTheme,
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
+    };
+  }
+
+  try {
+    const store = getStore({ name: "donation_store" });
+    const theme = (await store.get("personalized_theme", {
+      type: "json",
+    })) as any;
+
+    const mergedTheme = { ...defaultTheme, ...(theme || {}) };
+
+    cachedTheme = mergedTheme;
+    lastCacheFetch = now;
+
+    return {
+      theme: mergedTheme,
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
     };
   } catch {
@@ -126,39 +144,18 @@ export default function Home() {
   let turnstileWidgetId: string | null = null;
 
   const config = createMemo(() => {
-    const theme = data()?.theme || {};
+    const theme = data()?.theme || defaultTheme;
     return {
       ...theme,
-      bgColor: theme.bgColor ?? "#FFFDF6",
-      inputBgColor: theme.inputBgColor ?? "#f4f4f5",
-      inputTextColor: theme.inputTextColor ?? "#111111",
-      inputBorderColor: theme.inputBorderColor ?? "#e4e4e4",
-      cardBorderColor: theme.cardBorderColor ?? "#e4e4e4",
-      cardBgColor: theme.cardBgColor ?? "#ffffff",
-      vtuberName: theme.vtuberName ?? "Teacher Stefano",
-      nameColor: theme.nameColor ?? "#111111",
-      generalTextColor: theme.generalTextColor ?? "#222222",
-      mainFontFamily: theme.mainFontFamily ?? "Kanit",
-      welcomeText: theme.welcomeText ?? "Welcome to my support page! 💖",
-      nicknamePlaceholder: theme.nicknamePlaceholder ?? "Your nickname...",
-      messagePlaceholder: theme.messagePlaceholder ?? "Write a message...",
-      amountPlaceholder: theme.amountPlaceholder ?? "Min 10 THB...",
-      youtubeUrl: theme.youtubeUrl ?? "",
-      twitchUrl: theme.twitchUrl ?? "",
-      discordUrl: theme.discordUrl ?? "",
-      xUrl: theme.xUrl ?? "",
-      facebookUrl: theme.facebookUrl ?? "",
-      instagramUrl: theme.instagramUrl ?? "",
-      tiktokUrl: theme.tiktokUrl ?? "",
       presetAmounts:
         theme.presetAmounts && theme.presetAmounts.length === 4
           ? theme.presetAmounts
           : [100, 300, 500, 1000],
-      presetBorderColor: theme.presetBorderColor ?? "#e4e4e4",
-      submitBtnColor: theme.submitBtnColor ?? "#ffdd00",
-      submitBtnTextColor: theme.submitBtnTextColor ?? "#000000",
-      submitBtnText: theme.submitBtnText ?? "AGREE & SUPPORT ME",
     };
+  });
+
+  const activeFont = createMemo(() => {
+    return (config().mainFontFamily || "Kanit").trim();
   });
 
   const socialLinks = createMemo(() => {
@@ -172,17 +169,6 @@ export default function Home() {
       { platform: "instagram", url: conf.instagramUrl },
       { platform: "tiktok", url: conf.tiktokUrl },
     ].filter((link) => link.url && link.url.trim() !== "");
-  });
-
-  const uniqueFonts = createMemo(() => {
-    const conf = config();
-    return [
-      ...new Set(
-        [conf.mainFontFamily].filter(
-          (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
-        ),
-      ),
-    ];
   });
 
   const hexToRgba = (hex: string, opacity: number): string => {
@@ -207,9 +193,7 @@ export default function Home() {
     quality: number = 70,
   ): string => {
     if (!url) return "";
-    const cleanUrl = url.trim();
-    if (cleanUrl === "") return "";
-    return `/.netlify/images?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality}`;
+    return url.trim();
   };
 
   const initTurnstile = () => {
@@ -282,18 +266,24 @@ export default function Home() {
   });
 
   createEffect(() => {
-    const siteKey = data()?.turnstileSiteKey;
-    if (siteKey && turnstileReady()) {
-      initTurnstile();
-    }
-  });
-
-  createEffect(() => {
     if (cooldownRemaining() > 0) {
       const timer = setTimeout(() => {
         setCooldownRemaining((prev) => prev - 1);
       }, 1000);
       onCleanup(() => clearTimeout(timer));
+    }
+  });
+
+  createEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = `Support ${config().vtuberName}`;
+    }
+  });
+
+  createEffect(() => {
+    const siteKey = data()?.turnstileSiteKey;
+    if (siteKey && turnstileReady()) {
+      initTurnstile();
     }
   });
 
@@ -347,16 +337,16 @@ export default function Home() {
 
   return (
     <>
-      <Title>Support {config().vtuberName} 💖</Title>
+      <Title>Support {config().vtuberName}</Title>
+
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap');
           .custom-font-root,
           .custom-font-root input,
           .custom-font-root textarea,
           .custom-font-root button,
           .custom-font-root select {
-            font-family: '${config().mainFontFamily}', sans-serif !important;
+            font-family: var(--main-font-family), sans-serif !important;
           }
         `}
       </style>
@@ -367,14 +357,18 @@ export default function Home() {
       ></script>
 
       <main
-        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12"
+        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
+          "--main-font-family": `'${activeFont()}'`,
           "background-image":
-            config().bgType === "image" && config().bgUrl
-              ? `url(${optimizeImage(config().bgUrl, 1200)})`
+            config().bgType === "image"
+              ? `url(${
+                  config().bgUrl
+                    ? optimizeImage(config().bgUrl, 1200)
+                    : "https://placehold.co/1920x1080/cbd5e1/1e293b?text=Background"
+                })`
               : "none",
           "background-color": config().bgColor,
-          "font-family": `'${config().mainFontFamily}', sans-serif`,
         }}
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
@@ -385,7 +379,7 @@ export default function Home() {
             "background-image": `url(${
               config().bannerUrl
                 ? optimizeImage(config().bannerUrl, 800)
-                : "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600&auto=format&fit=crop"
+                : "https://placehold.co/1200x480/e2e8f0/0f172a?text=Banner"
             })`,
             "border-color": config().cardBorderColor,
           }}
@@ -409,7 +403,7 @@ export default function Home() {
                       src={
                         config().avatarUrl
                           ? optimizeImage(config().avatarUrl, 120)
-                          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
+                          : "https://placehold.co/300x300/e2e8f0/0f172a?text=Avatar"
                       }
                       alt="Avatar"
                       class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
@@ -476,7 +470,7 @@ export default function Home() {
                     config().inputTextColor,
                     0.6,
                   ),
-                  "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
+                  "--placeholder-font": `'${activeFont()}', sans-serif`,
                 }}
               >
                 <input
@@ -490,7 +484,11 @@ export default function Home() {
                 />
 
                 <div class="flex flex-col gap-2.5">
-                  <div class="grid grid-cols-4 gap-1.5">
+                  <div
+                    class="grid grid-cols-4 gap-1.5"
+                    role="group"
+                    aria-label="Donation preset amounts"
+                  >
                     <For each={config().presetAmounts}>
                       {(amt) => (
                         <button
@@ -500,6 +498,12 @@ export default function Home() {
                             setCustomAmountVal(String(amt));
                             setCustomActive(false);
                           }}
+                          aria-pressed={
+                            !customActive() && amount() === String(amt)
+                              ? "true"
+                              : "false"
+                          }
+                          aria-label={`Select preset amount of ${amt} Baht`}
                           class="py-3 text-base font-normal border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
                           style={{
                             "background-color":
@@ -528,10 +532,10 @@ export default function Home() {
                   <input
                     id="custom-amount"
                     type="number"
-                    min="10"
-                    max="5000"
+                    min={config().minDonationAmount || 10}
+                    max="100000"
                     step="0.01"
-                    placeholder={config().amountPlaceholder}
+                    placeholder={`Min ${config().minDonationAmount || 10} THB...`}
                     class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
                     style={{
                       "background-color": config().inputBgColor,
@@ -613,14 +617,14 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setIsTosExpanded(!isTosExpanded())}
+                    aria-expanded={isTosExpanded() ? "true" : "false"}
+                    aria-controls="tos-collapsed-content"
                     class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
                     style={{
                       "background-color": config().inputBgColor,
                       "border-color": config().inputBorderColor,
                       color: config().inputTextColor,
                     }}
-                    aria-expanded={isTosExpanded()}
-                    aria-controls="tos-collapsed-content"
                   >
                     <span>Terms & Privacy Policy</span>
                     <span class="text-[8px]">
@@ -658,6 +662,8 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setIsTosExpanded(!isTosExpanded())}
+                      aria-expanded={isTosExpanded() ? "true" : "false"}
+                      aria-controls="tos-collapsed-content"
                       class="font-bold underline cursor-pointer text-[10px]"
                       style={{ color: config().generalTextColor }}
                     >
@@ -685,6 +691,7 @@ export default function Home() {
                     cooldownRemaining() > 0 ||
                     (data()?.turnstileSiteKey !== "" && !turnstileToken())
                   }
+                  aria-busy={loading() ? "true" : "false"}
                   class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                   style={{
                     "background-color":

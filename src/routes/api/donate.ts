@@ -2,38 +2,12 @@ import type { APIEvent } from "@solidjs/start/server";
 import { setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { DonateInputSchema } from "~/lib/utils/schemas";
+import { getStore } from "@netlify/blobs";
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
 
   try {
-    const origin = event.request.headers.get("origin");
-    const url = new URL(event.request.url);
-    const host = event.request.headers.get("host") || url.host;
-    const protocol =
-      event.request.headers.get("x-forwarded-proto") || url.protocol;
-    const expectedOrigin = `${protocol}://${host}`;
-
-    if (!origin) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required Origin verification header",
-        }),
-        { status: 400 },
-      );
-    }
-
-    if (origin !== expectedOrigin) {
-      safeLog(
-        `Security Alert: Blocked Cross-Origin request from ${origin}`,
-        "WARN",
-      );
-      return new Response(
-        JSON.stringify({ error: "Untrusted network origin rejected" }),
-        { status: 403 },
-      );
-    }
-
     const body = await event.request.json();
 
     const result = DonateInputSchema.safeParse(body);
@@ -70,6 +44,32 @@ export async function POST(event: APIEvent) {
       );
     }
 
+    let minDonationAmount = 10;
+    try {
+      const store = getStore("donation_store");
+      const theme = (await store.get("personalized_theme", {
+        type: "json",
+      })) as any;
+      if (theme && theme.minDonationAmount) {
+        minDonationAmount = Number(theme.minDonationAmount);
+      }
+    } catch (err) {
+      safeLog(
+        "Dynamic validation fallback to 10 THB due to fetch failure",
+        "WARN",
+        err,
+      );
+    }
+
+    if (amount < minDonationAmount) {
+      return new Response(
+        JSON.stringify({
+          error: `Donation amount must be at least ${minDonationAmount} THB.`,
+        }),
+        { status: 400 },
+      );
+    }
+
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
       safeLog(
@@ -94,6 +94,7 @@ export async function POST(event: APIEvent) {
           secret: turnstileSecret,
           response: turnstile_token,
         }),
+        signal: AbortSignal.timeout(5000),
       },
     );
 
@@ -117,7 +118,12 @@ export async function POST(event: APIEvent) {
     }
 
     const netAmountInSatang = Math.round(amount * 100);
+    const url = new URL(event.request.url);
+    const host = event.request.headers.get("host") || url.host;
+    const protocol =
+      event.request.headers.get("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
+
     const beamUrl =
       process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
     const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
@@ -141,6 +147,7 @@ export async function POST(event: APIEvent) {
           }),
         },
       }),
+      signal: AbortSignal.timeout(5000),
     });
 
     const data = await response.json();

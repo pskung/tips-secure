@@ -15,12 +15,13 @@ import defaultTheme from "~/lib/config/theme.json";
 const getAdminData = query(async () => {
   "use server";
   try {
-    const store = getStore("donation_store");
-    const theme = await store.get("vtuber_personalized_theme", {
+    const store = getStore({ name: "donation_store" });
+    const theme = (await store.get("personalized_theme", {
       type: "json",
-    });
+    })) as any;
+
     return {
-      theme: theme || defaultTheme,
+      theme: { ...defaultTheme, ...(theme || {}) },
     };
   } catch {
     return {
@@ -28,6 +29,31 @@ const getAdminData = query(async () => {
     };
   }
 }, "adminData");
+
+function parseDirectImageUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  const imgHtmlRegex = /<img[^>]+src=["']([^"']+)["']/i;
+  const htmlMatch = trimmed.match(imgHtmlRegex);
+  if (htmlMatch && htmlMatch[1]) {
+    return htmlMatch[1];
+  }
+
+  const bbcodeRegex = /\[img\](.*?)\[\/img\]/i;
+  const bbMatch = trimmed.match(bbcodeRegex);
+  if (bbMatch && bbMatch[1]) {
+    return bbMatch[1];
+  }
+
+  const urlRegex = /(https?:\/\/[^\s"'<>]+)/;
+  const urlMatch = trimmed.match(urlRegex);
+  if (urlMatch && urlMatch[1]) {
+    return urlMatch[1];
+  }
+
+  return trimmed;
+}
 
 export default function Admin() {
   const data = createAsync(() => getAdminData());
@@ -41,44 +67,30 @@ export default function Admin() {
     facebookUrl: "",
     instagramUrl: "",
     tiktokUrl: "",
+    avatarUrl: "",
+    bannerUrl: "",
+    bgUrl: "",
+    mainFontFamily: "Kanit",
+    minDonationAmount: 10,
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
   const [authError, setAuthError] = createSignal("");
   const [saveLoading, setSaveLoading] = createSignal(false);
 
-  const [avatarLoading, setAvatarLoading] = createSignal(false);
-  const [bannerLoading, setBannerLoading] = createSignal(false);
-  const [bgLoading, setBgLoading] = createSignal(false);
-
   const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
 
   createEffect(() => {
     const theme = data()?.theme;
     if (theme) {
-      setConfig(
-        reconcile({
-          ...theme,
-          presetAmounts:
-            theme.presetAmounts && theme.presetAmounts.length === 4
-              ? [...theme.presetAmounts]
-              : [100, 300, 500, 1000],
-          youtubeUrl: theme.youtubeUrl ?? "",
-          twitchUrl: theme.twitchUrl ?? "",
-          discordUrl: theme.discordUrl ?? "",
-          xUrl: theme.xUrl ?? "",
-          facebookUrl: theme.facebookUrl ?? "",
-          instagramUrl: theme.instagramUrl ?? "",
-          tiktokUrl: theme.tiktokUrl ?? "",
-        }),
-      );
+      setConfig(reconcile(theme));
     }
   });
 
   const uniqueFonts = createMemo(() => {
     return [
       ...new Set(
-        [config.mainFontFamily].filter(
+        [config.mainFontFamily || "Kanit"].filter(
           (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
         ),
       ),
@@ -111,56 +123,6 @@ export default function Admin() {
     window.location.href = authorizeUrl;
   };
 
-  const handleFileUpload = async (
-    e: Event,
-    type: "avatar" | "banner" | "bg",
-  ) => {
-    const input = e.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    const MAX_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      alert("File size cannot exceed 5 MB.");
-      input.value = "";
-      return;
-    }
-
-    if (type === "avatar") setAvatarLoading(true);
-    else if (type === "banner") setBannerLoading(true);
-    else if (type === "bg") setBgLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: formData,
-      });
-
-      const resData = await res.json();
-      if (res.ok && resData.success) {
-        if (type === "avatar") setConfig("avatarUrl", resData.url);
-        else if (type === "banner") setConfig("bannerUrl", resData.url);
-        else if (type === "bg") setConfig("bgUrl", resData.url);
-        alert(`Successfully uploaded ${type} image.`);
-      } else {
-        alert(resData.error || "Upload failed.");
-      }
-    } catch {
-      alert("Temporary server error. Please try again.");
-    } finally {
-      if (type === "avatar") setAvatarLoading(false);
-      else if (type === "banner") setBannerLoading(false);
-      else if (type === "bg") setBgLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     setSaveLoading(true);
     try {
@@ -173,6 +135,15 @@ export default function Admin() {
         },
         body: JSON.stringify({ config: rawConfig }),
       });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_verified");
+        sessionStorage.removeItem("admin_jwt");
+        setIsAuthenticated(false);
+        alert("Session expired or unauthorized. Please log in again.");
+        return;
+      }
+
       const resData = await res.json();
       if (res.ok && resData.success) {
         alert("Configuration saved successfully.");
@@ -188,7 +159,8 @@ export default function Admin() {
 
   return (
     <>
-      <Title>Admin Dashboard 🎨</Title>
+      <Title>Admin Dashboard</Title>
+
       <For each={uniqueFonts()}>
         {(font) => (
           <Link
@@ -197,6 +169,18 @@ export default function Admin() {
           />
         )}
       </For>
+
+      <style>
+        {`
+          .admin-font-root,
+          .admin-font-root input,
+          .admin-font-root textarea,
+          .admin-font-root button,
+          .admin-font-root select {
+            font-family: var(--admin-font-family), sans-serif !important;
+          }
+        `}
+      </style>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -220,10 +204,25 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => handleOAuthLogin("google")}
-                class="w-full py-3.5 bg-[#EA4335] hover:bg-[#d63c2e] text-white font-black rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-2 text-sm"
+                class="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-bold border border-gray-300 rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-3 text-sm"
               >
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.54 0-6.425-2.885-6.425-6.425s2.885-6.425 6.425-6.425c1.6 0 3.06.59 4.19 1.55l3.1-3.1C19.29 2.22 15.93 1 12.24 1 5.92 1 12s4.92 11 11.24 11c6.53 0 10.86-4.6 10.86-11 0-.74-.07-1.46-.2-2.115H12.24z" />
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.61 0 3.06.55 4.2 1.64l3.15-3.15C17.45 1.74 14.89 1 12 1 7.37 1 3.4 3.65 1.44 7.5l3.8 2.95C6.18 7.3 8.87 5.04 12 5.04z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.27H12v4.51h6.46c-.28 1.48-1.07 2.74-2.33 3.59l3.61 2.8c2.11-1.95 3.75-4.82 3.75-8.63z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c3.24 0 5.97-1.08 7.96-2.91l-3.61-2.8c-1.11.75-2.53 1.19-4.35 1.19-3.13 0-5.82-2.26-6.76-5.41L1.44 16.5C3.4 20.35 7.37 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.24 13.07a6.972 6.972 0 0 1 0-2.14L1.44 7.98a11.974 11.974 0 0 0 0 8.04l3.8-2.95z"
+                  />
                 </svg>
                 Sign in with Google
               </button>
@@ -240,7 +239,12 @@ export default function Admin() {
         </div>
       </Show>
 
-      <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
+      <div
+        class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col"
+        style={{
+          "--admin-font-family": `'${config.mainFontFamily || "Kanit"}'`,
+        }}
+      >
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🎨</span>
@@ -349,15 +353,25 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Upload Profile Image (Avatar)
+                      Profile Image URL (Avatar)
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      disabled={avatarLoading()}
-                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                      onChange={(e) => handleFileUpload(e, "avatar")}
+                      type="text"
+                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                      value={config.avatarUrl || ""}
+                      onInput={(e) => {
+                        const parsed = parseDirectImageUrl(
+                          e.currentTarget.value,
+                        );
+                        setConfig("avatarUrl", parsed);
+                      }}
                     />
+                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                      *Recommend uploading to **imgbb.com**, selecting the Embed
+                      codes tab, and pasting the "Direct link" or HTML code
+                      here.
+                    </p>
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -373,15 +387,25 @@ export default function Admin() {
 
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Upload Banner Image
+                      Banner Image URL (1200x480)
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      disabled={bannerLoading()}
-                      class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                      onChange={(e) => handleFileUpload(e, "banner")}
+                      type="text"
+                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
+                      class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                      value={config.bannerUrl || ""}
+                      onInput={(e) => {
+                        const parsed = parseDirectImageUrl(
+                          e.currentTarget.value,
+                        );
+                        setConfig("bannerUrl", parsed);
+                      }}
                     />
+                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                      *Recommend uploading to **imgbb.com**, selecting the Embed
+                      codes tab, and pasting the "Direct link" or HTML code
+                      here.
+                    </p>
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -402,7 +426,7 @@ export default function Admin() {
                   </h3>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         YouTube
                       </label>
                       <input
@@ -416,7 +440,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         Twitch
                       </label>
                       <input
@@ -430,7 +454,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         Discord
                       </label>
                       <input
@@ -444,7 +468,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         X (Twitter)
                       </label>
                       <input
@@ -458,7 +482,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         Facebook
                       </label>
                       <input
@@ -472,7 +496,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         Instagram
                       </label>
                       <input
@@ -486,7 +510,7 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <label class="block text-[10px] font-bold text-[#5C4F45] mb-1">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
                         TikTok
                       </label>
                       <input
@@ -630,6 +654,28 @@ export default function Admin() {
                   </div>
                 </div>
 
+                <div class="border-t border-[#F0EAE1] pt-4">
+                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                    Minimum Donation Amount (THB)
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="100000"
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    value={config.minDonationAmount || 10}
+                    onInput={(e) =>
+                      setConfig(
+                        "minDonationAmount",
+                        Number(e.currentTarget.value),
+                      )
+                    }
+                  />
+                  <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                    *Minimum donation amount (must be at least 10 THB).
+                  </p>
+                </div>
+
                 <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
                   <label class="block text-xs font-bold text-[#5C4F45]">
                     🖼 Page Background Style
@@ -673,15 +719,25 @@ export default function Admin() {
                   >
                     <div>
                       <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Upload Page Background Image (Max 5 MB)
+                        Page Background Image URL (1920x1080)
                       </label>
                       <input
-                        type="file"
-                        accept="image/*"
-                        disabled={bgLoading()}
-                        class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#E87A5D] file:text-white hover:file:bg-[#d66c50] file:cursor-pointer disabled:opacity-50"
-                        onChange={(e) => handleFileUpload(e, "bg")}
+                        type="text"
+                        placeholder="Enter image URL, e.g., https://i.ibb.co/..."
+                        class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                        value={config.bgUrl || ""}
+                        onInput={(e) => {
+                          const parsed = parseDirectImageUrl(
+                            e.currentTarget.value,
+                          );
+                          setConfig("bgUrl", parsed);
+                        }}
                       />
+                      <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
+                        *Recommend uploading to **imgbb.com**, selecting the
+                        Embed codes tab, and pasting the "Direct link" or HTML
+                        code here.
+                      </p>
                       <Show when={config.bgUrl}>
                         <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                           <span class="text-[10px] text-emerald-600 font-bold">
