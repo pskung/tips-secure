@@ -187,6 +187,9 @@ export async function POST(event: APIEvent) {
         await store.set(`tx_log:${now}:${transactionId}`, "success");
         safeLog(`Fast-Path success and indexed: ${transactionId}`, "INFO");
       } else {
+        // [HOTFIX ADDED] ล็อกสถานะธุรกรรมทันทีเพื่อป้องกัน Race Condition ก่อนสุ่มส่งคิวงานซ้ำ
+        await store.set(`processed_tx:${transactionId}`, "retry_pending");
+
         // สร้าง Token ไดนามิกรักษาระบบความปลอดภัยเบื้องหลัง
         const oneTimeToken = generateOneTimeToken();
 

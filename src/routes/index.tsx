@@ -178,9 +178,7 @@ export default function Home() {
     quality: number = 70,
   ): string => {
     if (!url) return "";
-    const cleanUrl = url.trim();
-    if (cleanUrl === "") return "";
-    return `/.netlify/images?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality}`;
+    return url.trim();
   };
 
   const initTurnstile = () => {
