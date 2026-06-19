@@ -26,7 +26,7 @@ const getInitialData = query(async () => {
   }
 
   try {
-    const store = getStore("donation_store");
+    const store = getStore({ name: "donation_store" });
     const theme = (await store.get("personalized_theme", {
       type: "json",
     })) as any;
@@ -137,6 +137,10 @@ export default function Home() {
           ? theme.presetAmounts
           : [100, 300, 500, 1000],
     };
+  });
+
+  const activeFont = createMemo(() => {
+    return (config().mainFontFamily || "Kanit").trim();
   });
 
   const socialLinks = createMemo(() => {
@@ -324,8 +328,10 @@ export default function Home() {
 
       <Link
         rel="stylesheet"
-        href={`https://fonts.googleapis.com/css2?family=${config().mainFontFamily.trim().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
+        href={`https://fonts.googleapis.com/css2?family=${activeFont().replace(/\s+/g, "+")}:wght@400;500;700&display=swap`}
       />
+
+      {/* ประยุกต์ใช้ตัวแปร CSS เพื่อให้ฟอนต์ทำงานกับ Form Controls และ Reactive สอดคล้องกัน 100% */}
       <style>
         {`
           .custom-font-root,
@@ -333,7 +339,7 @@ export default function Home() {
           .custom-font-root textarea,
           .custom-font-root button,
           .custom-font-root select {
-            font-family: var(--main-font) !important;
+            font-family: var(--main-font-family), sans-serif !important;
           }
         `}
       </style>
@@ -346,6 +352,7 @@ export default function Home() {
       <main
         class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
+          "--main-font-family": `'${activeFont()}'`,
           "background-image":
             config().bgType === "image"
               ? `url(${
@@ -355,8 +362,6 @@ export default function Home() {
                 })`
               : "none",
           "background-color": config().bgColor,
-          "--main-font": `'${config().mainFontFamily}', sans-serif`,
-          "font-family": "var(--main-font)",
         }}
       >
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
@@ -458,7 +463,7 @@ export default function Home() {
                     config().inputTextColor,
                     0.6,
                   ),
-                  "--placeholder-font": `'${config().mainFontFamily}', sans-serif`,
+                  "--placeholder-font": `'${activeFont()}', sans-serif`,
                 }}
               >
                 <input

@@ -74,6 +74,7 @@ export default function Admin() {
     avatarUrl: "",
     bannerUrl: "",
     bgUrl: "",
+    mainFontFamily: "Kanit",
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -92,7 +93,7 @@ export default function Admin() {
   const uniqueFonts = createMemo(() => {
     return [
       ...new Set(
-        [config.mainFontFamily].filter(
+        [config.mainFontFamily || "Kanit"].filter(
           (f) => f && f.trim() !== "" && f.toLowerCase() !== "sans-serif",
         ),
       ),
@@ -162,6 +163,7 @@ export default function Admin() {
   return (
     <>
       <Title>Admin Dashboard</Title>
+
       <For each={uniqueFonts()}>
         {(font) => (
           <Link
@@ -170,6 +172,19 @@ export default function Admin() {
           />
         )}
       </For>
+
+      {/* ควบคุมฟอนต์ในฝั่ง Admin Panel ให้แสดงผลฟอนต์เปลี่ยนตามแอดมินเลือกทันที */}
+      <style>
+        {`
+          .admin-font-root,
+          .admin-font-root input,
+          .admin-font-root textarea,
+          .admin-font-root button,
+          .admin-font-root select {
+            font-family: var(--admin-font-family), sans-serif !important;
+          }
+        `}
+      </style>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -228,7 +243,12 @@ export default function Admin() {
         </div>
       </Show>
 
-      <div class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col">
+      <div
+        class="admin-font-root min-h-screen bg-[#FFFDF6] text-[#2C2520] flex flex-col"
+        style={{
+          "--admin-font-family": `'${config.mainFontFamily || "Kanit"}'`,
+        }}
+      >
         <header class="border-b border-[#F0EAE1] bg-[#FAF6ED] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-30">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🎨</span>
