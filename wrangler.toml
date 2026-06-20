@@ -1,8 +1,11 @@
+# wrangler.toml
 name = "tips-secure"
 compatibility_date = "2026-06-20"
-pages_build_output_dir = "dist"
+pages_build_output_dir = "dist/public"
+
+# สั่งเปิดความสามารถใช้งาน Node.js API และ Polyfills สำหรับ SolidStart เสมอโดยไม่ต้องตั้งค่าในเว็บ
+compatibility_flags = [ "nodejs_compat" ]
 
 [[kv_namespaces]]
 binding = "DONATION_STORE"
-id = "YOUR_KV_NAMESPACE_ID_PRODUCTION"
-preview_id = "YOUR_KV_NAMESPACE_ID_PREVIEW"
+id = "local-dev-dummy-id" # ใส่ ID สมมติไว้เพื่อหล่อเลี้ยงระบบจำลองฝั่งนักพัฒนาตอนทดสอบเครื่องตัวเอง (ปลอดภัยต่อการเอาขึ้น GitHub)

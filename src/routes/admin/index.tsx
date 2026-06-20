@@ -1,3 +1,4 @@
+// src/routes/admin/index.tsx
 import {
   createSignal,
   createMemo,
@@ -16,21 +17,15 @@ function parseDirectImageUrl(input: string): string {
 
   const imgHtmlRegex = /<img[^>]+src=["']([^"']+)["']/i;
   const htmlMatch = trimmed.match(imgHtmlRegex);
-  if (htmlMatch && htmlMatch[1]) {
-    return htmlMatch[1];
-  }
+  if (htmlMatch && htmlMatch[1]) return htmlMatch[1];
 
   const bbcodeRegex = /\[img\](.*?)\[\/img\]/i;
   const bbMatch = trimmed.match(bbcodeRegex);
-  if (bbMatch && bbMatch[1]) {
-    return bbMatch[1];
-  }
+  if (bbMatch && bbMatch[1]) return bbMatch[1];
 
   const urlRegex = /(https?:\/\/[^\s"'<>]+)/;
   const urlMatch = trimmed.match(urlRegex);
-  if (urlMatch && urlMatch[1]) {
-    return urlMatch[1];
-  }
+  if (urlMatch && urlMatch[1]) return urlMatch[1];
 
   return trimmed;
 }
@@ -53,12 +48,17 @@ export default function Admin() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
-  const [authError, setAuthError] = createSignal("");
+  const [password, setPassword] = createSignal("");
+  const [loginError, setLoginError] = createSignal("");
+  const [loginLoading, setLoginLoading] = createSignal(false);
   const [saveLoading, setSaveLoading] = createSignal(false);
-  // [อัปเกรด]: ตัวหมุนตรวจสอบระหว่างเปลี่ยนผ่านหน้าจอ SPA
   const [pageLoading, setPageLoading] = createSignal(true);
 
-  const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
+  // ส่วนของการดึงระบบรักษาความปลอดภัย Turnstile มาสแกนแอดมิน
+  const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
+  const [turnstileToken, setTurnstileToken] = createSignal("");
+  const [turnstileReady, setTurnstileReady] = createSignal(false);
+  let turnstileWidgetId: string | null = null;
 
   const uniqueFonts = createMemo(() => {
     return [
@@ -71,12 +71,17 @@ export default function Admin() {
   });
 
   onMount(async () => {
-    // [อัปเกรด]: ย้ายการดึงข้อมูลจาก Server Query เดิมมาใช้ Client Fetch 100% เพื่อความเข้ากันได้ของ Cloudflare
+    const storedToken = sessionStorage.getItem("admin_token");
+    if (storedToken) {
+      setIsAuthenticated(true);
+    }
+
     try {
       const res = await fetch("/api/theme");
       if (res.ok) {
         const payload = await res.json();
         setConfig(reconcile(payload.theme));
+        setTurnstileSiteKey(payload.turnstileSiteKey);
       } else {
         setConfig(reconcile(defaultTheme));
       }
@@ -86,29 +91,94 @@ export default function Admin() {
       setPageLoading(false);
     }
 
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get("access_token");
-      if (accessToken) {
-        sessionStorage.setItem("admin_verified", "true");
-        sessionStorage.setItem("admin_jwt", accessToken);
-        window.history.replaceState(null, "", window.location.pathname);
-        setIsAuthenticated(true);
+    // จับตามองไลบรารี Turnstile สกัดสแปม
+    const checkInterval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(checkInterval);
+        setTurnstileReady(true);
       }
-    } else {
-      const isVerified = sessionStorage.getItem("admin_verified") === "true";
-      const storedToken = sessionStorage.getItem("admin_jwt");
-      if (isVerified && storedToken) {
-        setIsAuthenticated(true);
+    }, 100);
+  });
+
+  const initTurnstile = () => {
+    if (typeof window === "undefined" || !(window as any).turnstile) return;
+    const siteKey = turnstileSiteKey();
+    if (!siteKey || !document.getElementById("admin-turnstile-container"))
+      return;
+
+    try {
+      if (turnstileWidgetId) {
+        (window as any).turnstile.remove(turnstileWidgetId);
       }
+
+      turnstileWidgetId = (window as any).turnstile.render(
+        "#admin-turnstile-container",
+        {
+          sitekey: siteKey,
+          theme: "light",
+          size: "flexible",
+          callback: (token: string) => {
+            setTurnstileToken(token);
+          },
+          "expired-callback": () => {
+            setTurnstileToken("");
+          },
+          "error-callback": () => {
+            setTurnstileToken("");
+          },
+        },
+      );
+    } catch (err) {
+      console.error("Failed to initialize Turnstile on admin login:", err);
+    }
+  };
+
+  createEffect(() => {
+    const siteKey = turnstileSiteKey();
+    if (siteKey && turnstileReady() && !isAuthenticated()) {
+      initTurnstile();
     }
   });
 
-  const handleOAuthLogin = (provider: "google") => {
-    setAuthError("");
-    const authorizeUrl = `/.netlify/identity/authorize?provider=${provider}`;
-    window.location.href = authorizeUrl;
+  const handleLogin = async (e: Event) => {
+    e.preventDefault();
+    if (turnstileSiteKey() && !turnstileToken()) {
+      alert("Please complete the security challenge first 🔒");
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError("");
+
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: password(),
+          turnstile_token: turnstileToken(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        sessionStorage.setItem("admin_token", data.token);
+        setIsAuthenticated(true);
+      } else {
+        setLoginError(data.error || "Incorrect Password.");
+        if (
+          typeof (window as any).turnstile !== "undefined" &&
+          turnstileWidgetId
+        ) {
+          (window as any).turnstile.reset(turnstileWidgetId);
+          setTurnstileToken("");
+        }
+      }
+    } catch {
+      setLoginError("Cannot connect to authorization server.");
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -119,16 +189,15 @@ export default function Admin() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getAuthToken()}`,
+          Authorization: `Bearer ${sessionStorage.getItem("admin_token") || ""}`,
         },
         body: JSON.stringify({ config: rawConfig }),
       });
 
-      if (res.status === 401) {
-        sessionStorage.removeItem("admin_verified");
-        sessionStorage.removeItem("admin_jwt");
+      if (res.status === 401 || res.status === 403) {
+        sessionStorage.removeItem("admin_token");
         setIsAuthenticated(false);
-        alert("Session expired or unauthorized. Please log in again.");
+        alert("Session expired. Please log in again.");
         return;
       }
 
@@ -176,60 +245,62 @@ export default function Admin() {
           }
         `}
       </style>
+      <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        async
+        defer
+      ></script>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div class="w-full max-w-sm p-8 bg-white border border-[#EBE3D5] rounded-3xl space-y-6 shadow-xl text-center">
             <div>
+              <span class="text-4xl">🔐</span>
               <h1 class="text-xl font-black mt-3 text-[#2C2520]">
                 Admin Dashboard
               </h1>
               <p class="text-xs text-[#7C6E65] mt-1">
-                Please log in with Google to manage settings.
+                Please complete security verification and enter password.
               </p>
             </div>
 
-            <Show when={authError()}>
+            <Show when={loginError()}>
               <div class="p-3 bg-red-50 border border-red-200 text-red-600 text-xs text-center rounded-xl font-bold">
-                {authError()}
+                {loginError()}
               </div>
             </Show>
 
-            <div class="space-y-3">
-              <button
-                type="button"
-                onClick={() => handleOAuthLogin("google")}
-                class="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-bold border border-gray-300 rounded-2xl cursor-pointer transition-all duration-300 shadow-xs flex items-center justify-center gap-3 text-sm"
-              >
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.04c1.61 0 3.06.55 4.2 1.64l3.15-3.15C17.45 1.74 14.89 1 12 1 7.37 1 3.4 3.65 1.44 7.5l3.8 2.95C6.18 7.3 8.87 5.04 12 5.04z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.27H12v4.51h6.46c-.28 1.48-1.07 2.74-2.33 3.59l3.61 2.8c2.11-1.95 3.75-4.82 3.75-8.63z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c3.24 0 5.97-1.08 7.96-2.91l-3.61-2.8c-1.11.75-2.53 1.19-4.35 1.19-3.13 0-5.82-2.26-6.76-5.41L1.44 16.5C3.4 20.35 7.37 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.24 13.07a6.972 6.972 0 0 1 0-2.14L1.44 7.98a11.974 11.974 0 0 0 0 8.04l3.8-2.95z"
-                  />
-                </svg>
-                Sign in with Google
-              </button>
-            </div>
+            <form onSubmit={handleLogin} class="space-y-4">
+              <input
+                type="password"
+                placeholder="Enter password..."
+                value={password()}
+                onInput={(e) => setPassword(e.currentTarget.value)}
+                class="w-full px-4 py-3 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-center font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                required
+              />
 
-            <p class="text-[10px] text-[#7C6E65] leading-relaxed">
-              *Only email addresses whitelisted inside the
-              <code class="bg-[#FAF8F3] px-1 py-0.5 rounded border border-[#EBE3D5] ml-1">
-                ADMIN_EMAILS
-              </code>{" "}
-              env can successfully log in.
-            </p>
+              <Show when={turnstileSiteKey()}>
+                <div
+                  id="admin-turnstile-container"
+                  class="w-full flex justify-center py-1 min-h-[65px]"
+                  style={{
+                    display: turnstileToken() ? "none" : "flex",
+                  }}
+                ></div>
+              </Show>
+
+              <button
+                type="submit"
+                disabled={
+                  loginLoading() ||
+                  (turnstileSiteKey() !== "" && !turnstileToken())
+                }
+                class="w-full py-3 bg-[#FFDD00] text-black font-black rounded-xl cursor-pointer hover:bg-[#FFE54D] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loginLoading() ? "Checking... ⏳" : "🔓 Login"}
+              </button>
+            </form>
           </div>
         </div>
       </Show>
@@ -362,11 +433,6 @@ export default function Admin() {
                         setConfig("avatarUrl", parsed);
                       }}
                     />
-                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                      *Recommend uploading to **imgbb.com**, selecting the Embed
-                      codes tab, and pasting the "Direct link" or HTML code
-                      here.
-                    </p>
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -396,11 +462,6 @@ export default function Admin() {
                         setConfig("bannerUrl", parsed);
                       }}
                     />
-                    <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                      *Recommend uploading to **imgbb.com**, selecting the Embed
-                      codes tab, and pasting the "Direct link" or HTML code
-                      here.
-                    </p>
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -427,7 +488,7 @@ export default function Admin() {
                       <input
                         type="text"
                         placeholder="https://youtube.com/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
                         value={config.youtubeUrl || ""}
                         onInput={(e) =>
                           setConfig("youtubeUrl", e.currentTarget.value)
@@ -441,7 +502,7 @@ export default function Admin() {
                       <input
                         type="text"
                         placeholder="https://twitch.tv/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
                         value={config.twitchUrl || ""}
                         onInput={(e) =>
                           setConfig("twitchUrl", e.currentTarget.value)
@@ -455,7 +516,7 @@ export default function Admin() {
                       <input
                         type="text"
                         placeholder="https://discord.gg/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
                         value={config.discordUrl || ""}
                         onInput={(e) =>
                           setConfig("discordUrl", e.currentTarget.value)
@@ -469,52 +530,10 @@ export default function Admin() {
                       <input
                         type="text"
                         placeholder="https://x.com/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
                         value={config.xUrl || ""}
                         onInput={(e) =>
                           setConfig("xUrl", e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Facebook
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="https://facebook.com/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                        value={config.facebookUrl || ""}
-                        onInput={(e) =>
-                          setConfig("facebookUrl", e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Instagram
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="https://instagram.com/..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                        value={config.instagramUrl || ""}
-                        onInput={(e) =>
-                          setConfig("instagramUrl", e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        TikTok
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="https://tiktok.com/@..."
-                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs text-[#2C2520]"
-                        value={config.tiktokUrl || ""}
-                        onInput={(e) =>
-                          setConfig("tiktokUrl", e.currentTarget.value)
                         }
                       />
                     </div>
@@ -545,7 +564,7 @@ export default function Admin() {
                       />
                       <input
                         type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-mono"
                         value={config.generalTextColor || ""}
                         onInput={(e) =>
                           setConfig("generalTextColor", e.currentTarget.value)
@@ -568,7 +587,7 @@ export default function Admin() {
                       />
                       <input
                         type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-mono"
                         value={config.cardBgColor || ""}
                         onInput={(e) =>
                           setConfig("cardBgColor", e.currentTarget.value)
@@ -594,7 +613,7 @@ export default function Admin() {
                       />
                       <input
                         type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-mono"
                         value={config.submitBtnColor || ""}
                         onInput={(e) =>
                           setConfig("submitBtnColor", e.currentTarget.value)
@@ -617,7 +636,7 @@ export default function Admin() {
                       />
                       <input
                         type="text"
-                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
+                        class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-mono"
                         value={config.submitBtnTextColor || ""}
                         onInput={(e) =>
                           setConfig("submitBtnTextColor", e.currentTarget.value)
@@ -657,7 +676,7 @@ export default function Admin() {
                     type="number"
                     min="10"
                     max="100000"
-                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold"
                     value={config.minDonationAmount || 10}
                     onInput={(e) =>
                       setConfig(
@@ -666,86 +685,6 @@ export default function Admin() {
                       )
                     }
                   />
-                  <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                    *Minimum donation amount (must be at least 10 THB).
-                  </p>
-                </div>
-
-                <div class="border-t border-[#F0EAE1] pt-4 space-y-3">
-                  <label class="block text-xs font-bold text-[#5C4F45]">
-                    🖼 Page Background Style
-                  </label>
-                  <div class="grid grid-cols-2 gap-3">
-                    <button
-                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "solid" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
-                      onClick={() => setConfig("bgType", "solid")}
-                    >
-                      Solid Color
-                    </button>
-                    <button
-                      class={`py-2.5 rounded-xl font-bold text-xs cursor-pointer border ${config.bgType === "image" ? "bg-[#FFDD00] text-[#1F160E] border-[#FFDD00]" : "bg-white border-[#E5DCCF]"}`}
-                      onClick={() => setConfig("bgType", "image")}
-                    >
-                      Wallpaper Image
-                    </button>
-                  </div>
-                  <Show
-                    when={config.bgType === "image"}
-                    fallback={
-                      <div class="flex gap-2">
-                        <input
-                          type="color"
-                          class="w-10 h-10 border-0 rounded-lg cursor-pointer"
-                          value={config.bgColor || ""}
-                          onInput={(e) =>
-                            setConfig("bgColor", e.currentTarget.value)
-                          }
-                        />
-                        <input
-                          type="text"
-                          class="flex-1 px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs uppercase font-mono"
-                          value={config.bgColor || ""}
-                          onInput={(e) =>
-                            setConfig("bgColor", e.currentTarget.value)
-                          }
-                        />
-                      </div>
-                    }
-                  >
-                    <div>
-                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                        Page Background Image URL (1920x1080)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter image URL, e.g., https://i.ibb.co/..."
-                        class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
-                        value={config.bgUrl || ""}
-                        onInput={(e) => {
-                          const parsed = parseDirectImageUrl(
-                            e.currentTarget.value,
-                          );
-                          setConfig("bgUrl", parsed);
-                        }}
-                      />
-                      <p class="text-[9px] text-[#7C6E65] mt-1 leading-normal">
-                        *Recommend uploading to **imgbb.com**, selecting the
-                        Embed codes tab, and pasting the "Direct link" or HTML
-                        code here.
-                      </p>
-                      <Show when={config.bgUrl}>
-                        <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
-                          <span class="text-[10px] text-emerald-600 font-bold">
-                            ✓ Active
-                          </span>
-                          <img
-                            src={config.bgUrl}
-                            class="w-16 h-8 rounded-lg object-cover border"
-                          />
-                        </div>
-                      </Show>
-                    </div>
-                  </Show>
                 </div>
               </div>
             </div>
