@@ -1,11 +1,10 @@
 # wrangler.toml
 name = "tips-secure"
 compatibility_date = "2026-06-20"
-pages_build_output_dir = "dist/public"
+pages_build_output_dir = "dist" # [แก้ไข]: ชี้ไปที่ dist เพื่อให้ระบบ Pages ตรวจเจอทั้ง Static Assets และระบบหลังบ้าน _worker.js
 
-# สั่งเปิดความสามารถใช้งาน Node.js API และ Polyfills สำหรับ SolidStart เสมอโดยไม่ต้องตั้งค่าในเว็บ
 compatibility_flags = [ "nodejs_compat" ]
 
 [[kv_namespaces]]
 binding = "DONATION_STORE"
-id = "local-dev-dummy-id" # ใส่ ID สมมติไว้เพื่อหล่อเลี้ยงระบบจำลองฝั่งนักพัฒนาตอนทดสอบเครื่องตัวเอง (ปลอดภัยต่อการเอาขึ้น GitHub)
+id = "local-dev-dummy-id" # รหัสหล่อเลี้ยงเพื่อรันจำลองระบบบนเครื่องตัวเอง
