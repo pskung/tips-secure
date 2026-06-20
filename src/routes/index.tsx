@@ -8,64 +8,14 @@ import {
   Show,
 } from "solid-js";
 import { Title } from "@solidjs/meta";
-import { createAsync, query } from "@solidjs/router";
-import { getStore } from "@netlify/blobs";
-import { getRequestEvent } from "solid-js/web";
-import { setHeader } from "vinxi/http";
 import defaultTheme from "~/lib/config/theme.json";
-
-let cachedTheme: any = null;
-let lastCacheFetch = 0;
-const CACHE_TTL = 30000;
-
-const getInitialData = query(async () => {
-  "use server";
-  const event = getRequestEvent();
-  if (event) {
-    setHeader(
-      event.nativeEvent,
-      "Cache-Control",
-      "public, max-age=0, s-maxage=15, stale-while-revalidate=15",
-    );
-  }
-
-  const now = Date.now();
-  if (cachedTheme && now - lastCacheFetch < CACHE_TTL) {
-    return {
-      theme: cachedTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
-    };
-  }
-
-  try {
-    const store = getStore({ name: "donation_store" });
-    const theme = (await store.get("personalized_theme", {
-      type: "json",
-    })) as any;
-
-    const mergedTheme = { ...defaultTheme, ...(theme || {}) };
-
-    cachedTheme = mergedTheme;
-    lastCacheFetch = now;
-
-    return {
-      theme: mergedTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
-    };
-  } catch {
-    return {
-      theme: defaultTheme,
-      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
-    };
-  }
-}, "initialData");
 
 function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
     return (
       <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+        <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837z" />
       </svg>
     );
   }
@@ -125,13 +75,66 @@ function getSocialIcon(platform: string) {
   );
 }
 
+function SkeletonUI() {
+  return (
+    <div class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-[#0b0f19] text-slate-400 animate-pulse">
+      <div class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-slate-800/40 border-b border-slate-800"></div>
+
+      <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
+        <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
+          <div class="flex-1 w-full space-y-4 flex flex-col">
+            <div class="p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col space-y-4 text-left">
+              <div class="flex items-center gap-4 w-full">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800/60 border border-slate-700"></div>
+                <div class="space-y-2 min-w-0 flex-1">
+                  <div class="h-6 bg-slate-800/60 rounded-md w-1/3"></div>
+                  <div class="flex gap-2">
+                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
+                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
+                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="border-t border-slate-800 w-full"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-slate-800/50 rounded-md w-1/4"></div>
+                <div class="h-3 bg-slate-800/40 rounded-md w-full"></div>
+                <div class="h-3 bg-slate-800/40 rounded-md w-5/6"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full lg:w-[340px] flex-shrink-0">
+            <div class="w-full p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col gap-3.5">
+              <div class="grid grid-cols-4 gap-1.5">
+                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
+                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
+                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
+                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
+              </div>
+              <div class="h-12 bg-slate-800/50 rounded-xl"></div>
+              <div class="h-12 bg-slate-800/50 rounded-xl"></div>
+              <div class="h-20 bg-slate-800/50 rounded-xl"></div>
+              <div class="h-8 bg-slate-800/40 rounded-xl"></div>
+              <div class="h-14 bg-slate-800/70 rounded-2xl"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
-  const data = createAsync(() => getInitialData());
+  // [อัปเกรด]: จัดเก็บตัวแปรฝั่งหน้าบ้านสำหรับการจัดการโหลด SPA
+  const [themeData, setThemeData] = createSignal<any>(null);
+  const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
+  const [loading, setLoading] = createSignal(true);
+  const [actionLoading, setActionLoading] = createSignal(false);
 
   const [name, setName] = createSignal("");
   const [amount, setAmount] = createSignal("");
   const [message, setMessage] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
   const [honeypot, setHoneypot] = createSignal("");
   const [renderTime, setRenderTime] = createSignal(0);
   const [cooldownRemaining, setCooldownRemaining] = createSignal(0);
@@ -143,8 +146,61 @@ export default function Home() {
 
   let turnstileWidgetId: string | null = null;
 
+  onMount(async () => {
+    setRenderTime(Date.now());
+    setAmount("");
+    setCustomAmountVal("");
+
+    try {
+      const res = await fetch("/api/theme");
+      if (res.ok) {
+        const payload = await res.json();
+        setThemeData(payload.theme);
+        setTurnstileSiteKey(payload.turnstileSiteKey);
+      } else {
+        setThemeData(defaultTheme);
+      }
+    } catch {
+      setThemeData(defaultTheme);
+    } finally {
+      // ปิดแอนิเมชัน Skeleton และสไลด์หน้าเว็บหลักขึ้นมาทดแทน
+      setLoading(false);
+    }
+
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        sessionStorage.setItem("admin_verified", "true");
+        sessionStorage.setItem("admin_jwt", accessToken);
+        window.location.href = "/admin";
+        return;
+      }
+    }
+
+    const lastRequest = localStorage.getItem("last_donate_request");
+    if (lastRequest) {
+      const elapsed = Date.now() - Number(lastRequest);
+      if (elapsed < 60000) {
+        setCooldownRemaining(Math.ceil((60000 - elapsed) / 1000));
+      }
+    }
+
+    const checkInterval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(checkInterval);
+        setTurnstileReady(true);
+      }
+    }, 100);
+
+    onCleanup(() => {
+      clearInterval(checkInterval);
+    });
+  });
+
   const config = createMemo(() => {
-    const theme = data()?.theme || defaultTheme;
+    const theme = themeData() || defaultTheme;
     return {
       ...theme,
       presetAmounts:
@@ -187,18 +243,9 @@ export default function Home() {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const optimizeImage = (
-    url: string | undefined,
-    width: number,
-    quality: number = 70,
-  ): string => {
-    if (!url) return "";
-    return url.trim();
-  };
-
   const initTurnstile = () => {
     if (typeof window === "undefined" || !(window as any).turnstile) return;
-    const siteKey = data()?.turnstileSiteKey;
+    const siteKey = turnstileSiteKey();
     if (!siteKey || !document.getElementById("turnstile-container")) return;
 
     try {
@@ -228,43 +275,6 @@ export default function Home() {
     }
   };
 
-  onMount(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get("access_token");
-      if (accessToken) {
-        sessionStorage.setItem("admin_verified", "true");
-        sessionStorage.setItem("admin_jwt", accessToken);
-        window.location.href = "/admin";
-        return;
-      }
-    }
-
-    setRenderTime(Date.now());
-    setAmount("");
-    setCustomAmountVal("");
-
-    const lastRequest = localStorage.getItem("last_donate_request");
-    if (lastRequest) {
-      const elapsed = Date.now() - Number(lastRequest);
-      if (elapsed < 60000) {
-        setCooldownRemaining(Math.ceil((60000 - elapsed) / 1000));
-      }
-    }
-
-    const checkInterval = setInterval(() => {
-      if ((window as any).turnstile) {
-        clearInterval(checkInterval);
-        setTurnstileReady(true);
-      }
-    }, 100);
-
-    onCleanup(() => {
-      clearInterval(checkInterval);
-    });
-  });
-
   createEffect(() => {
     if (cooldownRemaining() > 0) {
       const timer = setTimeout(() => {
@@ -281,7 +291,7 @@ export default function Home() {
   });
 
   createEffect(() => {
-    const siteKey = data()?.turnstileSiteKey;
+    const siteKey = turnstileSiteKey();
     if (siteKey && turnstileReady()) {
       initTurnstile();
     }
@@ -291,12 +301,12 @@ export default function Home() {
     e.preventDefault();
     if (cooldownRemaining() > 0) return;
 
-    if (data()?.turnstileSiteKey && !turnstileToken()) {
+    if (turnstileSiteKey() && !turnstileToken()) {
       alert("Please complete the security challenge first 🔒");
       return;
     }
 
-    setLoading(true);
+    setActionLoading(true);
 
     try {
       const res = await fetch("/api/donate", {
@@ -319,7 +329,7 @@ export default function Home() {
         window.location.href = resData.invoice_url;
       } else {
         alert(resData.error || "A temporary payment error occurred.");
-        setLoading(false);
+        setActionLoading(false);
 
         if (
           typeof (window as any).turnstile !== "undefined" &&
@@ -331,12 +341,12 @@ export default function Home() {
       }
     } catch (err) {
       alert("Payment system is temporarily unavailable.");
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
   return (
-    <>
+    <Show when={!loading()} fallback={<SkeletonUI />}>
       <Title>Support {config().vtuberName}</Title>
 
       <style>
@@ -364,7 +374,7 @@ export default function Home() {
             config().bgType === "image"
               ? `url(${
                   config().bgUrl
-                    ? optimizeImage(config().bgUrl, 1200)
+                    ? config().bgUrl
                     : "https://placehold.co/1920x1080/cbd5e1/1e293b?text=Background"
                 })`
               : "none",
@@ -378,7 +388,7 @@ export default function Home() {
           style={{
             "background-image": `url(${
               config().bannerUrl
-                ? optimizeImage(config().bannerUrl, 800)
+                ? config().bannerUrl
                 : "https://placehold.co/1200x480/e2e8f0/0f172a?text=Banner"
             })`,
             "border-color": config().cardBorderColor,
@@ -402,7 +412,7 @@ export default function Home() {
                     <img
                       src={
                         config().avatarUrl
-                          ? optimizeImage(config().avatarUrl, 120)
+                          ? config().avatarUrl
                           : "https://placehold.co/300x300/e2e8f0/0f172a?text=Avatar"
                       }
                       alt="Avatar"
@@ -673,7 +683,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <Show when={data()?.turnstileSiteKey}>
+                <Show when={turnstileSiteKey()}>
                   <div
                     id="turnstile-container"
                     class="w-full flex justify-center transition-all duration-300 py-1"
@@ -687,11 +697,11 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={
-                    loading() ||
+                    actionLoading() ||
                     cooldownRemaining() > 0 ||
-                    (data()?.turnstileSiteKey !== "" && !turnstileToken())
+                    (turnstileSiteKey() !== "" && !turnstileToken())
                   }
-                  aria-busy={loading() ? "true" : "false"}
+                  aria-busy={actionLoading() ? "true" : "false"}
                   class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                   style={{
                     "background-color":
@@ -704,7 +714,10 @@ export default function Home() {
                   <Show
                     when={cooldownRemaining() > 0}
                     fallback={
-                      <Show when={loading()} fallback={config().submitBtnText}>
+                      <Show
+                        when={actionLoading()}
+                        fallback={config().submitBtnText}
+                      >
                         Generating QR Code...
                       </Show>
                     }
@@ -717,6 +730,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-    </>
+    </Show>
   );
 }
