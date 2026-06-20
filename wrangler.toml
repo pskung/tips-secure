@@ -1,10 +1,9 @@
-# wrangler.toml
 name = "tips-secure"
 compatibility_date = "2026-06-20"
-pages_build_output_dir = "dist" # [แก้ไข]: ชี้ไปที่ dist เพื่อให้ระบบ Pages ตรวจเจอทั้ง Static Assets และระบบหลังบ้าน _worker.js
+pages_build_output_dir = "dist" # ผลลัพธ์จากการ Build ของ Vinxi จะถูกสร้างเก็บไว้ที่โฟลเดอร์ dist
 
 compatibility_flags = [ "nodejs_compat" ]
 
 [[kv_namespaces]]
 binding = "DONATION_STORE"
-id = "local-dev-dummy-id" # รหัสหล่อเลี้ยงเพื่อรันจำลองระบบบนเครื่องตัวเอง
+id = "local-dev-dummy-id" # สำหรับใช้งานรันประมวลผลจำลองบนเครื่องนักพัฒนาผ่าน wrangler dev
