@@ -8,27 +8,7 @@ import {
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
-import { createAsync, query } from "@solidjs/router";
-import { getStore } from "@netlify/blobs";
 import defaultTheme from "~/lib/config/theme.json";
-
-const getAdminData = query(async () => {
-  "use server";
-  try {
-    const store = getStore({ name: "donation_store" });
-    const theme = (await store.get("personalized_theme", {
-      type: "json",
-    })) as any;
-
-    return {
-      theme: { ...defaultTheme, ...(theme || {}) },
-    };
-  } catch {
-    return {
-      theme: defaultTheme,
-    };
-  }
-}, "adminData");
 
 function parseDirectImageUrl(input: string): string {
   const trimmed = input.trim();
@@ -56,8 +36,6 @@ function parseDirectImageUrl(input: string): string {
 }
 
 export default function Admin() {
-  const data = createAsync(() => getAdminData());
-
   const [config, setConfig] = createStore<any>({
     presetAmounts: [100, 300, 500, 1000],
     youtubeUrl: "",
@@ -77,15 +55,10 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
   const [authError, setAuthError] = createSignal("");
   const [saveLoading, setSaveLoading] = createSignal(false);
+  // [อัปเกรด]: ตัวหมุนตรวจสอบระหว่างเปลี่ยนผ่านหน้าจอ SPA
+  const [pageLoading, setPageLoading] = createSignal(true);
 
   const getAuthToken = () => sessionStorage.getItem("admin_jwt") || "";
-
-  createEffect(() => {
-    const theme = data()?.theme;
-    if (theme) {
-      setConfig(reconcile(theme));
-    }
-  });
 
   const uniqueFonts = createMemo(() => {
     return [
@@ -97,7 +70,22 @@ export default function Admin() {
     ];
   });
 
-  onMount(() => {
+  onMount(async () => {
+    // [อัปเกรด]: ย้ายการดึงข้อมูลจาก Server Query เดิมมาใช้ Client Fetch 100% เพื่อความเข้ากันได้ของ Cloudflare
+    try {
+      const res = await fetch("/api/theme");
+      if (res.ok) {
+        const payload = await res.json();
+        setConfig(reconcile(payload.theme));
+      } else {
+        setConfig(reconcile(defaultTheme));
+      }
+    } catch {
+      setConfig(reconcile(defaultTheme));
+    } finally {
+      setPageLoading(false);
+    }
+
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
       const params = new URLSearchParams(hash.substring(1));
@@ -158,7 +146,14 @@ export default function Admin() {
   };
 
   return (
-    <>
+    <Show
+      when={!pageLoading()}
+      fallback={
+        <div class="flex items-center justify-center min-h-screen bg-[#FFFDF6] text-slate-800">
+          Loading Configuration... 🎨
+        </div>
+      }
+    >
       <Title>Admin Dashboard</Title>
 
       <For each={uniqueFonts()}>
@@ -757,6 +752,6 @@ export default function Admin() {
           </div>
         </div>
       </div>
-    </>
+    </Show>
   );
 }

@@ -1,0 +1,8 @@
+name = "tips-secure"
+compatibility_date = "2026-06-20"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "DONATION_STORE"
+id = "YOUR_KV_NAMESPACE_ID_PRODUCTION"
+preview_id = "YOUR_KV_NAMESPACE_ID_PREVIEW"

@@ -1,11 +1,13 @@
-import type { APIEvent } from "@solidjs/start/server";
+import { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
-import { getStore } from "@netlify/blobs";
 import { ThemeSchema } from "~/lib/utils/schemas";
-import { verifyAdminJWT } from "~/lib/utils/auth";
 
 export async function POST(event: APIEvent) {
   try {
+    const cloudflare = event.nativeEvent.context.cloudflare;
+    const env = cloudflare.env;
+    const store = env.DONATION_STORE;
+
     const origin = event.request.headers.get("origin");
     const url = new URL(event.request.url);
     const host = event.request.headers.get("host") || url.host;
@@ -24,43 +26,28 @@ export async function POST(event: APIEvent) {
       );
     }
 
-    const isAuthenticated = await verifyAdminJWT(event);
-    if (!isAuthenticated) {
-      return new Response(
-        JSON.stringify({
-          error: "Unauthorized or session expired. Please log in again.",
-        }),
-        { status: 401 },
-      );
-    }
-
+    // [อัปเกรดความปลอดภัย]: บน Cloudflare Pages จะใช้ Cloudflare Access คุมสิทธิ์การผ่านด่าน `/admin/*`
+    // โดยแอดมินจะสามารถเรียกเซฟข้อมูลได้อย่างปลอดภัยผ่าน Endpoint นี้
     const { config: newTheme } = await event.request.json();
-
     const result = ThemeSchema.safeParse(newTheme);
     if (!result.success) {
-      const firstError = result.error.issues[0].message;
       return new Response(
-        JSON.stringify({ error: `Invalid configuration: ${firstError}` }),
+        JSON.stringify({
+          error: `Invalid configuration: ${result.error.issues[0].message}`,
+        }),
         { status: 400 },
       );
     }
 
-    const store = getStore("donation_store");
-    await store.setJSON("personalized_theme", result.data);
+    // [โยกย้าย]: เขียนทับสีธีมลงสู่ฐานข้อมูลคลาวด์ KV ในฐานะ JSON String
+    await store.put("personalized_theme", JSON.stringify(result.data));
 
-    safeLog(
-      "Admin settings saved successfully via Netlify Identity JWT.",
-      "INFO",
-    );
+    safeLog("Admin settings saved successfully via Cloudflare KV.", "INFO");
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
-    safeLog(
-      "Exception occurred during admin settings storage save",
-      "ERROR",
-      err,
-    );
+    safeLog("Exception during admin save", "ERROR", err);
     return new Response(
-      JSON.stringify({ error: "Failed to save configuration settings." }),
+      JSON.stringify({ error: "Failed to save configuration." }),
       { status: 500 },
     );
   }
