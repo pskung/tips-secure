@@ -4,14 +4,14 @@
 
 [template.environment]
   ADMIN_EMAILS = "Google account for admin (vtuber.main@gmail.com, graphic.designer@gmail.com, moderator.team@gmail.com)"
-  BEAM_API_KEY =  "[REDACTED]"
-  BEAM_WEBHOOK_SECRET =  "[REDACTED]"
-  BEAM_API_URL = "https://playground.api.beamcheckout.com"
-  TURNSTILE_SITE_KEY =  "[REDACTED]"
-  TURNSTILE_SECRET_KEY =  "[REDACTED]"
-  STREAMLABS_ACCESS_TOKEN =  "[REDACTED]"
-  STREAMELEMENTS_JWT = "[REDACTED]"
-  STREAMELEMENTS_CHANNEL_ID = "[REDACTED]"
+  BEAM_API_KEY =  "BEAM_API_KEY (Optional - Can be set later)"
+  BEAM_WEBHOOK_SECRET =  "BEAM_WEBHOOK_SECRET (Optional - Can be set later)"
+  BEAM_API_URL = "BEAM_API_URL (Optional - Can be set later)"
+  TURNSTILE_SITE_KEY =  "TURNSTILE_SITE_KEY (Optional - Can be set later)"
+  TURNSTILE_SECRET_KEY =  "TURNSTILE_SECRET_KEY (Optional - Can be set later)"
+  STREAMLABS_ACCESS_TOKEN =  "STREAMLABS_ACCESS_TOKEN (Optional - Can be set later)"
+  STREAMELEMENTS_JWT = "STREAMELEMENTS_JWT (Optional - Can be set later)"
+  STREAMELEMENTS_CHANNEL_ID = "STREAMELEMENTS_CHANNEL_ID (Optional - Can be set later)"
 
 [images]
   remote_images = ["https://i.ibb.co/.*"]
