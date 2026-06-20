@@ -164,4 +164,4 @@ Beam Checkout เป็นช่องทางรับเงิน:
 
 ## คำถามที่น่าสนใจ
 *   **เปลี่ยนชื่อเว็บอย่างไร** ไปที่เมนู **Project configuration > Change project name**
-*   **ตกแต่งหน้าโดเนทอย่างไร** ใช้เว็บที่ได้และเติม admin ตามหลัง `https://your-app.netlify.app/admin`
+*   **ตกแต่งหน้าโดเนทอย่างไร** นำ Link ที่ได้มาเติม admin ตามหลัง ตัวอย่าง `https://your-app.netlify.app/admin` เมื่อกด Save ให้รอประมาณ 60 วินาที แล้วทำการกด Refresh หน้าหลัก จึงจะเห็นผลลัพธ์ของการตกแต่ง
