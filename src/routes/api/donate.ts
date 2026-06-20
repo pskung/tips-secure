@@ -1,21 +1,22 @@
-import type { APIEvent } from "@solidjs/start/server";
+import { APIEvent } from "@solidjs/start/server";
 import { setCookie } from "vinxi/http";
 import { safeLog } from "~/lib/utils/logger";
 import { DonateInputSchema } from "~/lib/utils/schemas";
-import { getStore } from "@netlify/blobs";
 
 export async function POST(event: APIEvent) {
   const now = Date.now();
-
   try {
-    const body = await event.request.json();
+    const cloudflare = event.nativeEvent.context.cloudflare;
+    const env = cloudflare.env;
+    const store = env.DONATION_STORE;
 
+    const body = await event.request.json();
     const result = DonateInputSchema.safeParse(body);
     if (!result.success) {
-      const firstError = result.error.issues[0].message;
-      return new Response(JSON.stringify({ error: firstError }), {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({ error: result.error.issues[0].message }),
+        { status: 400 },
+      );
     }
 
     const {
@@ -28,9 +29,7 @@ export async function POST(event: APIEvent) {
     } = result.data;
 
     if (email_confirm) {
-      safeLog("Spam Bot Detected: Invisible honeypot trap triggered.", "WARN", {
-        email_confirm,
-      });
+      safeLog("Spam Bot Detected: Invisible honeypot trap triggered.", "WARN");
       return new Response(JSON.stringify({ error: "Operation rejected" }), {
         status: 400,
       });
@@ -46,7 +45,7 @@ export async function POST(event: APIEvent) {
 
     let minDonationAmount = 10;
     try {
-      const store = getStore("donation_store");
+      // [โยกย้าย]: ค้นหาเกณฑ์ขั้นต่ำไดนามิกผ่านคลาวด์ KV
       const theme = (await store.get("personalized_theme", {
         type: "json",
       })) as any;
@@ -54,33 +53,22 @@ export async function POST(event: APIEvent) {
         minDonationAmount = Number(theme.minDonationAmount);
       }
     } catch (err) {
-      safeLog(
-        "Dynamic validation fallback to 10 THB due to fetch failure",
-        "WARN",
-        err,
-      );
+      safeLog("Fallback to 10 THB due to KV fetch failure", "WARN", err);
     }
 
     if (amount < minDonationAmount) {
       return new Response(
         JSON.stringify({
-          error: `Donation amount must be at least ${minDonationAmount} THB.`,
+          error: `Donation must be at least ${minDonationAmount} THB.`,
         }),
         { status: 400 },
       );
     }
 
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    const turnstileSecret = env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) {
-      safeLog(
-        "Critical: TURNSTILE_SECRET_KEY is missing in production environment.",
-        "ERROR",
-      );
       return new Response(
-        JSON.stringify({
-          error:
-            "Security system is not fully initialized. Please contact administrator.",
-        }),
+        JSON.stringify({ error: "Security system not initialized." }),
         { status: 500 },
       );
     }
@@ -101,18 +89,14 @@ export async function POST(event: APIEvent) {
     const verifyData = await verifyResponse.json();
     if (!verifyData.success) {
       return new Response(
-        JSON.stringify({
-          error: "Security verification failed. Please try again.",
-        }),
+        JSON.stringify({ error: "Security verification failed." }),
         { status: 400 },
       );
     }
 
-    if (!process.env.BEAM_API_KEY) {
+    if (!env.BEAM_API_KEY) {
       return new Response(
-        JSON.stringify({
-          error: "Payment gateway credentials are not configured.",
-        }),
+        JSON.stringify({ error: "Payment gateway not configured." }),
         { status: 501 },
       );
     }
@@ -125,8 +109,8 @@ export async function POST(event: APIEvent) {
     const siteUrl = `${protocol}://${host}/`;
 
     const beamUrl =
-      process.env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
-    const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
+      env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+    const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
 
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
@@ -152,7 +136,6 @@ export async function POST(event: APIEvent) {
 
     const data = await response.json();
     if (!response.ok) {
-      safeLog("Failed to generate Beam payment link", "ERROR", data);
       return new Response(
         JSON.stringify({ error: "Failed to generate payment link." }),
         { status: response.status },
@@ -163,7 +146,7 @@ export async function POST(event: APIEvent) {
       maxAge: 60,
       path: "/",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "strict",
     });
 
@@ -171,7 +154,7 @@ export async function POST(event: APIEvent) {
       status: 200,
     });
   } catch (error) {
-    safeLog("Internal Fatal Exception in Payment Controller", "ERROR", error);
+    safeLog("Fatal exception in donate controller", "ERROR", error);
     return new Response(JSON.stringify({ error: "Internal server error." }), {
       status: 500,
     });

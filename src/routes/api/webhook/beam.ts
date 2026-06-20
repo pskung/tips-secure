@@ -1,11 +1,6 @@
-import type { APIEvent } from "@solidjs/start/server";
+import { APIEvent } from "@solidjs/start/server";
 import { safeLog } from "~/lib/utils/logger";
-import {
-  timingSafeCompare,
-  encryptPII,
-  generateOneTimeToken,
-} from "~/lib/utils/crypto";
-import { getStore } from "@netlify/blobs";
+import { timingSafeCompare } from "~/lib/utils/crypto";
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
@@ -13,13 +8,107 @@ const EXTERNAL_API = {
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
 
+// ฟังก์ชันซ่อมสัญญาณอัตโนมัติในหน่วยความจำ Workers Edge ผ่านระบบ waitUntil()
+async function retryAlertInBackground(
+  env: any,
+  transactionId: string,
+  donorName: string,
+  donorMessage: string,
+  amountInThb: number,
+  currency: string,
+) {
+  const store = env.DONATION_STORE;
+  let slSuccess = !env.STREAMLABS_ACCESS_TOKEN;
+  let seSuccess = !(env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID);
+
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const promises: Promise<any>[] = [];
+
+    if (env.STREAMLABS_ACCESS_TOKEN && !slSuccess) {
+      const params = new URLSearchParams();
+      params.append("access_token", env.STREAMLABS_ACCESS_TOKEN);
+      params.append("name", donorName);
+      params.append("message", donorMessage);
+      params.append("amount", String(amountInThb));
+      params.append("currency", currency);
+
+      promises.push(
+        fetch(EXTERNAL_API.STREAMLABS_DONATIONS, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString(),
+          signal: AbortSignal.timeout(5000),
+        })
+          .then((res) => {
+            if (res.ok) slSuccess = true;
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID && !seSuccess) {
+      const sePayload = {
+        user: { username: donorName },
+        message: donorMessage,
+        amount: Number(amountInThb),
+        currency,
+      };
+      promises.push(
+        fetch(EXTERNAL_API.STREAMELEMENTS_TIPS(env.STREAMELEMENTS_CHANNEL_ID), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${env.STREAMELEMENTS_JWT}`,
+          },
+          body: JSON.stringify(sePayload),
+          signal: AbortSignal.timeout(5000),
+        })
+          .then((res) => {
+            if (res.ok) seSuccess = true;
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+
+    if (slSuccess && seSuccess) break;
+
+    if (attempt < maxRetries) {
+      const backoffTime = Math.pow(2, attempt) * 1000;
+      await new Promise((r) => setTimeout(r, backoffTime));
+    }
+  }
+
+  // [โยกย้าย]: บันทึกสถานะพร้อมระบบระบุลบล้างคีย์อัตโนมัติใน 7 วัน (604800 วินาที)
+  if (slSuccess && seSuccess) {
+    await store.put(`processed_tx:${transactionId}`, "success", {
+      expirationTtl: 604800,
+    });
+    safeLog(`Background Retry Success: ${transactionId}`, "INFO");
+  } else {
+    await store.put(`processed_tx:${transactionId}`, "failed", {
+      expirationTtl: 604800,
+    });
+    safeLog(`Background Retry Permanently Failed: ${transactionId}`, "ERROR");
+  }
+}
+
 export async function POST(event: APIEvent) {
   try {
+    const cloudflare = event.nativeEvent.context.cloudflare;
+    const env = cloudflare.env;
+    const store = env.DONATION_STORE;
+    const ctx = cloudflare.context;
+
     const body = await event.request.json();
     const headers = event.request.headers;
 
     const callbackToken = headers.get("x-beam-webhook-token");
-    const expectedToken = process.env.BEAM_WEBHOOK_SECRET;
+    const expectedToken = env.BEAM_WEBHOOK_SECRET;
 
     if (
       !callbackToken ||
@@ -47,15 +136,12 @@ export async function POST(event: APIEvent) {
     if (isPaymentLinkPaid || isTransactionSuccess) {
       const transactionId =
         body.transactionId || body.chargeId || body.paymentLinkId;
-
       if (!transactionId) {
         return new Response(
           JSON.stringify({ error: "Missing transaction ID" }),
           { status: 400 },
         );
       }
-
-      const store = getStore({ name: "donation_store", consistency: "strong" });
 
       const isAlreadyProcessed = await store.get(
         `processed_tx:${transactionId}`,
@@ -83,11 +169,10 @@ export async function POST(event: APIEvent) {
         }
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
-        if (paymentLinkId) {
+        if (paymentLinkId && env.BEAM_API_KEY) {
           const beamUrl =
-            process.env.BEAM_API_URL ||
-            "https://playground.api.beamcheckout.com";
-          const authHeader = "Basic " + btoa(`${process.env.BEAM_API_KEY}:`);
+            env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+          const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
           try {
             const plResponse = await fetch(
               `${beamUrl}/api/v1/payment-links/${paymentLinkId}`,
@@ -98,7 +183,7 @@ export async function POST(event: APIEvent) {
             );
             if (plResponse.ok) {
               const plData = await plResponse.json();
-              const noteStr = plData.order?.internalNote;
+              const noteStr = plData?.order?.internalNote;
               if (noteStr) {
                 try {
                   const parsedNote = JSON.parse(noteStr);
@@ -119,9 +204,9 @@ export async function POST(event: APIEvent) {
       let seSuccess = false;
       const fastPathPromises: Promise<any>[] = [];
 
-      if (process.env.STREAMLABS_ACCESS_TOKEN) {
+      if (env.STREAMLABS_ACCESS_TOKEN) {
         const params = new URLSearchParams();
-        params.append("access_token", process.env.STREAMLABS_ACCESS_TOKEN);
+        params.append("access_token", env.STREAMLABS_ACCESS_TOKEN);
         params.append("name", donorName);
         params.append("message", donorMessage);
         params.append("amount", String(amountInThb));
@@ -143,10 +228,7 @@ export async function POST(event: APIEvent) {
         slSuccess = true;
       }
 
-      if (
-        process.env.STREAMELEMENTS_JWT &&
-        process.env.STREAMELEMENTS_CHANNEL_ID
-      ) {
+      if (env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID) {
         const sePayload = {
           user: { username: donorName },
           message: donorMessage,
@@ -155,14 +237,12 @@ export async function POST(event: APIEvent) {
         };
         fastPathPromises.push(
           fetch(
-            EXTERNAL_API.STREAMELEMENTS_TIPS(
-              process.env.STREAMELEMENTS_CHANNEL_ID,
-            ),
+            EXTERNAL_API.STREAMELEMENTS_TIPS(env.STREAMELEMENTS_CHANNEL_ID),
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.STREAMELEMENTS_JWT}`,
+                Authorization: `Bearer ${env.STREAMELEMENTS_JWT}`,
               },
               body: JSON.stringify(sePayload),
               signal: AbortSignal.timeout(800),
@@ -181,47 +261,28 @@ export async function POST(event: APIEvent) {
         await Promise.all(fastPathPromises);
       }
 
-      const now = Date.now();
+      // [โยกย้าย]: บันทึกธุรกรรมพร้อมระบบทำลายคีย์ตัวเองอัตโนมัติใน 7 วัน (604800 วินาที)
       if (slSuccess && seSuccess) {
-        await store.set(`processed_tx:${transactionId}`, "success");
-        await store.set(`tx_log:${now}:${transactionId}`, "success");
-        safeLog(`Fast-Path success and indexed: ${transactionId}`, "INFO");
+        await store.put(`processed_tx:${transactionId}`, "success", {
+          expirationTtl: 604800,
+        });
+        safeLog(`Fast-Path success: ${transactionId}`, "INFO");
       } else {
-        // [HOTFIX ADDED] ล็อกสถานะธุรกรรมทันทีเพื่อป้องกัน Race Condition ก่อนสุ่มส่งคิวงานซ้ำ
-        await store.set(`processed_tx:${transactionId}`, "retry_pending");
+        // อนุมัติและสั่งรันระบบ Retries ซ่อมแซมแบบอะซิงโครนัสในแรม Edge
+        await store.put(`processed_tx:${transactionId}`, "retry_pending", {
+          expirationTtl: 604800,
+        });
 
-        // สร้าง Token ไดนามิกรักษาระบบความปลอดภัยเบื้องหลัง
-        const oneTimeToken = generateOneTimeToken();
-
-        const alertTask = {
-          transactionId,
-          donorName: encryptPII(donorName),
-          donorMessage: encryptPII(donorMessage),
-          amountInThb,
-          currency,
-          createdAt: now,
-          isEncrypted: true,
-          oneTimeToken, // เซฟเก็บไว้คู่กับประวัติคิวงาน
-        };
-        await store.setJSON(`failed_alert:${transactionId}`, alertTask);
-
-        const url = new URL(event.request.url);
-        const host = headers.get("host") || url.host;
-        const protocol = headers.get("x-forwarded-proto") || url.protocol;
-
-        // ยิงสั่งงาน background retry โดยแนบคีย์ Token ชุดสุ่มเฉพาะกิจไปทดสอบด่านสิทธิ์
-        fetch(
-          `${protocol}://${host}/.netlify/functions/alert-retry-background`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Background-Token": oneTimeToken,
-            },
-            body: JSON.stringify({ transactionId }),
-            signal: AbortSignal.timeout(500),
-          },
-        ).catch(() => {});
+        ctx.waitUntil(
+          retryAlertInBackground(
+            env,
+            transactionId,
+            donorName,
+            donorMessage,
+            amountInThb,
+            currency,
+          ),
+        );
       }
     }
     return new Response(JSON.stringify({ success: true }), { status: 200 });
