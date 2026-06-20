@@ -1,5 +1,0 @@
-name = "tips-secure"
-compatibility_date = "2026-06-20"
-pages_build_output_dir = "dist" # ผลลัพธ์จากการ Build ของ Vinxi จะถูกสร้างเก็บไว้ที่โฟลเดอร์ dist
-
-compatibility_flags = [ "nodejs_compat" ]
