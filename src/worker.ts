@@ -1,14 +1,15 @@
 import { Hono } from "hono";
-import { safeLog } from "./lib/utils/logger"; // 🟢 ปรับเปลี่ยนเส้นทาง Relative Import ให้ถูกต้อง
+import { bodyLimit } from "hono/body-limit"; // 🟢 ดึงไลบรารีควบคุมขนาดคำร้องขอของ Hono
+import { safeLog } from "./lib/utils/logger";
 import { timingSafeCompare } from "./lib/utils/crypto";
 import { DonateInputSchema, ThemeSchema } from "./lib/utils/schemas";
 import defaultTheme from "./lib/config/theme.json";
 
-// กำหนดโครงสร้างตัวแปรระบบและผูกมัด Static Assets เข้ากับระบบหลังบ้าน
+// กำหนดโครงสร้างตัวแปรระบบ
 type Bindings = {
   DONATION_STORE: KVNamespace;
-  ASSETS: Fetcher; // 🟢 สิทธิ์การดึงข้อมูลไฟล์สถิตหน้าบ้านจากเอนจิน Workers Static Assets
-  ADMIN_PASSWORD?: string;
+  ASSETS: Fetcher;
+  ADMIN_PASSWORD_HASH?: string; // 🟢 ปรับเปลี่ยนจากความลับตรงเป็นรหัสแฮชเพื่อความปลอดภัยสูง
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   BEAM_WEBHOOK_SECRET?: string;
@@ -19,13 +20,37 @@ type Bindings = {
   STREAMELEMENTS_CHANNEL_ID?: string;
 };
 
-// ตั้งค่า Hono โดยตรงบนสิทธิ์ Workers
 const app = new Hono<{ Bindings: Bindings }>();
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
   STREAMELEMENTS_TIPS: (channelId: string) =>
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
+};
+
+// 🟢 ตัวกรองสยบสแปม DoS จำกัดขนาด JSON ขาเข้าสูงสุดไม่เกิน 16KB (เหลือเฟือสำหรับโดเนทและบันทึกสกิน)
+const jsonPayloadLimit = bodyLimit({
+  maxSize: 16 * 1024, // 16 Kilobytes
+  onError: (c) => {
+    return c.json(
+      { error: "Payload size limits exceeded. Action blocked." },
+      413,
+    );
+  },
+});
+
+// 🟢 ฟังก์ชันแปลงอักขระพิเศษ (HTML Entity Encoder) สกัดช่องโหว่ XSS กลั่นแกล้งบนหน้าจอ OBS [1]
+const escapeHtml = (str: string): string => {
+  return str.replace(/[&<>"']/g, (m) => {
+    const map: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#x27;",
+    };
+    return map[m] || m;
+  });
 };
 
 // ฟังก์ชันเข้ารหัส SHA-256 แบบไร้โมดูล Node.js [1]
@@ -150,6 +175,7 @@ api.get("/theme", async (c) => {
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
   } catch (error) {
+    // 🟢 Finding #3: ดักจับ Error ส่งออกประวัติลับและตอบกลับทึบแสง (Opaque Fallback Response)
     safeLog("Theme fetch failed, falling back to default.", "WARN", error);
     return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
       "Cache-Control":
@@ -159,17 +185,23 @@ api.get("/theme", async (c) => {
 });
 
 // [POST] /api/admin/login: ตรวจสอบความปลอดภัยคัดแยกสแปมบอทและมอบรหัสเข้าใช้
-api.post("/admin/login", async (c) => {
+// 🟢 ติดตั้งคำสั่ง jsonPayloadLimit เพื่อควบคุมความปลอดภัยของอินพุต DoS
+api.post("/admin/login", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
     const body = await c.req.json();
     const inputPassword = body.password;
     const turnstileToken = body.turnstile_token;
-    const expectedPassword = env.ADMIN_PASSWORD;
 
-    if (!expectedPassword || expectedPassword.trim() === "") {
+    // 🟢 Finding #7: ดึงค่าตรวจสอบเปรียบเทียบในลักษณะแฮช (ADMIN_PASSWORD_HASH) ปลอดภัย 100%
+    const expectedPasswordHash = env.ADMIN_PASSWORD_HASH;
+
+    if (!expectedPasswordHash || expectedPasswordHash.trim() === "") {
       return c.json(
-        { error: "System Error: Admin password not configured on server." },
+        {
+          error:
+            "System Error: Admin authentication hash is not configured on server.",
+        },
         500,
       );
     }
@@ -205,20 +237,29 @@ api.post("/admin/login", async (c) => {
       return c.json({ error: "Security verification failed. Try again." }, 400);
     }
 
-    if (!inputPassword || !timingSafeCompare(inputPassword, expectedPassword)) {
+    // 🟢 Finding #7: นำรหัสที่พิมพ์เข้ามาไปแฮชเป็น SHA-256 ก่อนเปรียบเทียบแบบ Timing-Safe
+    const hashedInput = await sha256(inputPassword || "");
+
+    if (
+      !inputPassword ||
+      !timingSafeCompare(hashedInput, expectedPasswordHash)
+    ) {
       safeLog("Unsuccessful login attempt to admin dashboard.", "WARN");
       return c.json({ error: "Invalid password." }, 401);
     }
 
-    const token = await sha256(expectedPassword);
+    // ส่งคืนลายเซ็น Token ที่ปลอดภัยขึ้นอยู่กับรหัสแฮชเพื่อทำ Stateless Session
+    const token = await sha256(expectedPasswordHash);
     return c.json({ success: true, token }, 200);
   } catch (error) {
+    safeLog("Admin login controller exception raised", "ERROR", error);
     return c.json({ error: "Server connection error" }, 500);
   }
 });
 
 // [POST] /api/admin/save: บันทึกความงามสกินใหม่ และป้องกันจู่โจมข้ามไซต์ (Anti-CSRF)
-api.post("/admin/save", async (c) => {
+// 🟢 ติดตั้งคำสั่ง jsonPayloadLimit ป้องกันแอดมินหรือผู้ป่วนยิงไฟล์สกินขนาด DoS เข้ามาในแรม
+api.post("/admin/save", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
     const store = env.DONATION_STORE;
@@ -238,13 +279,15 @@ api.post("/admin/save", async (c) => {
     }
 
     const authHeader = c.req.header("Authorization");
-    const expectedPassword = env.ADMIN_PASSWORD;
 
-    if (!expectedPassword || expectedPassword.trim() === "") {
-      return c.json({ error: "Admin password is not set" }, 500);
+    // 🟢 Finding #7: ยืนยัน Token ขาเข้าด้วยรหัสแฮชลับ
+    const expectedPasswordHash = env.ADMIN_PASSWORD_HASH;
+
+    if (!expectedPasswordHash || expectedPasswordHash.trim() === "") {
+      return c.json({ error: "Admin authentication hash is not set" }, 500);
     }
 
-    const expectedToken = await sha256(expectedPassword);
+    const expectedToken = await sha256(expectedPasswordHash);
     const clientToken = authHeader?.replace("Bearer ", "");
 
     if (!clientToken || !timingSafeCompare(clientToken, expectedToken)) {
@@ -277,7 +320,8 @@ api.post("/admin/save", async (c) => {
 });
 
 // [POST] /api/donate: ตรวจประวัติตัดความเสี่ยง ยืนยันผู้จ่าย และออกบิล QR Code
-api.post("/donate", async (c) => {
+// 🟢 ติดตั้งตัวบล็อกขนาดอินพุต DoS ป้องกันผู้ป่วนส่ง Payload ข้อมูลยักษ์เข้าเครื่อง Edge
+api.post("/donate", jsonPayloadLimit, async (c) => {
   const now = Date.now();
   try {
     const env = c.env;
@@ -358,6 +402,10 @@ api.post("/donate", async (c) => {
       return c.json({ error: "Payment gateway not configured." }, 501);
     }
 
+    // 🟢 Finding #1: ดำเนินการฟิลเตอร์ล้างค่าอักขระพิเศษสกัดช่องโหว่ XSS จากชื่อผู้โดเนทและข้อความสนับสนุน
+    const sanitizedName = escapeHtml(name.trim());
+    const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
+
     const netAmountInSatang = Math.round(amount * 100);
     const url = new URL(c.req.url);
     const host = c.req.header("host") || url.host;
@@ -379,11 +427,11 @@ api.post("/donate", async (c) => {
         order: {
           currency: "THB",
           netAmount: netAmountInSatang,
-          description: `Support payment by ${name}`,
+          description: `Support payment by ${sanitizedName}`,
           referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
           internalNote: JSON.stringify({
-            donor_name: name,
-            donor_message: message || "",
+            donor_name: sanitizedName,
+            donor_message: sanitizedMessage || "",
           }),
         },
       }),
@@ -392,9 +440,14 @@ api.post("/donate", async (c) => {
 
     const data: any = await response.json();
     if (!response.ok) {
+      // 🟢 Finding #3: ตรวจสอบและดักจับ Error ส่งออกประวัติลับและตอบกลับหน้าบ้านกลาง ๆ ป้องกัน Trace Leakage
+      safeLog("Beam API generation failed", "ERROR", data);
       return c.json(
-        { error: "Failed to generate payment link." },
-        response.status as any,
+        {
+          error:
+            "Failed to generate payment link. Gateway is temporarily unavailable.",
+        },
+        502,
       );
     }
 
@@ -410,12 +463,16 @@ api.post("/donate", async (c) => {
     });
   } catch (error) {
     safeLog("Fatal exception in donate controller", "ERROR", error);
-    return c.json({ error: "Internal server error." }, 500);
+    return c.json(
+      { error: "An unexpected error occurred. Please try again later." },
+      500,
+    );
   }
 });
 
 // [POST] /api/webhook/beam: ตรวจบิลจ่ายเสร็จ และยิงแจ้งขึ้นจอทันทีด้วย waitUntil [1]
-api.post("/webhook/beam", async (c) => {
+// 🟢 ติดตั้งตัวบล็อกขนาดอินพุต DoS ป้องกันคำขอยักษ์จากสคริปต์สปริงบอร์ดโจมตีเกตเวย์
+api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
     const store = env.DONATION_STORE;
@@ -471,10 +528,11 @@ api.post("/webhook/beam", async (c) => {
       if (orderNote) {
         try {
           const parsedNote = JSON.parse(orderNote);
-          donorName = parsedNote.donor_name || "Anonymous";
-          donorMessage = parsedNote.donor_message || "";
+          // 🟢 Finding #1: สกัด XSS ด่านสุดท้ายก่อนส่งมอบขึ้นสตรีมเมอร์
+          donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
+          donorMessage = escapeHtml(parsedNote.donor_message || "");
         } catch {
-          donorName = orderNote || "Anonymous";
+          donorName = escapeHtml(orderNote || "Anonymous");
         }
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
@@ -496,10 +554,11 @@ api.post("/webhook/beam", async (c) => {
               if (noteStr) {
                 try {
                   const parsedNote = JSON.parse(noteStr);
-                  donorName = parsedNote.donor_name || "Anonymous";
-                  donorMessage = parsedNote.donor_message || "";
+                  // 🟢 Finding #1: สกัด XSS จากกรณีเรียกดูย้อนหลัง
+                  donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
+                  donorMessage = escapeHtml(parsedNote.donor_message || "");
                 } catch {
-                  donorName = noteStr || "Anonymous";
+                  donorName = escapeHtml(noteStr || "Anonymous");
                 }
               }
             }
@@ -594,18 +653,15 @@ api.post("/webhook/beam", async (c) => {
     }
     return c.json({ success: true }, 200);
   } catch (error) {
+    // 🟢 Finding #3: ซ่อน Error ของการเชื่อมต่อ Webhook
     safeLog("Fatal Webhook Controller Error", "ERROR", error);
-    return c.json({ error: "Fail" }, 500);
+    return c.json({ error: "Fail. Webhook connection refused." }, 500);
   }
 });
 
-// -----------------------------------------------------------------------------
-// 🟢 หัวใจสำคัญ: ระบบ Fallback เสิร์ฟไฟล์สถิตหน้าบ้านผ่านพอร์ต ASSETS
-// -----------------------------------------------------------------------------
+// ระบบ Fallback เสิร์ฟไฟล์สถิตหน้าบ้านผ่านพอร์ต ASSETS
 app.all("*", async (c) => {
-  // หากผู้ใช้ไม่ได้เรียกเข้าหลังบ้าน /api ให้ส่งต่อคำสั่งขอไฟล์ไปที่ Assets Binding ของ Workers
   return await c.env.ASSETS.fetch(c.req.raw);
 });
 
-// สั่งจ่ายออกแอปพลิเคชันรูปแบบ ES Modules สำหรับระบบ Workers
 export default app;
