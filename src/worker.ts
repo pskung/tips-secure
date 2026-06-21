@@ -7,7 +7,7 @@ import { DonateInputSchema, ThemeSchema } from "./lib/utils/schemas";
 import defaultTheme from "./lib/config/theme.json";
 
 type Bindings = {
-  DONATION_STORE: KVNamespace;
+  DB: D1Database;
   ASSETS: Fetcher;
   ADMIN_PASSWORD?: string;
   TURNSTILE_SECRET_KEY?: string;
@@ -66,7 +66,7 @@ async function retryAlertInBackground(
   amountInThb: number,
   currency: string,
 ) {
-  const store = env.DONATION_STORE;
+  const db = env.DB;
   let slSuccess = !env.STREAMLABS_ACCESS_TOKEN;
   let seSuccess = !(env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID);
 
@@ -132,15 +132,22 @@ async function retryAlertInBackground(
     }
   }
 
+  const nowEpoch = Math.floor(Date.now() / 1000);
   if (slSuccess && seSuccess) {
-    await store.put(`processed_tx:${transactionId}`, "success", {
-      expirationTtl: 604800,
-    });
+    await db
+      .prepare(
+        "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+      )
+      .bind(transactionId, "success", nowEpoch)
+      .run();
     safeLog(`Background Retry Success: ${transactionId}`, "INFO");
   } else {
-    await store.put(`processed_tx:${transactionId}`, "failed", {
-      expirationTtl: 604800,
-    });
+    await db
+      .prepare(
+        "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+      )
+      .bind(transactionId, "failed", nowEpoch)
+      .run();
     safeLog(`Background Retry Permanently Failed: ${transactionId}`, "ERROR");
   }
 }
@@ -150,19 +157,20 @@ const api = app.basePath("/api");
 api.get("/theme", async (c) => {
   const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
   try {
-    const store = c.env.DONATION_STORE;
-    if (!store) {
-      safeLog(
-        "Warning: DONATION_STORE is not bound to the environment.",
-        "WARN",
-      );
+    const db = c.env.DB;
+    if (!db) {
+      safeLog("Warning: DB is not bound to the environment.", "WARN");
       return c.json({ theme: defaultTheme, turnstileSiteKey }, 200);
     }
 
-    const theme = await store.get("personalized_theme", { type: "json" });
-    const mergedTheme = { ...defaultTheme, ...(theme || {}) };
+    const result = await db
+      .prepare("SELECT value FROM settings WHERE key = ?")
+      .bind("personalized_theme")
+      .first<{ value: string }>();
 
-    return c.json({ theme: mergedTheme, turnstileSiteKey }, 200, {
+    const theme = result ? JSON.parse(result.value) : defaultTheme;
+
+    return c.json({ theme, turnstileSiteKey }, 200, {
       "Cache-Control":
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
@@ -275,7 +283,7 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
 api.post("/admin/save", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
-    const store = env.DONATION_STORE;
+    const db = env.DB;
 
     const origin = c.req.header("origin");
     const url = new URL(c.req.url);
@@ -331,11 +339,15 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
       );
     }
 
-    if (!store) {
-      return c.json({ error: "KV database not available on server" }, 500);
+    if (!db) {
+      return c.json({ error: "Database not available on server" }, 500);
     }
 
-    await store.put("personalized_theme", JSON.stringify(result.data));
+    await db
+      .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+      .bind("personalized_theme", JSON.stringify(result.data))
+      .run();
+
     safeLog("Admin settings saved successfully.", "INFO");
     return c.json({ success: true }, 200);
   } catch (err) {
@@ -348,7 +360,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
   const now = Date.now();
   try {
     const env = c.env;
-    const store = env.DONATION_STORE;
+    const db = env.DB;
 
     const body = await c.req.json();
     const result = DonateInputSchema.safeParse(body);
@@ -377,16 +389,21 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     let minDonationAmount = 10;
     try {
-      if (store) {
-        const theme: any = await store.get("personalized_theme", {
-          type: "json",
-        });
-        if (theme && theme.minDonationAmount) {
-          minDonationAmount = Number(theme.minDonationAmount);
+      if (db) {
+        const result = await db
+          .prepare("SELECT value FROM settings WHERE key = ?")
+          .bind("personalized_theme")
+          .first<{ value: string }>();
+
+        if (result) {
+          const theme = JSON.parse(result.value);
+          if (theme && theme.minDonationAmount) {
+            minDonationAmount = Number(theme.minDonationAmount);
+          }
         }
       }
     } catch (err) {
-      safeLog("Fallback to 10 THB due to KV fetch failure", "WARN", err);
+      safeLog("Fallback to 10 THB due to DB fetch failure", "WARN", err);
     }
 
     if (amount < minDonationAmount) {
@@ -494,7 +511,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
-    const store = env.DONATION_STORE;
+    const db = env.DB;
     const ctx = c.executionCtx;
 
     const body = await c.req.json();
@@ -525,13 +542,15 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
         return c.json({ error: "Missing transaction ID" }, 400);
       }
 
-      if (!store) {
-        return c.json({ error: "KV database not available" }, 500);
+      if (!db) {
+        return c.json({ error: "Database not available" }, 500);
       }
 
-      const isAlreadyProcessed = await store.get(
-        `processed_tx:${transactionId}`,
-      );
+      const isAlreadyProcessed = await db
+        .prepare("SELECT status FROM transactions WHERE id = ?")
+        .bind(transactionId)
+        .first<{ status: string }>();
+
       if (isAlreadyProcessed) {
         return c.json({ success: true, message: "Duplicate skipped" }, 200);
       }
@@ -644,15 +663,22 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
         await Promise.all(fastPathPromises);
       }
 
+      const nowEpoch = Math.floor(Date.now() / 1000);
       if (slSuccess && seSuccess) {
-        await store.put(`processed_tx:${transactionId}`, "success", {
-          expirationTtl: 604800,
-        });
+        await db
+          .prepare(
+            "INSERT INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+          )
+          .bind(transactionId, "success", nowEpoch)
+          .run();
         safeLog(`Fast-Path success: ${transactionId}`, "INFO");
       } else {
-        await store.put(`processed_tx:${transactionId}`, "retry_pending", {
-          expirationTtl: 604800,
-        });
+        await db
+          .prepare(
+            "INSERT INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+          )
+          .bind(transactionId, "retry_pending", nowEpoch)
+          .run();
 
         ctx.waitUntil(
           retryAlertInBackground(
@@ -665,6 +691,17 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
           ),
         );
       }
+
+      const sevenDaysAgo = nowEpoch - 7 * 24 * 60 * 60;
+      ctx.waitUntil(
+        db
+          .prepare("DELETE FROM transactions WHERE created_at < ?")
+          .bind(sevenDaysAgo)
+          .run()
+          .catch((err: any) =>
+            safeLog("D1 old transaction purging failed", "WARN", err),
+          ),
+      );
     }
     return c.json({ success: true }, 200);
   } catch (error) {
