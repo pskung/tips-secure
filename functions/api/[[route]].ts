@@ -127,9 +127,20 @@ async function retryAlertInBackground(
 // [GET] /api/theme: จัดส่งสกินตกแต่งความละเอียดสูง พร้อมการแคชบน Edge CDN
 // -----------------------------------------------------------------------------
 app.get("/theme", async (c) => {
+  // ดึงค่า Site Key ขึ้นมารอก่อนเสมอเพื่อความปลอดภัย
+  const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
+
   try {
     const store = c.env.DONATION_STORE;
-    const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
+
+    // ตรวจสอบโครงสร้าง: หากไม่ได้ผูกมัด KV ให้ดึงค่า Default ไปทำงานต่อโดยไม่ปล่อยให้ระบบล้มเหลว
+    if (!store) {
+      safeLog(
+        "Warning: DONATION_STORE is not bound to the environment.",
+        "WARN",
+      );
+      return c.json({ theme: defaultTheme, turnstileSiteKey }, 200);
+    }
 
     const theme = await store.get("personalized_theme", { type: "json" });
     const mergedTheme = { ...defaultTheme, ...(theme || {}) };
@@ -139,14 +150,12 @@ app.get("/theme", async (c) => {
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
   } catch (error) {
-    return c.json(
-      { theme: defaultTheme, turnstileSiteKey: "[REDACTED]" },
-      200,
-      {
-        "Cache-Control":
-          "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
-      },
-    );
+    // หากเกิด Error อื่น ๆ ให้ส่ง Site Key ตัวจริงกลับไปหน้าบ้านเสมอ ห้ามส่ง "[REDACTED]"
+    safeLog("Theme fetch failed, falling back to default.", "WARN", error);
+    return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
+      "Cache-Control":
+        "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
+    });
   }
 });
 
