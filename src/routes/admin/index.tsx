@@ -1,4 +1,20 @@
-// src/routes/admin/index.tsx
+import type { ThemeConfig } from "~/lib/utils/schemas"; // ดึงสกินสเปกที่มีอยู่แล้วมาใช้คุม
+
+interface ThemeResponse {
+  theme: ThemeConfig;
+  turnstileSiteKey: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  token?: string;
+  error?: string;
+}
+
+interface SaveResponse {
+  success: boolean;
+  error?: string;
+}
 import {
   createSignal,
   createMemo,
@@ -79,7 +95,7 @@ export default function Admin() {
     try {
       const res = await fetch("/api/theme");
       if (res.ok) {
-        const payload = await res.json();
+        const payload = (await res.json()) as ThemeResponse;
         setConfig(reconcile(payload.theme));
         setTurnstileSiteKey(payload.turnstileSiteKey);
       } else {
@@ -160,9 +176,9 @@ export default function Admin() {
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as LoginResponse;
       if (res.ok && data.success) {
-        sessionStorage.setItem("admin_token", data.token);
+        sessionStorage.setItem("admin_token", data.token || "");
         setIsAuthenticated(true);
       } else {
         setLoginError(data.error || "Incorrect Password.");
@@ -201,7 +217,7 @@ export default function Admin() {
         return;
       }
 
-      const resData = await res.json();
+      const resData = (await res.json()) as SaveResponse;
       if (res.ok && resData.success) {
         alert("Configuration saved successfully.");
       } else {

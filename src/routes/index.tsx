@@ -1,3 +1,14 @@
+import type { ThemeConfig } from "~/lib/utils/schemas";
+
+interface ThemeResponse {
+  theme: ThemeConfig;
+  turnstileSiteKey: string;
+}
+
+interface DonateResponse {
+  invoice_url?: string;
+  error?: string;
+}
 import {
   createSignal,
   createMemo,
@@ -154,7 +165,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/theme");
       if (res.ok) {
-        const payload = await res.json();
+        const payload = (await res.json()) as ThemeResponse;
         setThemeData(payload.theme);
         setTurnstileSiteKey(payload.turnstileSiteKey);
       } else {
@@ -323,7 +334,7 @@ export default function Home() {
         }),
       });
 
-      const resData = await res.json();
+      const resData = (await res.json()) as DonateResponse;
       if (res.ok && resData.invoice_url) {
         localStorage.setItem("last_donate_request", String(Date.now()));
         window.location.href = resData.invoice_url;
