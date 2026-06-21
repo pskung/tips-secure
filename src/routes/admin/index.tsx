@@ -264,11 +264,6 @@ export default function Admin() {
           }
         `}
       </style>
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        async
-        defer
-      ></script>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -442,7 +437,7 @@ export default function Admin() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
+                      placeholder="e.g., https://i.ibb.co/avatar.png"
                       class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
                       value={config.avatarUrl || ""}
                       onInput={(e) => {
@@ -452,6 +447,10 @@ export default function Admin() {
                         setConfig("avatarUrl", parsed);
                       }}
                     />
+                    <p class="text-[10px] text-[#7C6E65] mt-1 italic">
+                      Supports HTML/BBCode/Direct Link (e.g., ImgBB).
+                      Auto-parsed.
+                    </p>
                     <Show when={config.avatarUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -471,7 +470,7 @@ export default function Admin() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter image URL, e.g., https://i.ibb.co/..."
+                      placeholder="e.g., https://i.ibb.co/banner.png"
                       class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs font-bold"
                       value={config.bannerUrl || ""}
                       onInput={(e) => {
@@ -481,6 +480,10 @@ export default function Admin() {
                         setConfig("bannerUrl", parsed);
                       }}
                     />
+                    <p class="text-[10px] text-[#7C6E65] mt-1 italic">
+                      Supports HTML/BBCode/Direct Link (e.g., ImgBB).
+                      Auto-parsed.
+                    </p>
                     <Show when={config.bannerUrl}>
                       <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                         <span class="text-[10px] text-emerald-600 font-bold">
@@ -499,6 +502,7 @@ export default function Admin() {
                   <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
                     🔗 Social Media Links
                   </h3>
+
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label class="block text-xs font-bold text-[#5C4F45] mb-1">
@@ -626,10 +630,8 @@ export default function Admin() {
                           setConfig("bgType", e.currentTarget.value)
                         }
                       >
-                        <option value="solid">🎨 Solid Color (สีทึบ)</option>
-                        <option value="image">
-                          🌄 Image Background (รูปภาพ)
-                        </option>
+                        <option value="solid">🎨 Solid Color</option>
+                        <option value="image">🌄 Image Background</option>
                       </select>
                     </div>
 
@@ -665,7 +667,7 @@ export default function Admin() {
                       </label>
                       <input
                         type="text"
-                        placeholder="https://image-url.com/..."
+                        placeholder="e.g., https://i.ibb.co/background.png"
                         class="w-full px-3 py-2 bg-white border border-[#E5DCCF] rounded-xl text-xs font-bold"
                         value={config.bgUrl || ""}
                         onInput={(e) => {
@@ -675,6 +677,10 @@ export default function Admin() {
                           setConfig("bgUrl", parsed);
                         }}
                       />
+                      <p class="text-[10px] text-[#7C6E65] mt-1 italic">
+                        💡 Supports HTML/BBCode/Direct Link (e.g., ImgBB).
+                        Auto-parsed.
+                      </p>
                       <Show when={config.bgUrl}>
                         <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
                           <span class="text-[10px] text-emerald-600 font-bold">
