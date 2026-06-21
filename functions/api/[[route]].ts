@@ -593,3 +593,4 @@ app.post("/webhook/beam", async (c) => {
 
 // สั่งจ่ายออกตัวประสานงาน Hono ให้รองรับระบบ Cloudflare Pages Functions
 export const onRequest = handle(app);
+export default app;
