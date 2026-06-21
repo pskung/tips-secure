@@ -15,6 +15,7 @@ interface SaveResponse {
   success: boolean;
   error?: string;
 }
+
 import {
   createSignal,
   createMemo,
@@ -58,6 +59,8 @@ export default function Admin() {
     tiktokUrl: "",
     avatarUrl: "",
     bannerUrl: "",
+    bgType: "image",
+    bgColor: "#FFFDF6",
     bgUrl: "",
     mainFontFamily: "Kanit",
     minDonationAmount: 10,
@@ -261,6 +264,11 @@ export default function Admin() {
           }
         `}
       </style>
+      <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        async
+        defer
+      ></script>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -430,7 +438,7 @@ export default function Admin() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Profile Image URL (Avatar)
+                      Profile Image URL (Avatar) (400x400)
                     </label>
                     <input
                       type="text"
@@ -548,6 +556,48 @@ export default function Admin() {
                         }
                       />
                     </div>
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Facebook
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://facebook.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
+                        value={config.facebookUrl || ""}
+                        onInput={(e) =>
+                          setConfig("facebookUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Instagram
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://instagram.com/..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
+                        value={config.instagramUrl || ""}
+                        onInput={(e) =>
+                          setConfig("instagramUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        TikTok
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tiktok.com/@..."
+                        class="w-full px-3 py-2 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-xs"
+                        value={config.tiktokUrl || ""}
+                        onInput={(e) =>
+                          setConfig("tiktokUrl", e.currentTarget.value)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -555,10 +605,91 @@ export default function Admin() {
 
             <div class="bg-white border border-[#F0EAE1] rounded-3xl p-6 space-y-5 shadow-xs">
               <h2 class="text-xs font-black uppercase text-[#1F160E] border-b border-[#F0EAE1] pb-2 tracking-widest flex items-center gap-2">
-                <span>🎨</span> Color Palette & Donation Presets
+                <span>🎨</span> Background & Color Configurations
               </h2>
 
               <div class="space-y-4">
+                <div class="border border-[#F0EAE1] p-4 rounded-2xl bg-[#FFFDF6]/50 space-y-3">
+                  <h3 class="text-xs font-black text-[#E87A5D] uppercase tracking-wider">
+                    🖼️ Background Settings
+                  </h3>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Background Type
+                      </label>
+                      <select
+                        class="w-full px-3 py-2 bg-white border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                        value={config.bgType || "solid"}
+                        onChange={(e) =>
+                          setConfig("bgType", e.currentTarget.value)
+                        }
+                      >
+                        <option value="solid">🎨 Solid Color (สีทึบ)</option>
+                        <option value="image">
+                          🌄 Image Background (รูปภาพ)
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Background Solid Color
+                      </label>
+                      <div class="flex gap-2">
+                        <input
+                          type="color"
+                          class="w-8 h-8 border-0 rounded-lg cursor-pointer"
+                          value={config.bgColor || "#FFFDF6"}
+                          onInput={(e) =>
+                            setConfig("bgColor", e.currentTarget.value)
+                          }
+                        />
+                        <input
+                          type="text"
+                          class="flex-1 px-3 py-1 bg-white border border-[#E5DCCF] rounded-xl text-[#2C2520] text-xs font-mono uppercase"
+                          value={config.bgColor || ""}
+                          onInput={(e) =>
+                            setConfig("bgColor", e.currentTarget.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Show when={config.bgType === "image"}>
+                    <div class="pt-2 animate-fade-in">
+                      <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                        Background Image URL (1920x1080)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://image-url.com/..."
+                        class="w-full px-3 py-2 bg-white border border-[#E5DCCF] rounded-xl text-xs font-bold"
+                        value={config.bgUrl || ""}
+                        onInput={(e) => {
+                          const parsed = parseDirectImageUrl(
+                            e.currentTarget.value,
+                          );
+                          setConfig("bgUrl", parsed);
+                        }}
+                      />
+                      <Show when={config.bgUrl}>
+                        <div class="mt-2 flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#F0EAE1]">
+                          <span class="text-[10px] text-emerald-600 font-bold">
+                            ✓ Active
+                          </span>
+                          <img
+                            src={config.bgUrl}
+                            class="w-16 h-10 rounded-md object-cover border"
+                          />
+                        </div>
+                      </Show>
+                    </div>
+                  </Show>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
