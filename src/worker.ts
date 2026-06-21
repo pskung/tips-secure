@@ -721,16 +721,18 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
         );
       }
 
-      const sevenDaysAgo = nowEpoch - 7 * 24 * 60 * 60;
-      ctx.waitUntil(
-        db
-          .prepare("DELETE FROM transactions WHERE created_at < ?")
-          .bind(sevenDaysAgo)
-          .run()
-          .catch((err: any) =>
-            safeLog("D1 old transaction purging failed", "WARN", err),
-          ),
-      );
+      if (Math.random() < 0.01) {
+        const sevenDaysAgo = nowEpoch - 7 * 24 * 60 * 60;
+        ctx.waitUntil(
+          db
+            .prepare("DELETE FROM transactions WHERE created_at < ?")
+            .bind(sevenDaysAgo)
+            .run()
+            .catch((err: any) =>
+              safeLog("D1 old transaction purging failed", "WARN", err),
+            ),
+        );
+      }
     }
     return c.json({ success: true }, 200);
   } catch (error) {
