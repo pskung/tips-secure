@@ -1,13 +1,11 @@
-# -----------------------------------------------------------------------------
-# ⚙️ โครงสร้างพื้นฐานของระบบ (Core Configuration)
-# -----------------------------------------------------------------------------
+#:schema node_modules/wrangler/config-schema.json
 name = "tips-secure"
-main = "functions/api/[[route]].ts"
+
+main = "src/worker.ts"
 compatibility_date = "2026-06-16"
 
-# -----------------------------------------------------------------------------
-# 🎨 การจัดการไฟล์หน้าเว็บถาวร (Workers Static Assets Setup)
-# -----------------------------------------------------------------------------
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+
+not_found_handling = "single-page-application"

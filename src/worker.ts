@@ -1,13 +1,13 @@
 import { Hono } from "hono";
-import { handle } from "hono/cloudflare-pages";
-import { safeLog } from "../../src/lib/utils/logger";
-import { timingSafeCompare } from "../../src/lib/utils/crypto";
-import { DonateInputSchema, ThemeSchema } from "../../src/lib/utils/schemas";
-import defaultTheme from "../../src/lib/config/theme.json";
+import { safeLog } from "./lib/utils/logger"; // 🟢 ปรับเปลี่ยนเส้นทาง Relative Import ให้ถูกต้อง
+import { timingSafeCompare } from "./lib/utils/crypto";
+import { DonateInputSchema, ThemeSchema } from "./lib/utils/schemas";
+import defaultTheme from "./lib/config/theme.json";
 
-// กำหนดโครงสร้างตัวแปรระบบ (Types) สำหรับระบบจำหน่ายบน Cloudflare Pages
+// กำหนดโครงสร้างตัวแปรระบบและผูกมัด Static Assets เข้ากับระบบหลังบ้าน
 type Bindings = {
   DONATION_STORE: KVNamespace;
+  ASSETS: Fetcher; // 🟢 สิทธิ์การดึงข้อมูลไฟล์สถิตหน้าบ้านจากเอนจิน Workers Static Assets
   ADMIN_PASSWORD?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
@@ -19,7 +19,8 @@ type Bindings = {
   STREAMELEMENTS_CHANNEL_ID?: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
+// ตั้งค่า Hono โดยตรงบนสิทธิ์ Workers
+const app = new Hono<{ Bindings: Bindings }>();
 
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
@@ -124,16 +125,15 @@ async function retryAlertInBackground(
 }
 
 // -----------------------------------------------------------------------------
-// [GET] /api/theme: จัดส่งสกินตกแต่งความละเอียดสูง พร้อมการแคชบน Edge CDN
+// กลุ่มเราเตอร์ประมวลผลข้อมูลหลังบ้าน (Hono API Routes under /api/*)
 // -----------------------------------------------------------------------------
-app.get("/theme", async (c) => {
-  // ดึงค่า Site Key ขึ้นมารอก่อนเสมอเพื่อความปลอดภัย
-  const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
+const api = app.basePath("/api");
 
+// [GET] /api/theme: จัดส่งสกินตกแต่งความละเอียดสูง พร้อมการแคชบน Edge CDN
+api.get("/theme", async (c) => {
+  const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
   try {
     const store = c.env.DONATION_STORE;
-
-    // ตรวจสอบโครงสร้าง: หากไม่ได้ผูกมัด KV ให้ดึงค่า Default ไปทำงานต่อโดยไม่ปล่อยให้ระบบล้มเหลว
     if (!store) {
       safeLog(
         "Warning: DONATION_STORE is not bound to the environment.",
@@ -150,7 +150,6 @@ app.get("/theme", async (c) => {
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
   } catch (error) {
-    // หากเกิด Error อื่น ๆ ให้ส่ง Site Key ตัวจริงกลับไปหน้าบ้านเสมอ ห้ามส่ง "[REDACTED]"
     safeLog("Theme fetch failed, falling back to default.", "WARN", error);
     return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
       "Cache-Control":
@@ -159,10 +158,8 @@ app.get("/theme", async (c) => {
   }
 });
 
-// -----------------------------------------------------------------------------
 // [POST] /api/admin/login: ตรวจสอบความปลอดภัยคัดแยกสแปมบอทและมอบรหัสเข้าใช้
-// -----------------------------------------------------------------------------
-app.post("/admin/login", async (c) => {
+api.post("/admin/login", async (c) => {
   try {
     const env = c.env;
     const body = await c.req.json();
@@ -220,10 +217,8 @@ app.post("/admin/login", async (c) => {
   }
 });
 
-// -----------------------------------------------------------------------------
 // [POST] /api/admin/save: บันทึกความงามสกินใหม่ และป้องกันจู่โจมข้ามไซต์ (Anti-CSRF)
-// -----------------------------------------------------------------------------
-app.post("/admin/save", async (c) => {
+api.post("/admin/save", async (c) => {
   try {
     const env = c.env;
     const store = env.DONATION_STORE;
@@ -268,6 +263,10 @@ app.post("/admin/save", async (c) => {
       );
     }
 
+    if (!store) {
+      return c.json({ error: "KV database not available on server" }, 500);
+    }
+
     await store.put("personalized_theme", JSON.stringify(result.data));
     safeLog("Admin settings saved successfully.", "INFO");
     return c.json({ success: true }, 200);
@@ -277,10 +276,8 @@ app.post("/admin/save", async (c) => {
   }
 });
 
-// -----------------------------------------------------------------------------
 // [POST] /api/donate: ตรวจประวัติตัดความเสี่ยง ยืนยันผู้จ่าย และออกบิล QR Code
-// -----------------------------------------------------------------------------
-app.post("/donate", async (c) => {
+api.post("/donate", async (c) => {
   const now = Date.now();
   try {
     const env = c.env;
@@ -313,11 +310,13 @@ app.post("/donate", async (c) => {
 
     let minDonationAmount = 10;
     try {
-      const theme: any = await store.get("personalized_theme", {
-        type: "json",
-      });
-      if (theme && theme.minDonationAmount) {
-        minDonationAmount = Number(theme.minDonationAmount);
+      if (store) {
+        const theme: any = await store.get("personalized_theme", {
+          type: "json",
+        });
+        if (theme && theme.minDonationAmount) {
+          minDonationAmount = Number(theme.minDonationAmount);
+        }
       }
     } catch (err) {
       safeLog("Fallback to 10 THB due to KV fetch failure", "WARN", err);
@@ -365,7 +364,8 @@ app.post("/donate", async (c) => {
     const protocol = c.req.header("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
 
-    const beamUrl = env.BEAM_API_URL;
+    const beamUrl =
+      env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
     const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
 
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
@@ -394,11 +394,10 @@ app.post("/donate", async (c) => {
     if (!response.ok) {
       return c.json(
         { error: "Failed to generate payment link." },
-        response.status as 400 | 401 | 403 | 404 | 500 | 501 | 502 | 503,
+        response.status as any,
       );
     }
 
-    // เซ็ตคุกกี้จำกัดความถี่ด้วย Web Standard Set-Cookie Header
     const headers = new Headers();
     headers.append(
       "Set-Cookie",
@@ -415,14 +414,12 @@ app.post("/donate", async (c) => {
   }
 });
 
-// -----------------------------------------------------------------------------
 // [POST] /api/webhook/beam: ตรวจบิลจ่ายเสร็จ และยิงแจ้งขึ้นจอทันทีด้วย waitUntil [1]
-// -----------------------------------------------------------------------------
-app.post("/webhook/beam", async (c) => {
+api.post("/webhook/beam", async (c) => {
   try {
     const env = c.env;
     const store = env.DONATION_STORE;
-    const ctx = c.executionCtx; // ดึง Execution Context สิทธิ์ WaitUntil ข้ามวินาทีมาใช้งานทันที! [1]
+    const ctx = c.executionCtx;
 
     const body = await c.req.json();
     const callbackToken = c.req.header("x-beam-webhook-token");
@@ -454,6 +451,10 @@ app.post("/webhook/beam", async (c) => {
         return c.json({ error: "Missing transaction ID" }, 400);
       }
 
+      if (!store) {
+        return c.json({ error: "KV database not available" }, 500);
+      }
+
       const isAlreadyProcessed = await store.get(
         `processed_tx:${transactionId}`,
       );
@@ -478,7 +479,8 @@ app.post("/webhook/beam", async (c) => {
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
         if (paymentLinkId && env.BEAM_API_KEY) {
-          const beamUrl = env.BEAM_API_URL;
+          const beamUrl =
+            env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
           const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
           try {
             const plResponse = await fetch(
@@ -578,7 +580,6 @@ app.post("/webhook/beam", async (c) => {
           expirationTtl: 604800,
         });
 
-        // สั่งรันคำสั่ง Retries ซ่อมแซมแบบอะซิงโครนัสเบื้องหลังทันทีโดยไม่มีการรอหน่วงฝั่งลูกค้า! [1]
         ctx.waitUntil(
           retryAlertInBackground(
             env,
@@ -598,6 +599,13 @@ app.post("/webhook/beam", async (c) => {
   }
 });
 
-// สั่งจ่ายออกตัวประสานงาน Hono ให้รองรับระบบ Cloudflare Pages Functions
-export const onRequest = handle(app);
+// -----------------------------------------------------------------------------
+// 🟢 หัวใจสำคัญ: ระบบ Fallback เสิร์ฟไฟล์สถิตหน้าบ้านผ่านพอร์ต ASSETS
+// -----------------------------------------------------------------------------
+app.all("*", async (c) => {
+  // หากผู้ใช้ไม่ได้เรียกเข้าหลังบ้าน /api ให้ส่งต่อคำสั่งขอไฟล์ไปที่ Assets Binding ของ Workers
+  return await c.env.ASSETS.fetch(c.req.raw);
+});
+
+// สั่งจ่ายออกแอปพลิเคชันรูปแบบ ES Modules สำหรับระบบ Workers
 export default app;
