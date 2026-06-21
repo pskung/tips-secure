@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { sign, verify } from "hono/jwt";
 import { safeLog } from "./lib/utils/logger";
-import { timingSafeCompare } from "./lib/utils/crypto";
+import { secureCompare } from "./lib/utils/crypto";
 import { DonateInputSchema, ThemeSchema } from "./lib/utils/schemas";
 import defaultTheme from "./lib/config/theme.json";
 
@@ -51,78 +51,120 @@ const escapeHtml = (str: string): string => {
   });
 };
 
-async function sha256(message: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+async function getTheme(db: D1Database | undefined): Promise<any> {
+  if (!db) return defaultTheme;
+  try {
+    const result = await db
+      .prepare("SELECT value FROM settings WHERE key = ?")
+      .bind("personalized_theme")
+      .first<{ value: string }>();
+
+    if (!result) return defaultTheme;
+    return { ...defaultTheme, ...JSON.parse(result.value) };
+  } catch (error) {
+    safeLog("Theme database fallback triggered", "WARN", error);
+    return defaultTheme;
+  }
+}
+
+async function triggerAlerts(
+  env: Bindings,
+  donorName: string,
+  donorMessage: string,
+  amountInThb: number,
+  currency: string,
+  slSuccess: boolean,
+  seSuccess: boolean,
+  timeoutMs: number,
+): Promise<{ slSuccess: boolean; seSuccess: boolean }> {
+  const promises: Promise<any>[] = [];
+  let nextSl = slSuccess;
+  let nextSe = seSuccess;
+
+  if (env.STREAMLABS_ACCESS_TOKEN && !slSuccess) {
+    const params = new URLSearchParams({
+      access_token: env.STREAMLABS_ACCESS_TOKEN,
+      name: donorName,
+      message: donorMessage,
+      amount: String(amountInThb),
+      currency,
+    });
+
+    promises.push(
+      fetch(EXTERNAL_API.STREAMLABS_DONATIONS, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+        .then((res) => {
+          if (res.ok) nextSl = true;
+        })
+        .catch(() => {}),
+    );
+  }
+
+  if (env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID && !seSuccess) {
+    const sePayload = {
+      user: { username: donorName },
+      message: donorMessage,
+      amount: Number(amountInThb),
+      currency,
+    };
+
+    promises.push(
+      fetch(EXTERNAL_API.STREAMELEMENTS_TIPS(env.STREAMELEMENTS_CHANNEL_ID), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.STREAMELEMENTS_JWT}`,
+        },
+        body: JSON.stringify(sePayload),
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+        .then((res) => {
+          if (res.ok) nextSe = true;
+        })
+        .catch(() => {}),
+    );
+  }
+
+  if (promises.length > 0) {
+    await Promise.all(promises);
+  }
+
+  return { slSuccess: nextSl, seSuccess: nextSe };
 }
 
 async function retryAlertInBackground(
-  env: any,
+  env: Bindings,
   transactionId: string,
   donorName: string,
   donorMessage: string,
   amountInThb: number,
   currency: string,
+  initialSl: boolean,
+  initialSe: boolean,
 ) {
   const db = env.DB;
-  let slSuccess = !env.STREAMLABS_ACCESS_TOKEN;
-  let seSuccess = !(env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID);
-
+  let slSuccess = initialSl;
+  let seSuccess = initialSe;
   const maxRetries = 3;
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const promises: Promise<any>[] = [];
+    const result = await triggerAlerts(
+      env,
+      donorName,
+      donorMessage,
+      amountInThb,
+      currency,
+      slSuccess,
+      seSuccess,
+      5000,
+    );
 
-    if (env.STREAMLABS_ACCESS_TOKEN && !slSuccess) {
-      const params = new URLSearchParams();
-      params.append("access_token", env.STREAMLABS_ACCESS_TOKEN);
-      params.append("name", donorName);
-      params.append("message", donorMessage);
-      params.append("amount", String(amountInThb));
-      params.append("currency", currency);
-
-      promises.push(
-        fetch(EXTERNAL_API.STREAMLABS_DONATIONS, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: params.toString(),
-          signal: AbortSignal.timeout(5000),
-        })
-          .then((res) => {
-            if (res.ok) slSuccess = true;
-          })
-          .catch(() => {}),
-      );
-    }
-
-    if (env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID && !seSuccess) {
-      const sePayload = {
-        user: { username: donorName },
-        message: donorMessage,
-        amount: Number(amountInThb),
-        currency,
-      };
-      promises.push(
-        fetch(EXTERNAL_API.STREAMELEMENTS_TIPS(env.STREAMELEMENTS_CHANNEL_ID), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${env.STREAMELEMENTS_JWT}`,
-          },
-          body: JSON.stringify(sePayload),
-          signal: AbortSignal.timeout(5000),
-        })
-          .then((res) => {
-            if (res.ok) seSuccess = true;
-          })
-          .catch(() => {}),
-      );
-    }
-
-    if (promises.length > 0) {
-      await Promise.all(promises);
-    }
+    slSuccess = result.slSuccess;
+    seSuccess = result.seSuccess;
 
     if (slSuccess && seSuccess) break;
 
@@ -133,21 +175,18 @@ async function retryAlertInBackground(
   }
 
   const nowEpoch = Math.floor(Date.now() / 1000);
-  if (slSuccess && seSuccess) {
-    await db
-      .prepare(
-        "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
-      )
-      .bind(transactionId, "success", nowEpoch)
-      .run();
+  const finalStatus = slSuccess && seSuccess ? "success" : "failed";
+
+  await db
+    .prepare(
+      "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+    )
+    .bind(transactionId, finalStatus, nowEpoch)
+    .run();
+
+  if (finalStatus === "success") {
     safeLog(`Background Retry Success: ${transactionId}`, "INFO");
   } else {
-    await db
-      .prepare(
-        "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
-      )
-      .bind(transactionId, "failed", nowEpoch)
-      .run();
     safeLog(`Background Retry Permanently Failed: ${transactionId}`, "ERROR");
   }
 }
@@ -184,32 +223,11 @@ api.use("*", async (c, next) => {
 
 api.get("/theme", async (c) => {
   const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
-  try {
-    const db = c.env.DB;
-    if (!db) {
-      safeLog("Warning: DB is not bound to the environment.", "WARN");
-      return c.json({ theme: defaultTheme, turnstileSiteKey }, 200);
-    }
-
-    const result = await db
-      .prepare("SELECT value FROM settings WHERE key = ?")
-      .bind("personalized_theme")
-      .first<{ value: string }>();
-
-    const parsedDbTheme = result ? JSON.parse(result.value) : {};
-    const theme = { ...defaultTheme, ...parsedDbTheme };
-
-    return c.json({ theme, turnstileSiteKey }, 200, {
-      "Cache-Control":
-        "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
-    });
-  } catch (error) {
-    safeLog("Theme fetch failed, falling back to default.", "WARN", error);
-    return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
-      "Cache-Control":
-        "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
-    });
-  }
+  const theme = await getTheme(c.env.DB);
+  return c.json({ theme, turnstileSiteKey }, 200, {
+    "Cache-Control":
+      "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
+  });
 });
 
 api.get("/admin/verify", async (c) => {
@@ -245,14 +263,11 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
     const body = await c.req.json();
     const inputPassword = body.password;
     const turnstileToken = body.turnstile_token;
-
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
       return c.json(
-        {
-          error: "System Error: Admin validation is not configured on server.",
-        },
+        { error: "System Error: Admin validation is not configured." },
         500,
       );
     }
@@ -288,10 +303,10 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Security verification failed. Try again." }, 400);
     }
 
-    const hashedInput = await sha256(inputPassword || "");
-    const hashedExpected = await sha256(expectedPassword);
-
-    if (!inputPassword || !timingSafeCompare(hashedInput, hashedExpected)) {
+    if (
+      !inputPassword ||
+      !(await secureCompare(inputPassword, expectedPassword))
+    ) {
       safeLog("Unsuccessful login attempt to admin dashboard.", "WARN");
       return c.json({ error: "Invalid password." }, 401);
     }
@@ -332,10 +347,7 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
-      return c.json(
-        { error: "Admin authentication password is not set on server" },
-        500,
-      );
+      return c.json({ error: "Admin authentication password is not set" }, 500);
     }
 
     const clientToken = authHeader?.replace("Bearer ", "");
@@ -349,11 +361,7 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
         return c.json({ error: "Unauthorized: Invalid credentials." }, 401);
       }
     } catch (err) {
-      safeLog(
-        "Unauthorized API save attempt - JWT validation failure",
-        "WARN",
-        err,
-      );
+      safeLog("Unauthorized API save attempt - JWT failure", "WARN", err);
       return c.json({ error: "Session expired. Please log in again." }, 401);
     }
 
@@ -361,9 +369,7 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
     const result = ThemeSchema.safeParse(newTheme);
     if (!result.success) {
       return c.json(
-        {
-          error: `Invalid configuration: ${result.error.issues[0].message}`,
-        },
+        { error: `Invalid configuration: ${result.error.issues[0].message}` },
         400,
       );
     }
@@ -416,30 +422,12 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Operation rate limit exceeded" }, 400);
     }
 
-    let minDonationAmount = 10;
-    try {
-      if (db) {
-        const result = await db
-          .prepare("SELECT value FROM settings WHERE key = ?")
-          .bind("personalized_theme")
-          .first<{ value: string }>();
-
-        if (result) {
-          const theme = JSON.parse(result.value);
-          if (theme && theme.minDonationAmount) {
-            minDonationAmount = Number(theme.minDonationAmount);
-          }
-        }
-      }
-    } catch (err) {
-      safeLog("Fallback to 10 THB due to DB fetch failure", "WARN", err);
-    }
+    const theme = await getTheme(db);
+    const minDonationAmount = Number(theme.minDonationAmount) || 10;
 
     if (amount < minDonationAmount) {
       return c.json(
-        {
-          error: `Donation must be at least ${minDonationAmount} THB.`,
-        },
+        { error: `Donation must be at least ${minDonationAmount} THB.` },
         400,
       );
     }
@@ -510,10 +498,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
     if (!response.ok) {
       safeLog("Beam API generation failed", "ERROR", data);
       return c.json(
-        {
-          error:
-            "Failed to generate payment link. Gateway is temporarily unavailable.",
-        },
+        { error: "Failed to generate payment link. Gateway unavailable." },
         502,
       );
     }
@@ -552,10 +537,7 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Unauthenticated" }, 401);
     }
 
-    const hashedCallback = await sha256(callbackToken);
-    const hashedExpected = await sha256(expectedToken);
-
-    if (!timingSafeCompare(hashedCallback, hashedExpected)) {
+    if (!(await secureCompare(callbackToken, expectedToken))) {
       safeLog("Security Alert: Webhook callback signature mismatch.", "WARN");
       return c.json({ error: "Unauthenticated origin" }, 401);
     }
@@ -631,69 +613,22 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
         }
       }
 
-      let slSuccess = false;
-      let seSuccess = false;
-      const fastPathPromises: Promise<any>[] = [];
+      const initSl = !env.STREAMLABS_ACCESS_TOKEN;
+      const initSe = !(env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID);
 
-      if (env.STREAMLABS_ACCESS_TOKEN) {
-        const params = new URLSearchParams();
-        params.append("access_token", env.STREAMLABS_ACCESS_TOKEN);
-        params.append("name", donorName);
-        params.append("message", donorMessage);
-        params.append("amount", String(amountInThb));
-        params.append("currency", currency);
-
-        fastPathPromises.push(
-          fetch(EXTERNAL_API.STREAMLABS_DONATIONS, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString(),
-            signal: AbortSignal.timeout(800),
-          })
-            .then((res) => {
-              if (res.ok) slSuccess = true;
-            })
-            .catch(() => {}),
-        );
-      } else {
-        slSuccess = true;
-      }
-
-      if (env.STREAMELEMENTS_JWT && env.STREAMELEMENTS_CHANNEL_ID) {
-        const sePayload = {
-          user: { username: donorName },
-          message: donorMessage,
-          amount: Number(amountInThb),
-          currency,
-        };
-        fastPathPromises.push(
-          fetch(
-            EXTERNAL_API.STREAMELEMENTS_TIPS(env.STREAMELEMENTS_CHANNEL_ID),
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${env.STREAMELEMENTS_JWT}`,
-              },
-              body: JSON.stringify(sePayload),
-              signal: AbortSignal.timeout(800),
-            },
-          )
-            .then((res) => {
-              if (res.ok) seSuccess = true;
-            })
-            .catch(() => {}),
-        );
-      } else {
-        seSuccess = true;
-      }
-
-      if (fastPathPromises.length > 0) {
-        await Promise.all(fastPathPromises);
-      }
+      const fastPath = await triggerAlerts(
+        env,
+        donorName,
+        donorMessage,
+        amountInThb,
+        currency,
+        initSl,
+        initSe,
+        800,
+      );
 
       const nowEpoch = Math.floor(Date.now() / 1000);
-      if (slSuccess && seSuccess) {
+      if (fastPath.slSuccess && fastPath.seSuccess) {
         await db
           .prepare(
             "INSERT INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
@@ -717,6 +652,8 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
             donorMessage,
             amountInThb,
             currency,
+            fastPath.slSuccess,
+            fastPath.seSuccess,
           ),
         );
       }
