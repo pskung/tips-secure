@@ -27,6 +27,7 @@ import {
 import { createStore, reconcile } from "solid-js/store";
 import { Title, Link } from "@solidjs/meta";
 import defaultTheme from "~/lib/config/theme.json";
+import { onCleanup } from "solid-js";
 
 function parseDirectImageUrl(input: string): string {
   const trimmed = input.trim();
@@ -177,6 +178,18 @@ export default function Admin() {
     if (siteKey && turnstileReady() && !isAuthenticated()) {
       initTurnstile();
     }
+    onCleanup(() => {
+      if (
+        typeof window !== "undefined" &&
+        (window as any).turnstile &&
+        turnstileWidgetId
+      ) {
+        try {
+          (window as any).turnstile.remove(turnstileWidgetId);
+          turnstileWidgetId = null;
+        } catch (err) {}
+      }
+    });
   });
 
   const handleLogin = async (e: Event) => {
