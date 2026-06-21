@@ -152,7 +152,35 @@ async function retryAlertInBackground(
   }
 }
 
+let isDbInitialized = false;
 const api = app.basePath("/api");
+
+api.use("*", async (c, next) => {
+  const db = c.env.DB;
+  if (db && !isDbInitialized) {
+    try {
+      await db.batch([
+        db.prepare(`
+          CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        `),
+        db.prepare(`
+          CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        `),
+      ]);
+      isDbInitialized = true;
+    } catch (err) {
+      safeLog("Database auto-bootstrap failed", "ERROR", err);
+    }
+  }
+  await next();
+});
 
 api.get("/theme", async (c) => {
   const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
@@ -168,7 +196,8 @@ api.get("/theme", async (c) => {
       .bind("personalized_theme")
       .first<{ value: string }>();
 
-    const theme = result ? JSON.parse(result.value) : defaultTheme;
+    const parsedDbTheme = result ? JSON.parse(result.value) : {};
+    const theme = { ...defaultTheme, ...parsedDbTheme };
 
     return c.json({ theme, turnstileSiteKey }, 200, {
       "Cache-Control":

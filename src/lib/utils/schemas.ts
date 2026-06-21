@@ -34,6 +34,9 @@ export const ThemeSchema = z.object({
   mainFontFamily: z.string().min(1, "Please specify the main font family."),
   vtuberName: z.string().min(1, "Please specify the streamer name."),
   welcomeText: z.string().min(1, "Please enter the welcome text."),
+  nicknamePlaceholder: z.string().optional().or(z.literal("")),
+  messagePlaceholder: z.string().optional().or(z.literal("")),
+  submitBtnText: z.string().optional().or(z.literal("")),
   bgType: z.enum(["solid", "image"]),
   bgColor: z.string().regex(hexColorRegex, "Invalid background color format."),
   cardBgColor: z
