@@ -678,7 +678,7 @@ export default function Admin() {
                         }}
                       />
                       <p class="text-[10px] text-[#7C6E65] mt-1 italic">
-                        💡 Supports HTML/BBCode/Direct Link (e.g., ImgBB).
+                        Supports HTML/BBCode/Direct Link (e.g., ImgBB).
                         Auto-parsed.
                       </p>
                       <Show when={config.bgUrl}>
