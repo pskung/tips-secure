@@ -261,11 +261,6 @@ export default function Admin() {
           }
         `}
       </style>
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        async
-        defer
-      ></script>
 
       <Show when={!isAuthenticated()}>
         <div class="fixed inset-0 bg-[#FAF6ED]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">

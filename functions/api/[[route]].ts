@@ -356,8 +356,7 @@ app.post("/donate", async (c) => {
     const protocol = c.req.header("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
 
-    const beamUrl =
-      env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+    const beamUrl = env.BEAM_API_URL;
     const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
 
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
@@ -470,8 +469,7 @@ app.post("/webhook/beam", async (c) => {
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
         if (paymentLinkId && env.BEAM_API_KEY) {
-          const beamUrl =
-            env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+          const beamUrl = env.BEAM_API_URL;
           const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
           try {
             const plResponse = await fetch(

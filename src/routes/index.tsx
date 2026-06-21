@@ -371,11 +371,6 @@ export default function Home() {
           }
         `}
       </style>
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        async
-        defer
-      ></script>
 
       <main
         class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-cover bg-center bg-no-repeat bg-fixed"
