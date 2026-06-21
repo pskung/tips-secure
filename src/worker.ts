@@ -1,15 +1,15 @@
 import { Hono } from "hono";
-import { bodyLimit } from "hono/body-limit"; // 🟢 ดึงไลบรารีควบคุมขนาดคำร้องขอของ Hono
+import { bodyLimit } from "hono/body-limit";
+import { sign, verify } from "hono/jwt";
 import { safeLog } from "./lib/utils/logger";
 import { timingSafeCompare } from "./lib/utils/crypto";
 import { DonateInputSchema, ThemeSchema } from "./lib/utils/schemas";
 import defaultTheme from "./lib/config/theme.json";
 
-// กำหนดโครงสร้างตัวแปรระบบ
 type Bindings = {
   DONATION_STORE: KVNamespace;
   ASSETS: Fetcher;
-  ADMIN_PASSWORD?: string; // 🟢 กลับมาใช้ตัวแปรตัวเดิมของระบบ ไม่ต้องสร้าง EV ใหม่เพิ่มค่ะ
+  ADMIN_PASSWORD?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   BEAM_WEBHOOK_SECRET?: string;
@@ -28,9 +28,8 @@ const EXTERNAL_API = {
     `https://api.streamelements.com/kappa/v2/tips/${channelId}`,
 };
 
-// 🟢 ตัวกรองสยบสแปม DoS จำกัดขนาด JSON ขาเข้าสูงสุดไม่เกิน 16KB (เหลือเฟือสำหรับโดเนทและบันทึกสกิน)
 const jsonPayloadLimit = bodyLimit({
-  maxSize: 16 * 1024, // 16 Kilobytes
+  maxSize: 16 * 1024,
   onError: (c) => {
     return c.json(
       { error: "Payload size limits exceeded. Action blocked." },
@@ -39,7 +38,6 @@ const jsonPayloadLimit = bodyLimit({
   },
 });
 
-// 🟢 ฟังก์ชันแปลงอักขระพิเศษ (HTML Entity Encoder) สกัดช่องโหว่ XSS จากการส่งสคริปต์ก่อกวน [1]
 const escapeHtml = (str: string): string => {
   return str.replace(/[&<>"']/g, (m) => {
     const map: Record<string, string> = {
@@ -53,7 +51,6 @@ const escapeHtml = (str: string): string => {
   });
 };
 
-// ฟังก์ชันเข้ารหัส SHA-256 แบบไร้โมดูล Node.js [1]
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
@@ -61,7 +58,6 @@ async function sha256(message: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// ฟังก์ชันซ่อมสัญญาณสตรีมเมอร์อัตโนมัติเบื้องหลัง
 async function retryAlertInBackground(
   env: any,
   transactionId: string,
@@ -149,12 +145,8 @@ async function retryAlertInBackground(
   }
 }
 
-// -----------------------------------------------------------------------------
-// กลุ่มเราเตอร์ประมวลผลข้อมูลหลังบ้าน (Hono API Routes under /api/*)
-// -----------------------------------------------------------------------------
 const api = app.basePath("/api");
 
-// [GET] /api/theme: จัดส่งสกินตกแต่งความละเอียดสูง พร้อมการแคชบน Edge CDN
 api.get("/theme", async (c) => {
   const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
   try {
@@ -175,7 +167,6 @@ api.get("/theme", async (c) => {
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
   } catch (error) {
-    // 🟢 ดักจับ Error ส่งออกประวัติลับและตอบกลับทึบแสง (Opaque Fallback Response) ป้องกันข้อมูลทางเทคนิครั่วไหล
     safeLog("Theme fetch failed, falling back to default.", "WARN", error);
     return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
       "Cache-Control":
@@ -184,7 +175,33 @@ api.get("/theme", async (c) => {
   }
 });
 
-// [POST] /api/admin/login: ตรวจสอบความปลอดภัยคัดแยกสแปมบอทและมอบรหัสเข้าใช้
+api.get("/admin/verify", async (c) => {
+  const authHeader = c.req.header("Authorization");
+  const clientToken = authHeader?.replace("Bearer ", "");
+  const expectedPassword = c.env.ADMIN_PASSWORD;
+
+  if (!expectedPassword || expectedPassword.trim() === "") {
+    return c.json(
+      { valid: false, error: "System validation not configured." },
+      500,
+    );
+  }
+
+  if (!clientToken) {
+    return c.json({ valid: false, error: "Missing authorization token." }, 401);
+  }
+
+  try {
+    const decoded = await verify(clientToken, expectedPassword, "HS256");
+    if (decoded && decoded.role === "admin") {
+      return c.json({ valid: true }, 200);
+    }
+    return c.json({ valid: false, error: "Invalid credentials." }, 401);
+  } catch {
+    return c.json({ valid: false, error: "Token expired or corrupted." }, 401);
+  }
+});
+
 api.post("/admin/login", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -192,7 +209,6 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
     const inputPassword = body.password;
     const turnstileToken = body.turnstile_token;
 
-    // 🟢 เรียกใช้ตัวแปร ADMIN_PASSWORD ตัวเดิม ไม่ต้องเพิ่ม EV ใหม่ให้ยุ่งยากค่ะ
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
@@ -235,7 +251,6 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Security verification failed. Try again." }, 400);
     }
 
-    // 🟢 แฮชไดนามิกในแรมทั้งฝั่งอินพุตและเอาต์พุต เพื่อบีบความยาวให้เป็น 64 ตัวอักษรเท่ากันสำหรับการทำ Timing-Safe [1]
     const hashedInput = await sha256(inputPassword || "");
     const hashedExpected = await sha256(expectedPassword);
 
@@ -244,8 +259,12 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Invalid password." }, 401);
     }
 
-    // ส่งคืนลายเซ็น Token ที่ขึ้นอยู่กับคีย์แฮชเพื่อทำ Stateless Session
-    const token = await sha256(expectedPassword);
+    const payload = {
+      role: "admin",
+      exp: Math.floor(Date.now() / 1000) + 7200,
+    };
+    const token = await sign(payload, expectedPassword, "HS256");
+
     return c.json({ success: true, token }, 200);
   } catch (error) {
     safeLog("Admin login controller exception raised", "ERROR", error);
@@ -253,7 +272,6 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
   }
 });
 
-// [POST] /api/admin/save: บันทึกความงามสกินใหม่ และป้องกันจู่โจมข้ามไซต์ (Anti-CSRF)
 api.post("/admin/save", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -274,8 +292,6 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
     }
 
     const authHeader = c.req.header("Authorization");
-
-    // 🟢 ดึงรหัสผ่านแอดมินตัวเดิมมาประมวลผล
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
@@ -285,12 +301,23 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
       );
     }
 
-    const expectedToken = await sha256(expectedPassword);
     const clientToken = authHeader?.replace("Bearer ", "");
+    if (!clientToken) {
+      return c.json({ error: "Unauthorized: Missing token." }, 401);
+    }
 
-    if (!clientToken || !timingSafeCompare(clientToken, expectedToken)) {
-      safeLog("Security Alert: Unauthorized API save attempt", "WARN");
-      return c.json({ error: "Unauthorized" }, 401);
+    try {
+      const decoded = await verify(clientToken, expectedPassword, "HS256");
+      if (!decoded || decoded.role !== "admin") {
+        return c.json({ error: "Unauthorized: Invalid credentials." }, 401);
+      }
+    } catch (err) {
+      safeLog(
+        "Unauthorized API save attempt - JWT validation failure",
+        "WARN",
+        err,
+      );
+      return c.json({ error: "Session expired. Please log in again." }, 401);
     }
 
     const { config: newTheme } = await c.req.json();
@@ -317,7 +344,6 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
   }
 });
 
-// [POST] /api/donate: ตรวจประวัติตัดความเสี่ยง ยืนยันผู้จ่าย และออกบิล QR Code
 api.post("/donate", jsonPayloadLimit, async (c) => {
   const now = Date.now();
   try {
@@ -405,7 +431,6 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
     const protocol = c.req.header("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
 
-    // 🟢 Finding #1: ดำเนินการล้างค่าอักขระพิเศษสกัดช่องโหว่ XSS จากชื่อผู้โดเนทและข้อความสนับสนุน [1]
     const sanitizedName = escapeHtml(name.trim());
     const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
 
@@ -437,7 +462,6 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     const data: any = await response.json();
     if (!response.ok) {
-      // 🟢 Finding #3: ดักจับและเขียนประวัติลับหลบเลี่ยง Trace Leakage หน้าบ้าน
       safeLog("Beam API generation failed", "ERROR", data);
       return c.json(
         {
@@ -467,7 +491,6 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
   }
 });
 
-// [POST] /api/webhook/beam: ตรวจบิลจ่ายเสร็จ และยิงแจ้งแจ้งเตือน
 api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -475,20 +498,18 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
     const ctx = c.executionCtx;
 
     const body = await c.req.json();
-    const callbackToken = c.req.header("x-beam-webhook-token");
-    const expectedToken = env.BEAM_WEBHOOK_SECRET;
+    const callbackToken = c.req.header("x-beam-webhook-token") || "";
+    const expectedToken = env.BEAM_WEBHOOK_SECRET || "";
 
-    if (
-      !callbackToken ||
-      !expectedToken ||
-      callbackToken.trim() === "" ||
-      expectedToken.trim() === ""
-    ) {
+    if (callbackToken.trim() === "" || expectedToken.trim() === "") {
       safeLog("Security Alert: Null or missing Webhook credentials.", "WARN");
       return c.json({ error: "Unauthenticated" }, 401);
     }
 
-    if (!timingSafeCompare(callbackToken, expectedToken)) {
+    const hashedCallback = await sha256(callbackToken);
+    const hashedExpected = await sha256(expectedToken);
+
+    if (!timingSafeCompare(hashedCallback, hashedExpected)) {
       safeLog("Security Alert: Webhook callback signature mismatch.", "WARN");
       return c.json({ error: "Unauthenticated origin" }, 401);
     }
@@ -524,7 +545,6 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       if (orderNote) {
         try {
           const parsedNote = JSON.parse(orderNote);
-          // 🟢 Finding #1: สกัด XSS จากชื่อผู้โดเนทและข้อความสนับสนุนก่อนขึ้น overlays เสมอ
           donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
           donorMessage = escapeHtml(parsedNote.donor_message || "");
         } catch {
@@ -550,7 +570,6 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
               if (noteStr) {
                 try {
                   const parsedNote = JSON.parse(noteStr);
-                  // 🟢 Finding #1: สกัด XSS ข้อมูลเรียกดูย้อนหลัง
                   donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
                   donorMessage = escapeHtml(parsedNote.donor_message || "");
                 } catch {
@@ -649,13 +668,11 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
     }
     return c.json({ success: true }, 200);
   } catch (error) {
-    // 🟢 Finding #3: ซ่อนข้อผิดพลาด Webhook
     safeLog("Fatal Webhook Controller Error", "ERROR", error);
     return c.json({ error: "Fail. Webhook processing failed." }, 500);
   }
 });
 
-// ระบบ Fallback เสิร์ฟไฟล์สถิตหน้าบ้านผ่านพอร์ต ASSETS
 app.all("*", async (c) => {
   return await c.env.ASSETS.fetch(c.req.raw);
 });

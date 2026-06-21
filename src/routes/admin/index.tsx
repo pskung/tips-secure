@@ -1,4 +1,4 @@
-import type { ThemeConfig } from "~/lib/utils/schemas"; // ดึงสกินสเปกที่มีอยู่แล้วมาใช้คุม
+import type { ThemeConfig } from "~/lib/utils/schemas";
 
 interface ThemeResponse {
   theme: ThemeConfig;
@@ -73,7 +73,6 @@ export default function Admin() {
   const [saveLoading, setSaveLoading] = createSignal(false);
   const [pageLoading, setPageLoading] = createSignal(true);
 
-  // ส่วนของการดึงระบบรักษาความปลอดภัย Turnstile มาสแกนแอดมิน
   const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
   const [turnstileReady, setTurnstileReady] = createSignal(false);
@@ -91,8 +90,30 @@ export default function Admin() {
 
   onMount(async () => {
     const storedToken = sessionStorage.getItem("admin_token");
+
     if (storedToken) {
-      setIsAuthenticated(true);
+      try {
+        const verifyRes = await fetch("/api/admin/verify", {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+          },
+        });
+        if (verifyRes.ok) {
+          const verifyData = (await verifyRes.json()) as { valid: boolean };
+          if (verifyData.valid) {
+            setIsAuthenticated(true);
+          } else {
+            sessionStorage.removeItem("admin_token");
+            setIsAuthenticated(false);
+          }
+        } else {
+          sessionStorage.removeItem("admin_token");
+          setIsAuthenticated(false);
+        }
+      } catch {
+        sessionStorage.removeItem("admin_token");
+        setIsAuthenticated(false);
+      }
     }
 
     try {
@@ -110,7 +131,6 @@ export default function Admin() {
       setPageLoading(false);
     }
 
-    // จับตามองไลบรารี Turnstile สกัดสแปม
     const checkInterval = setInterval(() => {
       if ((window as any).turnstile) {
         clearInterval(checkInterval);

@@ -9,6 +9,7 @@ interface DonateResponse {
   invoice_url?: string;
   error?: string;
 }
+
 import {
   createSignal,
   createMemo,
@@ -137,7 +138,6 @@ function SkeletonUI() {
 }
 
 export default function Home() {
-  // [อัปเกรด]: จัดเก็บตัวแปรฝั่งหน้าบ้านสำหรับการจัดการโหลด SPA
   const [themeData, setThemeData] = createSignal<any>(null);
   const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
   const [loading, setLoading] = createSignal(true);
@@ -174,7 +174,6 @@ export default function Home() {
     } catch {
       setThemeData(defaultTheme);
     } finally {
-      // ปิดแอนิเมชัน Skeleton และสไลด์หน้าเว็บหลักขึ้นมาทดแทน
       setLoading(false);
     }
 

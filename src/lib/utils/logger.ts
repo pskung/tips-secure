@@ -9,32 +9,51 @@ export function safeLog(
     sanitizedError = rawError.stack || rawError.message;
   } else if (rawError) {
     try {
-      const stringified =
+      sanitizedError =
         typeof rawError === "string" ? rawError : JSON.stringify(rawError);
-
-      const piiFields = [
-        "donor_name",
-        "donor_message",
-        "email",
-        "password",
-        "token",
-        "access_token",
-        "ADMIN_PASSWORD_HASH",
-        "ADMIN_PASSWORD",
-        "BEAM_API_KEY",
-        "BEAM_WEBHOOK_SECRET",
-      ];
-
-      let sanitizedString = stringified;
-      piiFields.forEach((field) => {
-        const regex = new RegExp(`("${field}"\\s*:\\s*")[^"]+(")`, "gi");
-        sanitizedString = sanitizedString.replace(regex, `$1[REDACTED_PII]$2`);
-      });
-
-      sanitizedError = sanitizedString;
     } catch {
       sanitizedError = "[UNPARSABLE_ERROR_DATA]";
     }
+  }
+
+  if (sanitizedError) {
+    const piiFields = [
+      "donor_name",
+      "donor_message",
+      "email",
+      "password",
+      "token",
+      "access_token",
+      "ADMIN_PASSWORD_HASH",
+      "ADMIN_PASSWORD",
+      "BEAM_API_KEY",
+      "BEAM_WEBHOOK_SECRET",
+    ];
+
+    piiFields.forEach((field) => {
+      const jsonRegex = new RegExp(`("${field}"\\s*:\\s*")[^"]+(")`, "gi");
+      sanitizedError = sanitizedError.replace(jsonRegex, `$1[REDACTED_PII]$2`);
+
+      const plainRegex = new RegExp(`(${field}\\s*[=:]\\s*)[^\\s"';,]+`, "gi");
+      sanitizedError = sanitizedError.replace(
+        plainRegex,
+        `$1[REDACTED_SECRET]`,
+      );
+    });
+
+    const authHeaderRegex =
+      /(Authorization\s*:\s*(Bearer|Basic)\s+)[^\s"';,]+/gi;
+    sanitizedError = sanitizedError.replace(
+      authHeaderRegex,
+      `$1[REDACTED_AUTH_TOKEN]`,
+    );
+
+    const queryParamRegex =
+      /([?&](access_token|token|key|secret)=)[^&?\s"';,]+/gi;
+    sanitizedError = sanitizedError.replace(
+      queryParamRegex,
+      `$1[REDACTED_CREDENTIAL]`,
+    );
   }
 
   const logPayload = {
