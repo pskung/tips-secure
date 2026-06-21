@@ -9,7 +9,7 @@ import defaultTheme from "./lib/config/theme.json";
 type Bindings = {
   DONATION_STORE: KVNamespace;
   ASSETS: Fetcher;
-  ADMIN_PASSWORD_HASH?: string; // 🟢 ปรับเปลี่ยนจากความลับตรงเป็นรหัสแฮชเพื่อความปลอดภัยสูง
+  ADMIN_PASSWORD?: string; // 🟢 กลับมาใช้ตัวแปรตัวเดิมของระบบ ไม่ต้องสร้าง EV ใหม่เพิ่มค่ะ
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   BEAM_WEBHOOK_SECRET?: string;
@@ -39,7 +39,7 @@ const jsonPayloadLimit = bodyLimit({
   },
 });
 
-// 🟢 ฟังก์ชันแปลงอักขระพิเศษ (HTML Entity Encoder) สกัดช่องโหว่ XSS กลั่นแกล้งบนหน้าจอ OBS [1]
+// 🟢 ฟังก์ชันแปลงอักขระพิเศษ (HTML Entity Encoder) สกัดช่องโหว่ XSS จากการส่งสคริปต์ก่อกวน [1]
 const escapeHtml = (str: string): string => {
   return str.replace(/[&<>"']/g, (m) => {
     const map: Record<string, string> = {
@@ -175,7 +175,7 @@ api.get("/theme", async (c) => {
         "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
     });
   } catch (error) {
-    // 🟢 Finding #3: ดักจับ Error ส่งออกประวัติลับและตอบกลับทึบแสง (Opaque Fallback Response)
+    // 🟢 ดักจับ Error ส่งออกประวัติลับและตอบกลับทึบแสง (Opaque Fallback Response) ป้องกันข้อมูลทางเทคนิครั่วไหล
     safeLog("Theme fetch failed, falling back to default.", "WARN", error);
     return c.json({ theme: defaultTheme, turnstileSiteKey }, 200, {
       "Cache-Control":
@@ -185,7 +185,6 @@ api.get("/theme", async (c) => {
 });
 
 // [POST] /api/admin/login: ตรวจสอบความปลอดภัยคัดแยกสแปมบอทและมอบรหัสเข้าใช้
-// 🟢 ติดตั้งคำสั่ง jsonPayloadLimit เพื่อควบคุมความปลอดภัยของอินพุต DoS
 api.post("/admin/login", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -193,14 +192,13 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
     const inputPassword = body.password;
     const turnstileToken = body.turnstile_token;
 
-    // 🟢 Finding #7: ดึงค่าตรวจสอบเปรียบเทียบในลักษณะแฮช (ADMIN_PASSWORD_HASH) ปลอดภัย 100%
-    const expectedPasswordHash = env.ADMIN_PASSWORD_HASH;
+    // 🟢 เรียกใช้ตัวแปร ADMIN_PASSWORD ตัวเดิม ไม่ต้องเพิ่ม EV ใหม่ให้ยุ่งยากค่ะ
+    const expectedPassword = env.ADMIN_PASSWORD;
 
-    if (!expectedPasswordHash || expectedPasswordHash.trim() === "") {
+    if (!expectedPassword || expectedPassword.trim() === "") {
       return c.json(
         {
-          error:
-            "System Error: Admin authentication hash is not configured on server.",
+          error: "System Error: Admin validation is not configured on server.",
         },
         500,
       );
@@ -237,19 +235,17 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Security verification failed. Try again." }, 400);
     }
 
-    // 🟢 Finding #7: นำรหัสที่พิมพ์เข้ามาไปแฮชเป็น SHA-256 ก่อนเปรียบเทียบแบบ Timing-Safe
+    // 🟢 แฮชไดนามิกในแรมทั้งฝั่งอินพุตและเอาต์พุต เพื่อบีบความยาวให้เป็น 64 ตัวอักษรเท่ากันสำหรับการทำ Timing-Safe [1]
     const hashedInput = await sha256(inputPassword || "");
+    const hashedExpected = await sha256(expectedPassword);
 
-    if (
-      !inputPassword ||
-      !timingSafeCompare(hashedInput, expectedPasswordHash)
-    ) {
+    if (!inputPassword || !timingSafeCompare(hashedInput, hashedExpected)) {
       safeLog("Unsuccessful login attempt to admin dashboard.", "WARN");
       return c.json({ error: "Invalid password." }, 401);
     }
 
-    // ส่งคืนลายเซ็น Token ที่ปลอดภัยขึ้นอยู่กับรหัสแฮชเพื่อทำ Stateless Session
-    const token = await sha256(expectedPasswordHash);
+    // ส่งคืนลายเซ็น Token ที่ขึ้นอยู่กับคีย์แฮชเพื่อทำ Stateless Session
+    const token = await sha256(expectedPassword);
     return c.json({ success: true, token }, 200);
   } catch (error) {
     safeLog("Admin login controller exception raised", "ERROR", error);
@@ -258,7 +254,6 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
 });
 
 // [POST] /api/admin/save: บันทึกความงามสกินใหม่ และป้องกันจู่โจมข้ามไซต์ (Anti-CSRF)
-// 🟢 ติดตั้งคำสั่ง jsonPayloadLimit ป้องกันแอดมินหรือผู้ป่วนยิงไฟล์สกินขนาด DoS เข้ามาในแรม
 api.post("/admin/save", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -280,14 +275,17 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
 
     const authHeader = c.req.header("Authorization");
 
-    // 🟢 Finding #7: ยืนยัน Token ขาเข้าด้วยรหัสแฮชลับ
-    const expectedPasswordHash = env.ADMIN_PASSWORD_HASH;
+    // 🟢 ดึงรหัสผ่านแอดมินตัวเดิมมาประมวลผล
+    const expectedPassword = env.ADMIN_PASSWORD;
 
-    if (!expectedPasswordHash || expectedPasswordHash.trim() === "") {
-      return c.json({ error: "Admin authentication hash is not set" }, 500);
+    if (!expectedPassword || expectedPassword.trim() === "") {
+      return c.json(
+        { error: "Admin authentication password is not set on server" },
+        500,
+      );
     }
 
-    const expectedToken = await sha256(expectedPasswordHash);
+    const expectedToken = await sha256(expectedPassword);
     const clientToken = authHeader?.replace("Bearer ", "");
 
     if (!clientToken || !timingSafeCompare(clientToken, expectedToken)) {
@@ -320,7 +318,6 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
 });
 
 // [POST] /api/donate: ตรวจประวัติตัดความเสี่ยง ยืนยันผู้จ่าย และออกบิล QR Code
-// 🟢 ติดตั้งตัวบล็อกขนาดอินพุต DoS ป้องกันผู้ป่วนส่ง Payload ข้อมูลยักษ์เข้าเครื่อง Edge
 api.post("/donate", jsonPayloadLimit, async (c) => {
   const now = Date.now();
   try {
@@ -402,15 +399,15 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Payment gateway not configured." }, 501);
     }
 
-    // 🟢 Finding #1: ดำเนินการฟิลเตอร์ล้างค่าอักขระพิเศษสกัดช่องโหว่ XSS จากชื่อผู้โดเนทและข้อความสนับสนุน
-    const sanitizedName = escapeHtml(name.trim());
-    const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
-
     const netAmountInSatang = Math.round(amount * 100);
     const url = new URL(c.req.url);
     const host = c.req.header("host") || url.host;
     const protocol = c.req.header("x-forwarded-proto") || url.protocol;
     const siteUrl = `${protocol}://${host}/`;
+
+    // 🟢 Finding #1: ดำเนินการล้างค่าอักขระพิเศษสกัดช่องโหว่ XSS จากชื่อผู้โดเนทและข้อความสนับสนุน [1]
+    const sanitizedName = escapeHtml(name.trim());
+    const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
 
     const beamUrl =
       env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
@@ -440,7 +437,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     const data: any = await response.json();
     if (!response.ok) {
-      // 🟢 Finding #3: ตรวจสอบและดักจับ Error ส่งออกประวัติลับและตอบกลับหน้าบ้านกลาง ๆ ป้องกัน Trace Leakage
+      // 🟢 Finding #3: ดักจับและเขียนประวัติลับหลบเลี่ยง Trace Leakage หน้าบ้าน
       safeLog("Beam API generation failed", "ERROR", data);
       return c.json(
         {
@@ -470,8 +467,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
   }
 });
 
-// [POST] /api/webhook/beam: ตรวจบิลจ่ายเสร็จ และยิงแจ้งขึ้นจอทันทีด้วย waitUntil [1]
-// 🟢 ติดตั้งตัวบล็อกขนาดอินพุต DoS ป้องกันคำขอยักษ์จากสคริปต์สปริงบอร์ดโจมตีเกตเวย์
+// [POST] /api/webhook/beam: ตรวจบิลจ่ายเสร็จ และยิงแจ้งแจ้งเตือน
 api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
@@ -528,7 +524,7 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       if (orderNote) {
         try {
           const parsedNote = JSON.parse(orderNote);
-          // 🟢 Finding #1: สกัด XSS ด่านสุดท้ายก่อนส่งมอบขึ้นสตรีมเมอร์
+          // 🟢 Finding #1: สกัด XSS จากชื่อผู้โดเนทและข้อความสนับสนุนก่อนขึ้น overlays เสมอ
           donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
           donorMessage = escapeHtml(parsedNote.donor_message || "");
         } catch {
@@ -554,7 +550,7 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
               if (noteStr) {
                 try {
                   const parsedNote = JSON.parse(noteStr);
-                  // 🟢 Finding #1: สกัด XSS จากกรณีเรียกดูย้อนหลัง
+                  // 🟢 Finding #1: สกัด XSS ข้อมูลเรียกดูย้อนหลัง
                   donorName = escapeHtml(parsedNote.donor_name || "Anonymous");
                   donorMessage = escapeHtml(parsedNote.donor_message || "");
                 } catch {
@@ -653,9 +649,9 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
     }
     return c.json({ success: true }, 200);
   } catch (error) {
-    // 🟢 Finding #3: ซ่อน Error ของการเชื่อมต่อ Webhook
+    // 🟢 Finding #3: ซ่อนข้อผิดพลาด Webhook
     safeLog("Fatal Webhook Controller Error", "ERROR", error);
-    return c.json({ error: "Fail. Webhook connection refused." }, 500);
+    return c.json({ error: "Fail. Webhook processing failed." }, 500);
   }
 });
 
