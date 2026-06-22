@@ -196,7 +196,18 @@ const api = app.basePath("/api");
 
 api.use("*", async (c, next) => {
   const db = c.env.DB;
-  if (db && !isDbInitialized) {
+  if (!db) {
+    safeLog(
+      "Critical Error: SQLite D1 Database binding 'DB' is missing in environment settings.",
+      "ERROR",
+    );
+    return c.json(
+      { error: "System Configuration Error: Database binding is missing." },
+      500,
+    );
+  }
+
+  if (!isDbInitialized) {
     try {
       await db.batch([
         db.prepare(`
@@ -236,6 +247,10 @@ api.get("/admin/verify", async (c) => {
   const expectedPassword = c.env.ADMIN_PASSWORD;
 
   if (!expectedPassword || expectedPassword.trim() === "") {
+    safeLog(
+      "Critical Error: ADMIN_PASSWORD is not set or empty in environment.",
+      "ERROR",
+    );
     return c.json(
       { valid: false, error: "System validation not configured." },
       500,
@@ -266,6 +281,10 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
+      safeLog(
+        "Critical Error: ADMIN_PASSWORD is not set or empty in environment.",
+        "ERROR",
+      );
       return c.json(
         { error: "System Error: Admin validation is not configured." },
         500,
@@ -273,7 +292,11 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
     }
 
     const turnstileSecret = env.TURNSTILE_SECRET_KEY;
-    if (!turnstileSecret) {
+    if (!turnstileSecret || turnstileSecret.trim() === "") {
+      safeLog(
+        "Critical Error: TURNSTILE_SECRET_KEY is not set or empty in environment.",
+        "ERROR",
+      );
       return c.json(
         { error: "Security system (Turnstile) not initialized." },
         500,
@@ -347,6 +370,10 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
     const expectedPassword = env.ADMIN_PASSWORD;
 
     if (!expectedPassword || expectedPassword.trim() === "") {
+      safeLog(
+        "Critical Error: ADMIN_PASSWORD is not set or empty in environment.",
+        "ERROR",
+      );
       return c.json({ error: "Admin authentication password is not set" }, 500);
     }
 
@@ -433,8 +460,15 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
     }
 
     const turnstileSecret = env.TURNSTILE_SECRET_KEY;
-    if (!turnstileSecret) {
-      return c.json({ error: "Security system not initialized." }, 500);
+    if (!turnstileSecret || turnstileSecret.trim() === "") {
+      safeLog(
+        "Critical Error: TURNSTILE_SECRET_KEY is not set or empty in environment.",
+        "ERROR",
+      );
+      return c.json(
+        { error: "Security system (Turnstile) not initialized." },
+        500,
+      );
     }
 
     const verifyResponse = await fetch(
@@ -455,10 +489,26 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Security verification failed." }, 400);
     }
 
-    if (!env.BEAM_API_KEY) {
-      return c.json({ error: "Payment gateway not configured." }, 501);
+    if (!env.BEAM_API_KEY || env.BEAM_API_KEY.trim() === "") {
+      safeLog(
+        "Critical Error: BEAM_API_KEY is missing or empty in environment settings.",
+        "ERROR",
+      );
+      return c.json({ error: "Payment gateway key is not configured." }, 500);
     }
 
+    if (!env.BEAM_API_URL || env.BEAM_API_URL.trim() === "") {
+      safeLog(
+        "Critical Error: BEAM_API_URL is missing or empty in environment settings. Denying transaction.",
+        "ERROR",
+      );
+      return c.json(
+        { error: "Payment gateway API URL is not configured." },
+        500,
+      );
+    }
+
+    const beamUrl = env.BEAM_API_URL;
     const netAmountInSatang = Math.round(amount * 100);
     const url = new URL(c.req.url);
     const host = c.req.header("host") || url.host;
@@ -467,9 +517,6 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     const sanitizedName = escapeHtml(name.trim());
     const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
-
-    const beamUrl =
-      env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
     const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
 
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
@@ -530,11 +577,28 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
 
     const body = await c.req.json();
     const callbackToken = c.req.header("x-beam-webhook-token") || "";
-    const expectedToken = env.BEAM_WEBHOOK_SECRET || "";
+    const expectedToken = env.BEAM_WEBHOOK_SECRET;
 
-    if (callbackToken.trim() === "" || expectedToken.trim() === "") {
-      safeLog("Security Alert: Null or missing Webhook credentials.", "WARN");
-      return c.json({ error: "Unauthenticated" }, 401);
+    if (!expectedToken || expectedToken.trim() === "") {
+      safeLog(
+        "Critical Error: Webhook secret (BEAM_WEBHOOK_SECRET) is missing or empty in environment.",
+        "ERROR",
+      );
+      return c.json(
+        {
+          error:
+            "System Configuration Error: Webhook signature secret missing.",
+        },
+        500,
+      );
+    }
+
+    if (callbackToken.trim() === "") {
+      safeLog(
+        "Security Alert: Missing Webhook callback token in request header.",
+        "WARN",
+      );
+      return c.json({ error: "Unauthenticated request" }, 401);
     }
 
     if (!(await secureCompare(callbackToken, expectedToken))) {
@@ -583,8 +647,18 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
         if (paymentLinkId && env.BEAM_API_KEY) {
-          const beamUrl =
-            env.BEAM_API_URL || "https://playground.api.beamcheckout.com";
+          if (!env.BEAM_API_URL || env.BEAM_API_URL.trim() === "") {
+            safeLog(
+              "Critical Error: BEAM_API_URL is missing or empty during Webhook fallback check.",
+              "ERROR",
+            );
+            return c.json(
+              { error: "System Configuration Error: Payment API URL missing." },
+              500,
+            );
+          }
+
+          const beamUrl = env.BEAM_API_URL;
           const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
           try {
             const plResponse = await fetch(
