@@ -131,4 +131,4 @@ Beam Checkout เป็นช่องทางรับเงิน:
   จุดที่ 1 ไปที่เมนู **Build > Compute > Workers & Pages > กดที่โครงการของคุณ > Setting > General > Rename**
   จุดที่ 2 ไปที่เมนู **Build > Compute > Workers & Pages > Account Details > Subdomain > รูปดินสอ**
 
-- **ตกแต่งหน้าโดเนทอย่างไร** นำ Link ที่ได้มาเติม admin ตามหลัง ตัวอย่าง `tips-secure.Subdomain.workers.dev/admin` (สำหรับการเปลี่ยนแปลง Font ครั้งแรก จะมีการ download font เบื้องหลังประมาณ 3-4 นาที ระหว่างนั้นจะยังไม่สามารถกด save change ได้)
+- **ตกแต่งหน้าโดเนทอย่างไร** นำ Link ที่ได้มาเติม admin ตามหลัง ตัวอย่าง `tips-secure.Subdomain.workers.dev/admin` (สำหรับการเปลี่ยนแปลง Font ครั้งแรก จะมีการ download font เบื้องหลังประมาณ 3-4 นาที ระหว่างนั้นจะยังไม่สามารถกด save change ได้) คุณสามารถทักส่วนตัวเพื่อขอลองตกแต่งหน้าโดเนทก่อนได้ ผมจะให้ลองกับหน้าโดเนทของผมเอง
