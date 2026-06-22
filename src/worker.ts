@@ -13,6 +13,7 @@ type Bindings = {
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   BEAM_WEBHOOK_SECRET?: string;
+  BEAM_MERCHANT_ID?: string;
   BEAM_API_KEY?: string;
   BEAM_API_URL?: string;
   STREAMLABS_ACCESS_TOKEN?: string;
@@ -489,6 +490,17 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
       return c.json({ error: "Security verification failed." }, 400);
     }
 
+    if (!env.BEAM_MERCHANT_ID || env.BEAM_MERCHANT_ID.trim() === "") {
+      safeLog(
+        "Critical Error: BEAM_MERCHANT_ID is missing or empty in environment settings. Denying transaction.",
+        "ERROR",
+      );
+      return c.json(
+        { error: "Payment gateway Merchant ID is not configured." },
+        500,
+      );
+    }
+
     if (!env.BEAM_API_KEY || env.BEAM_API_KEY.trim() === "") {
       safeLog(
         "Critical Error: BEAM_API_KEY is missing or empty in environment settings.",
@@ -517,7 +529,9 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     const sanitizedName = escapeHtml(name.trim());
     const sanitizedMessage = message ? escapeHtml(message.trim()) : "";
-    const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
+
+    const authHeader =
+      "Basic " + btoa(`${env.BEAM_MERCHANT_ID}:${env.BEAM_API_KEY}`);
 
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
@@ -646,6 +660,7 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
         }
       } else {
         const paymentLinkId = body.sourceId || body.paymentLinkId;
+
         if (paymentLinkId && env.BEAM_API_KEY) {
           if (!env.BEAM_API_URL || env.BEAM_API_URL.trim() === "") {
             safeLog(
@@ -658,8 +673,20 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
             );
           }
 
+          if (!env.BEAM_MERCHANT_ID || env.BEAM_MERCHANT_ID.trim() === "") {
+            safeLog(
+              "Critical Error: BEAM_MERCHANT_ID is missing during Webhook fallback check.",
+              "ERROR",
+            );
+            return c.json(
+              { error: "System Configuration Error: Merchant ID missing." },
+              500,
+            );
+          }
+
           const beamUrl = env.BEAM_API_URL;
-          const authHeader = "Basic " + btoa(`${env.BEAM_API_KEY}:`);
+          const authHeader =
+            "Basic " + btoa(`${env.BEAM_MERCHANT_ID}:${env.BEAM_API_KEY}`);
           try {
             const plResponse = await fetch(
               `${beamUrl}/api/v1/payment-links/${paymentLinkId}`,
