@@ -65,6 +65,7 @@ export default function Admin() {
     bgUrl: "",
     mainFontFamily: "Kanit",
     minDonationAmount: 10,
+    supportEmail: "",
   });
 
   const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -330,7 +331,7 @@ export default function Admin() {
               <Show when={turnstileSiteKey()}>
                 <div
                   id="admin-turnstile-container"
-                  class="w-full flex justify-center py-1 min-h-[65px]"
+                  class="w-full flex justify-center py-1 min-h-16.25"
                   style={{
                     display: turnstileToken() ? "none" : "flex",
                   }}
@@ -461,6 +462,26 @@ export default function Admin() {
                       setConfig("welcomeText", e.currentTarget.value)
                     }
                   ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-[#5C4F45] mb-1">
+                    Support Email (Highly recommended for Payment Gateway
+                    Approval)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g., support@yourdomain.com"
+                    class="w-full px-3 py-2.5 bg-[#FAF8F3] border border-[#E5DCCF] rounded-xl text-[#2C2520] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-[#E87A5D]"
+                    value={config.supportEmail || ""}
+                    onInput={(e) =>
+                      setConfig("supportEmail", e.currentTarget.value)
+                    }
+                  />
+                  <p class="text-[10px] text-[#7C6E65] mt-1 italic">
+                    This email will be displayed dynamically in the Footer
+                    "Contact Us" section to satisfy gateway audits.
+                  </p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

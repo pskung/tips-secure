@@ -37,6 +37,7 @@ export const ThemeSchema = z.object({
   nicknamePlaceholder: z.string().optional().or(z.literal("")),
   messagePlaceholder: z.string().optional().or(z.literal("")),
   submitBtnText: z.string().optional().or(z.literal("")),
+  supportEmail: z.string().optional().or(z.literal("")),
   bgType: z.enum(["solid", "image"]),
   bgColor: z.string().regex(hexColorRegex, "Invalid background color format."),
   cardBgColor: z

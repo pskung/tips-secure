@@ -146,7 +146,6 @@ export default function Home() {
   const [customActive, setCustomActive] = createSignal(false);
   const [customAmountVal, setCustomAmountVal] = createSignal("");
   const [turnstileToken, setTurnstileToken] = createSignal("");
-  const [isTosExpanded, setIsTosExpanded] = createSignal(false);
   const [turnstileReady, setTurnstileReady] = createSignal(false);
 
   let turnstileWidgetId: string | null = null;
@@ -700,69 +699,17 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div class="flex flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsTosExpanded(!isTosExpanded())}
-                        aria-expanded={isTosExpanded() ? "true" : "false"}
-                        aria-controls="tos-collapsed-content"
-                        class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
-                        style={{
-                          "background-color": config().inputBgColor,
-                          "border-color": config().inputBorderColor,
-                          color: config().inputTextColor,
-                        }}
-                      >
-                        <span>Terms & Refund Policy</span>
-                        <span class="text-[8px]">
-                          {isTosExpanded() ? "▲" : "▼"}
-                        </span>
-                      </button>
-
-                      <Show when={isTosExpanded()}>
-                        <div
-                          id="tos-collapsed-content"
-                          class="p-2 rounded-xl border space-y-1.5 max-h-20 overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
-                          style={{
-                            "background-color": config().cardBgColor,
-                            "border-color": config().cardBorderColor,
-                            color: config().generalTextColor,
-                          }}
-                        >
-                          <p>
-                            <strong>1. Leaderboard Ranking Points:</strong> Your
-                            support is a purchase of Points (1 THB = 1 Point) to
-                            participate in the streamer's ranking leaderboard
-                            and community activities.
-                          </p>
-                          <p>
-                            <strong>2. Strictly Non-Refundable:</strong> Points
-                            are instantly processed and credited. All
-                            transactions are completely final, non-refundable,
-                            non-returnable, and cannot be exchanged for cash or
-                            any physical currencies under any circumstances.
-                          </p>
-                        </div>
-                      </Show>
-
+                    <div class="flex flex-col gap-1 text-center px-1">
                       <div
-                        class="text-[9px] leading-normal text-center px-1"
+                        class="text-[9px] leading-normal"
                         style={{
                           color: hexToRgba(config().generalTextColor, 0.7),
                         }}
                       >
-                        By purchasing points, you agree to our{" "}
-                        <button
-                          type="button"
-                          onClick={() => setIsTosExpanded(!isTosExpanded())}
-                          aria-expanded={isTosExpanded() ? "true" : "false"}
-                          aria-controls="tos-collapsed-content"
-                          class="font-black underline cursor-pointer text-[9px]"
-                          style={{ color: config().generalTextColor }}
-                        >
-                          Terms & Refund Policy
-                        </button>
-                        .
+                        By purchasing points, you agree to our standard{" "}
+                        <span class="font-black">Terms of Service</span> &{" "}
+                        <span class="font-black">Refund Policy</span> listed
+                        below.
                       </div>
                     </div>
 
@@ -917,6 +864,64 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <footer
+          class="mt-auto py-6 border-t text-center text-[10px] space-y-3 z-10"
+          style={{
+            "border-color": config().cardBorderColor,
+            color: hexToRgba(config().generalTextColor, 0.6),
+          }}
+        >
+          <div class="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <button
+              type="button"
+              onClick={() =>
+                alert(
+                  "TERMS OF SERVICE:\n- 1 THB equals 1 Point.\n- Points are used strictly for community interactive events, song requests, and streamer-led polls.\n- Sharing or trading points outside the platform is prohibited.",
+                )
+              }
+              class="underline cursor-pointer hover:opacity-80"
+            >
+              Terms of Service
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                alert(
+                  "REFUND POLICY:\n- All point purchases are delivered digitally and instantly.\n- Since digital delivery is irreversible, all transactions are strictly non-refundable and non-returnable under any circumstances.",
+                )
+              }
+              class="underline cursor-pointer hover:opacity-80"
+            >
+              Refund Policy
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                alert(
+                  "PRIVACY POLICY:\n- We collect only your nickname, payment details, and optional messages for processing transactions.\n- We adhere to the Thailand PDPA regulations and do not share your private data with third parties.",
+                )
+              }
+              class="underline cursor-pointer hover:opacity-80"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                alert(
+                  `CONTACT US:\nCreator Name: ${config().vtuberName}\nEmail: support@yourdomain.com (กรุณาเปลี่ยนเป็นอีเมลจริงของคุณ)\nBusiness Address: Bangkok, Thailand`,
+                )
+              }
+              class="underline cursor-pointer hover:opacity-80"
+            >
+              Contact Us
+            </button>
+          </div>
+          <p class="text-[9px] tracking-wide">
+            © {new Date().getFullYear()} {config().vtuberName} Points Store.
+            Powered by Hono & D1 SQLite.
+          </p>
+        </footer>
       </main>
     </Show>
   );

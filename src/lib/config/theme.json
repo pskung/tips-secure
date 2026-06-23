@@ -28,5 +28,6 @@
   "submitBtnColor": "#ffdd00",
   "submitBtnTextColor": "#000000",
   "submitBtnText": "AGREE & SUPPORT ME",
-  "minDonationAmount": 10
+  "minDonationAmount": 10,
+  "supportEmail": "support@yourdomain.com"
 }
