@@ -388,7 +388,7 @@ export default function Home() {
     }
   };
 
-  const modalContent = {
+  const modalContent = createMemo(() => ({
     terms: {
       title: "Terms of Service",
       text: `1. Points Purchase System: This portal provides interactive community points for supporting the creator. 1 THB is equivalent to 1 community activity point.
@@ -417,7 +417,7 @@ export default function Home() {
 • Support & Helpdesk Email: ${config().supportEmail || "support@yourdomain.com"}
 • Country of Business: Thailand`,
     },
-  };
+  }));
 
   return (
     <Show when={!loading()} fallback={<SkeletonUI />}>
@@ -940,7 +940,6 @@ export default function Home() {
             Powered by Hono & Cloudflare Workers.
           </p>
 
-          {/* ตรรกะแสดงผลกล่องลอย (Modal) เมื่อแอดมินหรือผู้ชมคลิกเปิดอ่าน */}
           <Show when={activeModal()}>
             {(modalType) => (
               <div
@@ -949,12 +948,12 @@ export default function Home() {
               >
                 <div
                   class="bg-white text-[#2C2520] border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-md w-full max-h-[75vh] overflow-y-auto shadow-2xl text-left flex flex-col justify-between"
-                  onClick={(e) => e.stopPropagation()} // ป้องกันกล่องปิดตัวเองเมื่อคลิกตัวข้อความด้านใน
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <div class="space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                       <h3 class="text-sm font-black uppercase tracking-wider text-slate-800">
-                        {modalContent[modalType()].title}
+                        {modalContent()[modalType()].title}
                       </h3>
                       <button
                         type="button"
@@ -966,7 +965,7 @@ export default function Home() {
                     </div>
 
                     <p class="text-xs leading-relaxed text-[#5C4F45] whitespace-pre-line text-left select-text">
-                      {modalContent[modalType()].text}
+                      {modalContent()[modalType()].text}
                     </p>
                   </div>
 
