@@ -909,7 +909,7 @@ export default function Home() {
               type="button"
               onClick={() =>
                 alert(
-                  `CONTACT US:\nCreator Name: ${config().vtuberName}\nEmail: support@yourdomain.com (กรุณาเปลี่ยนเป็นอีเมลจริงของคุณ)\nBusiness Address: Bangkok, Thailand`,
+                  `CONTACT US:\nCreator Name: ${config().vtuberName}\nEmail: ${config().supportEmail || "support@yourdomain.com"}\nBusiness Location: Thailand`,
                 )
               }
               class="underline cursor-pointer hover:opacity-80"
