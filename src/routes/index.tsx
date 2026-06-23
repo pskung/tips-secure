@@ -430,7 +430,7 @@ export default function Home() {
             "background-image": `url(${
               config().bannerUrl
                 ? config().bannerUrl
-                : "https://placehold.co/1200x480/e2e8f0/0f172a?text=Banner"
+                : "https://placehold.co/1920x400/e2e8f0/0f172a?text=Banner"
             })`,
             "border-color": config().cardBorderColor,
           }}
