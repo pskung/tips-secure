@@ -90,13 +90,13 @@ function getSocialIcon(platform: string) {
 function SkeletonUI() {
   return (
     <div class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-6 bg-[#0b0f19] text-slate-400 animate-pulse">
-      <div class="w-full h-20 bg-slate-800/40 border-b border-slate-800"></div>
+      <div class="w-full h-28 sm:h-36 md:h-40 bg-slate-800/40 border-b border-slate-800 shrink-0"></div>
       <div class="max-w-5xl w-full mx-auto px-4 py-2 flex-1 flex flex-col justify-start relative z-10">
-        <div class="flex flex-col lg:flex-row gap-4 items-start -mt-6 w-full">
+        <div class="flex flex-col lg:flex-row gap-4 items-start -mt-8 sm:-mt-12 md:-mt-16 w-full">
           <div class="flex-1 w-full space-y-3 flex flex-col">
             <div class="p-4 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col space-y-3 text-left">
               <div class="flex items-center gap-4 w-full">
-                <div class="w-14 h-14 rounded-full bg-slate-800/60 border border-slate-700"></div>
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800/60 border border-slate-700 shrink-0"></div>
                 <div class="space-y-2 min-w-0 flex-1">
                   <div class="h-5 bg-slate-800/60 rounded-md w-1/3"></div>
                   <div class="flex gap-2">
@@ -426,7 +426,7 @@ export default function Home() {
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
         <div
-          class="w-full h-16 sm:h-20 md:h-24 bg-cover bg-center relative shrink-0 border-b shadow-xs z-0"
+          class="w-full h-28 sm:h-36 md:h-40 bg-cover bg-center relative shrink-0 border-b shadow-xs z-0"
           style={{
             "background-image": `url(${
               config().bannerUrl
@@ -440,7 +440,7 @@ export default function Home() {
         </div>
 
         <div class="max-w-5xl w-full mx-auto px-4 py-2 flex-1 flex flex-col justify-start relative z-10">
-          <div class="flex flex-col lg:flex-row gap-5 items-start -mt-4 md:-mt-6 lg:-mt-8 w-full">
+          <div class="flex flex-col lg:flex-row gap-5 items-start -mt-8 sm:-mt-12 md:-mt-16 w-full">
             <div class="flex-1 w-full space-y-3 flex flex-col">
               <div
                 class="p-4 sm:p-5 rounded-3xl border shadow-md flex flex-col space-y-3 text-left"
@@ -458,7 +458,7 @@ export default function Home() {
                           : "https://placehold.co/300x300/e2e8f0/0f172a?text=Avatar"
                       }
                       alt="Avatar"
-                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-white shadow-xs object-cover"
+                      class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
                     />
                   </div>
                   <div class="space-y-1 min-w-0 flex-1">
