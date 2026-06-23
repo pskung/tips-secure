@@ -865,13 +865,13 @@ export default function Home() {
           </div>
         </div>
         <footer
-          class="mt-auto py-6 border-t text-center text-[10px] space-y-3 z-10"
+          class="mt-auto pt-3 pb-1 border-t text-center text-[10px] space-y-1 z-10"
           style={{
             "border-color": config().cardBorderColor,
             color: hexToRgba(config().generalTextColor, 0.6),
           }}
         >
-          <div class="flex flex-wrap justify-center gap-x-5 gap-y-2">
+          <div class="flex flex-wrap justify-center gap-x-5 gap-y-1">
             <button
               type="button"
               onClick={() =>
