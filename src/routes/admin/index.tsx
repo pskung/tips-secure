@@ -520,7 +520,7 @@ export default function Admin() {
 
                   <div>
                     <label class="block text-xs font-bold text-[#5C4F45] mb-1">
-                      Banner Image URL (1200x480)
+                      Banner Image URL (1920x400)
                     </label>
                     <input
                       type="text"
