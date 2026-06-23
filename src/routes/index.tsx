@@ -26,56 +26,56 @@ function getSocialIcon(platform: string) {
   const p = platform.toLowerCase();
   if (p.includes("youtube")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.516 0-9.387.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.389-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837z" />
       </svg>
     );
   }
   if (p.includes("twitch")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
       </svg>
     );
   }
   if (p.includes("discord")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.121-.63-.24-1.224-.534-1.783-.876a.079.079 0 0 1-.008-.13c.12-.09.239-.185.353-.28a.077.077 0 0 1 .081-.011c3.963 1.817 8.27 1.817 12.185 0a.078.078 0 0 1 .082.01c.114.095.233.19.353.281a.078.078 0 0 1-.007.13 12.19 12.19 0 0 1-1.784.877c-.033.013-.044.062-.024.12.355.698.766 1.365 1.225 1.993a.082.082 0 0 0 .085.029 19.9 19.9 0 0 0 6.002-3.03.076.076 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.121-.63-.24-1.224-.534-1.783-.876a.079.079 0 0 1-.008-.13c.12-.09.239-.185.353-.28a.077.077 0 0 1 .081-.011c3.963 1.817 8.27 1.817 12.185 0a.078.078 0 0 1 .082.01;c.114.095.233.19.353.281a.078.078 0 0 1-.007.13 12.19 12.19 0 0 1-1.784.877c-.033.013-.044.062-.024.12.355.698.766 1.365 1.225 1.993a.082.082 0 0 0 .085.029 19.9 19.9 0 0 0 6.002-3.03.076.076 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
       </svg>
     );
   }
   if (p.includes("x")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
       </svg>
     );
   }
   if (p.includes("facebook")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z" />
       </svg>
     );
   }
   if (p.includes("instagram")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204 0 3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
       </svg>
     );
   }
   if (p.includes("tiktok")) {
     return (
-      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
         <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.1.12.2.24.3.35v3.98c-.14-.02-.27-.06-.41-.09-1.2-.28-2.28-.97-3.04-1.92-.04-.05-.07-.11-.12-.18v7.22c.04 5.37-4.43 9.42-9.74 8.91-4.04-.39-7.16-3.86-7.14-7.9.03-3.84 2.87-7.07 6.69-7.46.61-.06 1.22-.04 1.83.05v3.94c-.4-.08-.81-.11-1.22-.09-1.85.08-3.34 1.64-3.29 3.51.05 1.84 1.57 3.31 3.42 3.27 1.8-.04 3.23-1.52 3.21-3.32V0c.34.01.67.01 1 .02z" />
       </svg>
     );
   }
   return (
     <svg
-      class="w-5 h-5 stroke-current fill-none"
+      class="w-4 h-4 stroke-current fill-none"
       viewBox="0 0 24 24"
       stroke-width="2"
       stroke-linecap="round"
@@ -89,46 +89,31 @@ function getSocialIcon(platform: string) {
 
 function SkeletonUI() {
   return (
-    <div class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-[#0b0f19] text-slate-400 animate-pulse">
-      <div class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-slate-800/40 border-b border-slate-800"></div>
-
-      <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-        <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-          <div class="flex-1 w-full space-y-4 flex flex-col">
-            <div class="p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col space-y-4 text-left">
+    <div class="flex min-h-screen flex-col relative select-none overflow-x-hidden pb-6 bg-[#0b0f19] text-slate-400 animate-pulse">
+      <div class="w-full h-20 bg-slate-800/40 border-b border-slate-800"></div>
+      <div class="max-w-5xl w-full mx-auto px-4 py-2 flex-1 flex flex-col justify-start relative z-10">
+        <div class="flex flex-col lg:flex-row gap-4 items-start -mt-6 w-full">
+          <div class="flex-1 w-full space-y-3 flex flex-col">
+            <div class="p-4 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col space-y-3 text-left">
               <div class="flex items-center gap-4 w-full">
-                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800/60 border border-slate-700"></div>
+                <div class="w-14 h-14 rounded-full bg-slate-800/60 border border-slate-700"></div>
                 <div class="space-y-2 min-w-0 flex-1">
-                  <div class="h-6 bg-slate-800/60 rounded-md w-1/3"></div>
+                  <div class="h-5 bg-slate-800/60 rounded-md w-1/3"></div>
                   <div class="flex gap-2">
-                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
-                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
-                    <div class="w-6 h-6 rounded-md bg-slate-800/60"></div>
+                    <div class="w-5 h-5 rounded-md bg-slate-800/60"></div>
+                    <div class="w-5 h-5 rounded-md bg-slate-800/60"></div>
                   </div>
                 </div>
               </div>
               <div class="border-t border-slate-800 w-full"></div>
               <div class="space-y-2">
-                <div class="h-4 bg-slate-800/50 rounded-md w-1/4"></div>
                 <div class="h-3 bg-slate-800/40 rounded-md w-full"></div>
-                <div class="h-3 bg-slate-800/40 rounded-md w-5/6"></div>
               </div>
             </div>
           </div>
-
-          <div class="w-full lg:w-[340px] flex-shrink-0">
-            <div class="w-full p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col gap-3.5">
-              <div class="grid grid-cols-4 gap-1.5">
-                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
-                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
-                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
-                <div class="h-10 bg-slate-800/60 rounded-xl"></div>
-              </div>
-              <div class="h-12 bg-slate-800/50 rounded-xl"></div>
-              <div class="h-12 bg-slate-800/50 rounded-xl"></div>
-              <div class="h-20 bg-slate-800/50 rounded-xl"></div>
-              <div class="h-8 bg-slate-800/40 rounded-xl"></div>
-              <div class="h-14 bg-slate-800/70 rounded-2xl"></div>
+          <div class="w-full lg:w-85 shrink-0">
+            <div class="w-full p-4 rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col gap-3">
+              <div class="h-8 bg-slate-800/60 rounded-xl"></div>
             </div>
           </div>
         </div>
@@ -142,6 +127,15 @@ export default function Home() {
   const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
   const [loading, setLoading] = createSignal(true);
   const [actionLoading, setActionLoading] = createSignal(false);
+
+  const [activeTab, setActiveTab] = createSignal<"support" | "leaderboard">(
+    "support",
+  );
+  const [leaderboard, setLeaderboard] = createSignal<
+    { name: string; points: number }[]
+  >([]);
+  const [leaderboardLoading, setLeaderboardLoading] = createSignal(false);
+  const [animateBar, setAnimateBar] = createSignal(false);
 
   const [name, setName] = createSignal("");
   const [amount, setAmount] = createSignal("");
@@ -302,9 +296,46 @@ export default function Home() {
 
   createEffect(() => {
     const siteKey = turnstileSiteKey();
-    if (siteKey && turnstileReady()) {
+    if (siteKey && turnstileReady() && activeTab() === "support") {
       initTurnstile();
     }
+  });
+
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    setAnimateBar(false);
+    try {
+      const res = await fetch("/api/leaderboard");
+      if (res.ok) {
+        const data = (await res.json()) as { name: string; points: number }[];
+        setLeaderboard(data);
+      } else {
+        setLeaderboard([
+          { name: "Top Supporter", points: 2500 },
+          { name: "Elite Member", points: 1500 },
+          { name: "Loyal Viewer", points: 1000 },
+          { name: "Active Chat", points: 500 },
+          { name: "New Friend", points: 100 },
+        ]);
+      }
+    } catch {
+      setLeaderboard([
+        { name: "Top Supporter", points: 2500 },
+        { name: "Elite Member", points: 1500 },
+        { name: "Loyal Viewer", points: 1000 },
+        { name: "Active Chat", points: 500 },
+        { name: "New Friend", points: 100 },
+      ]);
+    } finally {
+      setLeaderboardLoading(false);
+      setTimeout(() => setAnimateBar(true), 120);
+    }
+  };
+
+  const maxPoints = createMemo(() => {
+    const list = leaderboard();
+    if (list.length === 0) return 1;
+    return Math.max(...list.map((item) => item.points), 1);
   });
 
   const handleDonate = async (e: Event) => {
@@ -368,11 +399,17 @@ export default function Home() {
           .custom-font-root select {
             font-family: var(--main-font-family), sans-serif !important;
           }
+          .custom-font-root input::placeholder,
+          .custom-font-root textarea::placeholder {
+            color: var(--placeholder-color) !important;
+            font-family: var(--placeholder-font), sans-serif !important;
+            font-weight: 400 !important;
+          }
         `}
       </style>
 
       <main
-        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-12 bg-cover bg-center bg-no-repeat bg-fixed"
+        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-6 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           "--main-font-family": `'${activeFont()}'`,
           "background-image":
@@ -389,7 +426,7 @@ export default function Home() {
         <div class="absolute inset-0 bg-black/2 -z-10"></div>
 
         <div
-          class="w-full h-36 sm:h-44 md:h-52 lg:h-56 bg-cover bg-center relative flex-shrink-0 border-b shadow-xs z-0"
+          class="w-full h-16 sm:h-20 md:h-24 bg-cover bg-center relative shrink-0 border-b shadow-xs z-0"
           style={{
             "background-image": `url(${
               config().bannerUrl
@@ -402,18 +439,18 @@ export default function Home() {
           <div class="absolute inset-0 bg-black/4"></div>
         </div>
 
-        <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 flex flex-col justify-start relative z-10">
-          <div class="flex flex-col lg:flex-row gap-6 items-start -mt-10 md:-mt-16 lg:-mt-24 w-full">
-            <div class="flex-1 w-full space-y-4 flex flex-col">
+        <div class="max-w-5xl w-full mx-auto px-4 py-2 flex-1 flex flex-col justify-start relative z-10">
+          <div class="flex flex-col lg:flex-row gap-5 items-start -mt-4 md:-mt-6 lg:-mt-8 w-full">
+            <div class="flex-1 w-full space-y-3 flex flex-col">
               <div
-                class="p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col space-y-4 text-left"
+                class="p-4 sm:p-5 rounded-3xl border shadow-md flex flex-col space-y-3 text-left"
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
                 }}
               >
-                <div class="flex items-center gap-4 w-full">
-                  <div class="flex-shrink-0">
+                <div class="flex items-center gap-3 w-full">
+                  <div class="shrink-0">
                     <img
                       src={
                         config().avatarUrl
@@ -421,18 +458,18 @@ export default function Home() {
                           : "https://placehold.co/300x300/e2e8f0/0f172a?text=Avatar"
                       }
                       alt="Avatar"
-                      class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-xs object-cover"
+                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-white shadow-xs object-cover"
                     />
                   </div>
-                  <div class="space-y-1.5 min-w-0 flex-1">
+                  <div class="space-y-1 min-w-0 flex-1">
                     <h1
-                      class="text-xl sm:text-2xl font-black tracking-tight truncate"
+                      class="text-lg sm:text-xl font-black tracking-tight truncate"
                       style={{ color: config().nameColor }}
                     >
                       {config().vtuberName}
                     </h1>
 
-                    <div class="flex items-center gap-2 pt-0.5">
+                    <div class="flex items-center gap-1.5">
                       <For each={socialLinks()}>
                         {(link) => (
                           <a
@@ -459,7 +496,7 @@ export default function Home() {
 
                 <div>
                   <h2
-                    class="text-xs font-black uppercase tracking-widest mb-2"
+                    class="text-[10px] font-black uppercase tracking-widest mb-1"
                     style={{ color: config().generalTextColor }}
                   >
                     About {config().vtuberName}
@@ -474,10 +511,9 @@ export default function Home() {
               </div>
             </div>
 
-            <div class="w-full lg:w-[340px] flex-shrink-0">
-              <form
-                onSubmit={handleDonate}
-                class="w-full p-5 sm:p-6 rounded-3xl border shadow-md flex flex-col gap-3.5 relative overflow-hidden"
+            <div class="w-full lg:w-85 shrink-0">
+              <div
+                class="w-full p-4 sm:p-5 rounded-3xl border shadow-md flex flex-col gap-3 relative overflow-hidden"
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
@@ -485,252 +521,399 @@ export default function Home() {
                     config().inputTextColor,
                     0.6,
                   ),
-                  "--placeholder-font": `'${activeFont()}', sans-serif`,
+                  "--placeholder-font": `'${activeFont()}'`,
                 }}
               >
-                <input
-                  type="text"
-                  name="email_confirm"
-                  value={honeypot()}
-                  onInput={(e) => setHoneypot(e.currentTarget.value)}
-                  tabindex={-1}
-                  autocomplete="off"
-                  class="hidden"
-                />
-
-                <div class="flex flex-col gap-2.5">
-                  <div
-                    class="grid grid-cols-4 gap-1.5"
-                    role="group"
-                    aria-label="Donation preset amounts"
-                  >
-                    <For each={config().presetAmounts}>
-                      {(amt) => (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAmount(String(amt));
-                            setCustomAmountVal(String(amt));
-                            setCustomActive(false);
-                          }}
-                          aria-pressed={
-                            !customActive() && amount() === String(amt)
-                              ? "true"
-                              : "false"
-                          }
-                          aria-label={`Select preset amount of ${amt} Baht`}
-                          class="py-3 text-base font-normal border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
-                          style={{
-                            "background-color":
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnColor
-                                : config().inputBgColor,
-                            "border-color":
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnColor
-                                : config().presetBorderColor,
-                            color:
-                              !customActive() && amount() === String(amt)
-                                ? config().submitBtnTextColor
-                                : config().inputTextColor,
-                          }}
-                        >
-                          {amt}฿
-                        </button>
-                      )}
-                    </For>
-                  </div>
-
-                  <label for="custom-amount" class="sr-only">
-                    Amount
-                  </label>
-                  <input
-                    id="custom-amount"
-                    type="number"
-                    min={config().minDonationAmount || 10}
-                    max="100000"
-                    step="0.01"
-                    placeholder={`Min ${config().minDonationAmount || 10} THB...`}
-                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => {
-                      let val = e.currentTarget.value;
-                      if (val.includes(".")) {
-                        const [intPart, decPart] = val.split(".");
-                        if (decPart && decPart.length > 2) {
-                          val = `${intPart}.${decPart.substring(0, 2)}`;
-                          e.currentTarget.value = val;
-                        }
-                      }
-                      setCustomActive(true);
-                      setAmount(val);
-                      setCustomAmountVal(val);
-                    }}
-                    value={customAmountVal()}
-                  />
-                </div>
-
-                <div class="flex flex-col">
-                  <label for="nickname" class="sr-only">
-                    Nickname
-                  </label>
-                  <input
-                    id="nickname"
-                    type="text"
-                    required
-                    placeholder={config().nicknamePlaceholder}
-                    class="w-full px-4 py-3 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal"
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => setName(e.currentTarget.value)}
-                    value={name()}
-                  />
-                </div>
-
-                <div class="relative w-full">
-                  <label for="donor-msg" class="sr-only">
-                    Message
-                  </label>
-                  <textarea
-                    id="donor-msg"
-                    placeholder={config().messagePlaceholder}
-                    maxlength={255}
-                    class="w-full px-4 py-3 pb-8 rounded-xl text-base font-normal transition-all focus:outline-none focus:ring-1 border shadow-xs placeholder:text-[var(--placeholder-color)] placeholder:font-[var(--placeholder-font)] placeholder:font-normal resize-none overflow-y-hidden min-h-[72px]"
-                    rows={2}
-                    style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
-                      "--tw-ring-color": config().submitBtnColor,
-                    }}
-                    onInput={(e) => {
-                      setMessage(e.currentTarget.value);
-                      e.currentTarget.style.height = "auto";
-                      e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
-                    }}
-                    value={message()}
-                  ></textarea>
-
-                  <div
-                    class="absolute bottom-2.5 right-4 text-[10px] select-none"
-                    style={{ color: hexToRgba(config().inputTextColor, 0.6) }}
-                  >
-                    {255 - message().length}
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-2">
+                <div
+                  class="flex border-b pb-1 mb-1 gap-2"
+                  style={{ "border-color": config().cardBorderColor }}
+                >
                   <button
                     type="button"
-                    onClick={() => setIsTosExpanded(!isTosExpanded())}
-                    aria-expanded={isTosExpanded() ? "true" : "false"}
-                    aria-controls="tos-collapsed-content"
-                    class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
+                    onClick={() => setActiveTab("support")}
+                    class="flex-1 pb-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer text-center border-b-2"
                     style={{
-                      "background-color": config().inputBgColor,
-                      "border-color": config().inputBorderColor,
-                      color: config().inputTextColor,
+                      "border-color":
+                        activeTab() === "support"
+                          ? config().submitBtnColor
+                          : "transparent",
+                      color: config().generalTextColor,
+                      opacity: activeTab() === "support" ? "1" : "0.5",
                     }}
                   >
-                    <span>Terms & Privacy Policy</span>
-                    <span class="text-[8px]">
-                      {isTosExpanded() ? "▲" : "▼"}
-                    </span>
+                    Support
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("leaderboard");
+                      fetchLeaderboard();
+                    }}
+                    class="flex-1 pb-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer text-center border-b-2"
+                    style={{
+                      "border-color":
+                        activeTab() === "leaderboard"
+                          ? config().submitBtnColor
+                          : "transparent",
+                      color: config().generalTextColor,
+                      opacity: activeTab() === "leaderboard" ? "1" : "0.5",
+                    }}
+                  >
+                    Leaderboard
+                  </button>
+                </div>
 
-                  <Show when={isTosExpanded()}>
-                    <div
-                      id="tos-collapsed-content"
-                      class="p-2.5 rounded-xl border space-y-1.5 max-h-[75px] overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
+                <Show when={activeTab() === "support"}>
+                  <form onSubmit={handleDonate} class="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      name="email_confirm"
+                      value={honeypot()}
+                      onInput={(e) => setHoneypot(e.currentTarget.value)}
+                      tabindex={-1}
+                      autocomplete="off"
+                      class="hidden"
+                    />
+
+                    <div class="flex flex-col gap-2.5">
+                      <div
+                        class="grid grid-cols-4 gap-1.5"
+                        role="group"
+                        aria-label="Donation preset amounts"
+                      >
+                        <For each={config().presetAmounts}>
+                          {(amt) => (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAmount(String(amt));
+                                setCustomAmountVal(String(amt));
+                                setCustomActive(false);
+                              }}
+                              aria-pressed={
+                                !customActive() && amount() === String(amt)
+                                  ? "true"
+                                  : "false"
+                              }
+                              aria-label={`Select preset amount of ${amt} Baht`}
+                              class="py-2.5 text-sm font-bold border rounded-xl transition-all duration-200 cursor-pointer shadow-xs"
+                              style={{
+                                "background-color":
+                                  !customActive() && amount() === String(amt)
+                                    ? config().submitBtnColor
+                                    : config().inputBgColor,
+                                "border-color":
+                                  !customActive() && amount() === String(amt)
+                                    ? config().submitBtnColor
+                                    : config().presetBorderColor,
+                                color:
+                                  !customActive() && amount() === String(amt)
+                                    ? config().submitBtnTextColor
+                                    : config().inputTextColor,
+                              }}
+                            >
+                              {amt}฿
+                            </button>
+                          )}
+                        </For>
+                      </div>
+
+                      <label for="custom-amount" class="sr-only">
+                        Amount
+                      </label>
+                      <input
+                        id="custom-amount"
+                        type="number"
+                        min={config().minDonationAmount || 10}
+                        max="100000"
+                        step="1"
+                        placeholder={`Min ${config().minDonationAmount || 10} THB...`}
+                        class="w-full px-4 py-2.5 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs"
+                        style={{
+                          "background-color": config().inputBgColor,
+                          "border-color": config().inputBorderColor,
+                          color: config().inputTextColor,
+                          "--tw-ring-color": config().submitBtnColor,
+                        }}
+                        onInput={(e) => {
+                          let val = e.currentTarget.value;
+                          setCustomActive(true);
+                          setAmount(val);
+                          setCustomAmountVal(val);
+                        }}
+                        value={customAmountVal()}
+                      />
+                    </div>
+
+                    <div class="flex flex-col">
+                      <label for="nickname" class="sr-only">
+                        Nickname
+                      </label>
+                      <input
+                        id="nickname"
+                        type="text"
+                        required
+                        placeholder={config().nicknamePlaceholder}
+                        class="w-full px-4 py-2.5 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs"
+                        style={{
+                          "background-color": config().inputBgColor,
+                          "border-color": config().inputBorderColor,
+                          color: config().inputTextColor,
+                          "--tw-ring-color": config().submitBtnColor,
+                        }}
+                        onInput={(e) => setName(e.currentTarget.value)}
+                        value={name()}
+                      />
+                    </div>
+
+                    <div class="relative w-full">
+                      <label for="donor-msg" class="sr-only">
+                        Message
+                      </label>
+                      <textarea
+                        id="donor-msg"
+                        placeholder={config().messagePlaceholder}
+                        maxlength={255}
+                        class="w-full px-4 py-2.5 pb-6 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-1 border shadow-xs resize-none overflow-y-hidden min-h-12.5"
+                        rows={1}
+                        style={{
+                          "background-color": config().inputBgColor,
+                          "border-color": config().inputBorderColor,
+                          color: config().inputTextColor,
+                          "--tw-ring-color": config().submitBtnColor,
+                        }}
+                        onInput={(e) => {
+                          setMessage(e.currentTarget.value);
+                          e.currentTarget.style.height = "auto";
+                          e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                        }}
+                        value={message()}
+                      ></textarea>
+
+                      <div
+                        class="absolute bottom-1 right-3 text-[9px] select-none"
+                        style={{
+                          color: hexToRgba(config().inputTextColor, 0.6),
+                        }}
+                      >
+                        {255 - message().length}
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsTosExpanded(!isTosExpanded())}
+                        aria-expanded={isTosExpanded() ? "true" : "false"}
+                        aria-controls="tos-collapsed-content"
+                        class="w-full py-1.5 px-3 rounded-xl border font-bold text-[9px] flex items-center justify-between cursor-pointer transition-all hover:opacity-90"
+                        style={{
+                          "background-color": config().inputBgColor,
+                          "border-color": config().inputBorderColor,
+                          color: config().inputTextColor,
+                        }}
+                      >
+                        <span>Terms & Refund Policy</span>
+                        <span class="text-[8px]">
+                          {isTosExpanded() ? "▲" : "▼"}
+                        </span>
+                      </button>
+
+                      <Show when={isTosExpanded()}>
+                        <div
+                          id="tos-collapsed-content"
+                          class="p-2 rounded-xl border space-y-1.5 max-h-20 overflow-y-auto leading-relaxed text-[9px] transition-all duration-300"
+                          style={{
+                            "background-color": config().cardBgColor,
+                            "border-color": config().cardBorderColor,
+                            color: config().generalTextColor,
+                          }}
+                        >
+                          <p>
+                            <strong>1. Leaderboard Ranking Points:</strong> Your
+                            support is a purchase of Points (1 THB = 1 Point) to
+                            participate in the streamer's ranking leaderboard
+                            and community activities.
+                          </p>
+                          <p>
+                            <strong>2. Strictly Non-Refundable:</strong> Points
+                            are instantly processed and credited. All
+                            transactions are completely final, non-refundable,
+                            non-returnable, and cannot be exchanged for cash or
+                            any physical currencies under any circumstances.
+                          </p>
+                        </div>
+                      </Show>
+
+                      <div
+                        class="text-[9px] leading-normal text-center px-1"
+                        style={{
+                          color: hexToRgba(config().generalTextColor, 0.7),
+                        }}
+                      >
+                        By purchasing points, you agree to our{" "}
+                        <button
+                          type="button"
+                          onClick={() => setIsTosExpanded(!isTosExpanded())}
+                          aria-expanded={isTosExpanded() ? "true" : "false"}
+                          aria-controls="tos-collapsed-content"
+                          class="font-black underline cursor-pointer text-[9px]"
+                          style={{ color: config().generalTextColor }}
+                        >
+                          Terms & Refund Policy
+                        </button>
+                        .
+                      </div>
+                    </div>
+
+                    <Show when={turnstileSiteKey()}>
+                      <div
+                        id="turnstile-container"
+                        class="w-full flex justify-center transition-all duration-300 py-0.5"
+                        style={{
+                          display: turnstileToken() ? "none" : "flex",
+                          "min-height": "50px",
+                        }}
+                      ></div>
+                    </Show>
+
+                    <button
+                      type="submit"
+                      disabled={
+                        actionLoading() ||
+                        cooldownRemaining() > 0 ||
+                        (turnstileSiteKey() !== "" && !turnstileToken())
+                      }
+                      aria-busy={actionLoading() ? "true" : "false"}
+                      class="w-full py-3 text-sm font-black rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
                       style={{
-                        "background-color": config().cardBgColor,
+                        "background-color":
+                          cooldownRemaining() > 0
+                            ? "#64748b"
+                            : config().submitBtnColor,
+                        color: config().submitBtnTextColor || "#ffffff",
+                      }}
+                    >
+                      <Show
+                        when={cooldownRemaining() > 0}
+                        fallback={
+                          <Show
+                            when={actionLoading()}
+                            fallback={config().submitBtnText}
+                          >
+                            Get Points & Support
+                          </Show>
+                        }
+                      >
+                        Wait {cooldownRemaining()}s... ⏳
+                      </Show>
+                    </button>
+                  </form>
+                </Show>
+
+                <Show when={activeTab() === "leaderboard"}>
+                  <div class="flex flex-col gap-2.5 min-h-45 justify-between">
+                    <div>
+                      <h3
+                        class="text-xs font-black uppercase tracking-wider mb-2"
+                        style={{ color: config().generalTextColor }}
+                      >
+                        Monthly Leaderboard
+                      </h3>
+
+                      <Show when={leaderboardLoading()}>
+                        <div class="flex flex-col gap-2 py-8 items-center justify-center">
+                          <div
+                            class="animate-spin rounded-full h-5 w-5 border-b-2"
+                            style={{ "border-color": config().submitBtnColor }}
+                          ></div>
+                          <span
+                            class="text-[9px]"
+                            style={{ color: config().generalTextColor }}
+                          >
+                            Loading ranking...
+                          </span>
+                        </div>
+                      </Show>
+
+                      <Show when={!leaderboardLoading()}>
+                        <div class="flex flex-col gap-2 max-h-42.5 overflow-y-auto pr-1">
+                          <For each={leaderboard()}>
+                            {(item, idx) => (
+                              <div class="space-y-1">
+                                <div class="flex justify-between text-xs font-bold items-center">
+                                  <span
+                                    class="truncate pr-2"
+                                    style={{ color: config().generalTextColor }}
+                                  >
+                                    {idx() === 0
+                                      ? "🥇"
+                                      : idx() === 1
+                                        ? "🥈"
+                                        : idx() === 2
+                                          ? "🥉"
+                                          : `${idx() + 1}.`}{" "}
+                                    {item.name}
+                                  </span>
+                                  <span
+                                    class="font-black text-[11px] whitespace-nowrap"
+                                    style={{ color: config().generalTextColor }}
+                                  >
+                                    {item.points} pts
+                                  </span>
+                                </div>
+                                <div
+                                  class="w-full h-1.5 rounded-full overflow-hidden bg-black/5"
+                                  style={{
+                                    "background-color": hexToRgba(
+                                      config().inputTextColor,
+                                      0.1,
+                                    ),
+                                  }}
+                                >
+                                  <div
+                                    class="h-full rounded-full transition-all duration-1000 ease-out"
+                                    style={{
+                                      width: animateBar()
+                                        ? `${Math.max(4, (item.points / maxPoints()) * 100)}%`
+                                        : "0%",
+                                      "background-color":
+                                        config().submitBtnColor,
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            )}
+                          </For>
+                          <Show when={leaderboard().length === 0}>
+                            <div
+                              class="text-center py-10 text-xs"
+                              style={{
+                                color: hexToRgba(
+                                  config().generalTextColor,
+                                  0.6,
+                                ),
+                              }}
+                            >
+                              No points this month. Support to rank up!
+                            </div>
+                          </Show>
+                        </div>
+                      </Show>
+                    </div>
+
+                    <div
+                      class="border-t pt-2 text-center text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-1"
+                      style={{
                         "border-color": config().cardBorderColor,
                         color: config().generalTextColor,
                       }}
                     >
-                      <p>
-                        <strong>1. Non-Refundable:</strong> All support payments
-                        are voluntary and strictly non-refundable.
-                      </p>
-                      <p>
-                        <strong>2. Display Consent:</strong> By submitting, you
-                        consent to displaying your nickname and message on the
-                        live streaming overlay.
-                      </p>
+                      🪙 1 THB = 1 Point
                     </div>
-                  </Show>
-
-                  <div
-                    class="text-[10px] leading-normal text-center px-1"
-                    style={{ color: hexToRgba(config().generalTextColor, 0.7) }}
-                  >
-                    By supporting, you agree to our{" "}
-                    <button
-                      type="button"
-                      onClick={() => setIsTosExpanded(!isTosExpanded())}
-                      aria-expanded={isTosExpanded() ? "true" : "false"}
-                      aria-controls="tos-collapsed-content"
-                      class="font-bold underline cursor-pointer text-[10px]"
-                      style={{ color: config().generalTextColor }}
-                    >
-                      Terms & Privacy Policy
-                    </button>
-                    .
                   </div>
-                </div>
-
-                <Show when={turnstileSiteKey()}>
-                  <div
-                    id="turnstile-container"
-                    class="w-full flex justify-center transition-all duration-300 py-1"
-                    style={{
-                      display: turnstileToken() ? "none" : "flex",
-                      "min-height": "65px",
-                    }}
-                  ></div>
                 </Show>
-
-                <button
-                  type="submit"
-                  disabled={
-                    actionLoading() ||
-                    cooldownRemaining() > 0 ||
-                    (turnstileSiteKey() !== "" && !turnstileToken())
-                  }
-                  aria-busy={actionLoading() ? "true" : "false"}
-                  class="w-full py-4 text-base font-black rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed tracking-wider uppercase"
-                  style={{
-                    "background-color":
-                      cooldownRemaining() > 0
-                        ? "#64748b"
-                        : config().submitBtnColor,
-                    color: config().submitBtnTextColor || "#ffffff",
-                  }}
-                >
-                  <Show
-                    when={cooldownRemaining() > 0}
-                    fallback={
-                      <Show
-                        when={actionLoading()}
-                        fallback={config().submitBtnText}
-                      >
-                        Generating QR Code...
-                      </Show>
-                    }
-                  >
-                    Wait {cooldownRemaining()}s... ⏳
-                  </Show>
-                </button>
-              </form>
+              </div>
             </div>
           </div>
         </div>

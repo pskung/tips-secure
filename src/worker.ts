@@ -180,13 +180,23 @@ async function retryAlertInBackground(
 
   await db
     .prepare(
-      "INSERT OR REPLACE INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO transactions (id, status, name, amount, created_at) VALUES (?, ?, ?, ?, ?)",
     )
-    .bind(transactionId, finalStatus, nowEpoch)
+    .bind(transactionId, finalStatus, donorName, amountInThb, nowEpoch)
     .run();
 
   if (finalStatus === "success") {
-    safeLog(`Background Retry Success: ${transactionId}`, "INFO");
+    const orderCountResult = await db
+      .prepare(
+        "SELECT COUNT(*) as count FROM transactions WHERE status = 'success'",
+      )
+      .first<{ count: number }>();
+    const currentOrderNo = orderCountResult?.count || 1;
+
+    safeLog(
+      `[Order #${currentOrderNo}] Successfully added ${amountInThb} points to ${donorName}. (Background Retry Success)`,
+      "INFO",
+    );
   } else {
     safeLog(`Background Retry Permanently Failed: ${transactionId}`, "ERROR");
   }
@@ -221,16 +231,56 @@ api.use("*", async (c, next) => {
           CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
             status TEXT NOT NULL,
+            name TEXT,
+            amount REAL,
             created_at INTEGER NOT NULL
           )
         `),
       ]);
+
+      try {
+        await db.prepare("ALTER TABLE transactions ADD COLUMN name TEXT").run();
+      } catch {}
+      try {
+        await db
+          .prepare("ALTER TABLE transactions ADD COLUMN amount REAL")
+          .run();
+      } catch {}
+
       isDbInitialized = true;
     } catch (err) {
       safeLog("Database auto-bootstrap failed", "ERROR", err);
     }
   }
   await next();
+});
+
+api.get("/leaderboard", async (c) => {
+  const db = c.env.DB;
+  if (!db) return c.json([]);
+  try {
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    const thirtyDaysAgo = currentEpoch - 30 * 24 * 60 * 60;
+
+    const results = await db
+      .prepare(
+        `
+        SELECT name, SUM(amount) as points 
+        FROM transactions 
+        WHERE status = 'success' AND name IS NOT NULL AND name != '' AND created_at >= ?
+        GROUP BY name 
+        ORDER BY points DESC 
+        LIMIT 5
+      `,
+      )
+      .bind(thirtyDaysAgo)
+      .all<{ name: string; points: number }>();
+
+    return c.json(results.results || []);
+  } catch (error) {
+    safeLog("Leaderboard fetch failed. Returning empty list.", "WARN", error);
+    return c.json([]);
+  }
 });
 
 api.get("/theme", async (c) => {
@@ -455,7 +505,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
 
     if (amount < minDonationAmount) {
       return c.json(
-        { error: `Donation must be at least ${minDonationAmount} THB.` },
+        { error: `Min support is at least ${minDonationAmount} THB.` },
         400,
       );
     }
@@ -533,6 +583,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
     const authHeader =
       "Basic " + btoa(`${env.BEAM_MERCHANT_ID}:${env.BEAM_API_KEY}`);
 
+    // ส่งข้อมูลบันทึก Note สำหรับ Webhook เคลียร์ระบบ
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
       headers: {
@@ -544,7 +595,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
         order: {
           currency: "THB",
           netAmount: netAmountInSatang,
-          description: `Support payment by ${sanitizedName}`,
+          description: `Leaderboard point purchase by ${sanitizedName}`,
           referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
           internalNote: JSON.stringify({
             donor_name: sanitizedName,
@@ -732,17 +783,34 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       if (fastPath.slSuccess && fastPath.seSuccess) {
         await db
           .prepare(
-            "INSERT INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+            "INSERT INTO transactions (id, status, name, amount, created_at) VALUES (?, ?, ?, ?, ?)",
           )
-          .bind(transactionId, "success", nowEpoch)
+          .bind(transactionId, "success", donorName, amountInThb, nowEpoch)
           .run();
-        safeLog(`Fast-Path success: ${transactionId}`, "INFO");
+
+        const orderCountResult = await db
+          .prepare(
+            "SELECT COUNT(*) as count FROM transactions WHERE status = 'success'",
+          )
+          .first<{ count: number }>();
+        const currentOrderNo = orderCountResult?.count || 1;
+
+        safeLog(
+          `[Order #${currentOrderNo}] Added ${amountInThb} points successfully to ${donorName}. System balance updated.`,
+          "INFO",
+        );
       } else {
         await db
           .prepare(
-            "INSERT INTO transactions (id, status, created_at) VALUES (?, ?, ?)",
+            "INSERT INTO transactions (id, status, name, amount, created_at) VALUES (?, ?, ?, ?, ?)",
           )
-          .bind(transactionId, "retry_pending", nowEpoch)
+          .bind(
+            transactionId,
+            "retry_pending",
+            donorName,
+            amountInThb,
+            nowEpoch,
+          )
           .run();
 
         ctx.waitUntil(
@@ -760,11 +828,11 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
       }
 
       if (Math.random() < 0.01) {
-        const sevenDaysAgo = nowEpoch - 7 * 24 * 60 * 60;
+        const sixtyDaysAgo = nowEpoch - 60 * 24 * 60 * 60; // 60 Days retention
         ctx.waitUntil(
           db
             .prepare("DELETE FROM transactions WHERE created_at < ?")
-            .bind(sevenDaysAgo)
+            .bind(sixtyDaysAgo)
             .run()
             .catch((err: any) =>
               safeLog("D1 old transaction purging failed", "WARN", err),
