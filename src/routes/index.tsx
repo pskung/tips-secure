@@ -408,7 +408,7 @@ export default function Home() {
       </style>
 
       <main
-        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-6 bg-cover bg-center bg-no-repeat bg-fixed"
+        class="custom-font-root flex min-h-screen flex-col relative select-none overflow-x-hidden pb-2 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           "--main-font-family": `'${activeFont()}'`,
           "background-image":
