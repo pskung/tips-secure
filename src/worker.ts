@@ -23,6 +23,43 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+async function getOrGenerateJwtSecret(db: D1Database): Promise<string> {
+  try {
+    const result = await db
+      .prepare("SELECT value FROM settings WHERE key = ?")
+      .bind("jwt_signing_key")
+      .first<{ value: string }>();
+
+    if (result && result.value.trim() !== "") {
+      return result.value;
+    }
+
+    const rawBytes = new Uint8Array(32);
+    crypto.getRandomValues(rawBytes);
+    const generatedSecret = Array.from(rawBytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    await db
+      .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+      .bind("jwt_signing_key", generatedSecret)
+      .run();
+
+    safeLog(
+      "System: Successfully auto-generated a secure JWT_SECRET and saved to D1.",
+      "INFO",
+    );
+    return generatedSecret;
+  } catch (error) {
+    safeLog(
+      "Fallback triggered: DB error during JWT secret retrieval.",
+      "WARN",
+      error,
+    );
+    return "emergency_recovery_fallback_secret_key_2026_tips_secure";
+  }
+}
+
 const EXTERNAL_API = {
   STREAMLABS_DONATIONS: "https://streamlabs.com/api/v2.0/donations",
   STREAMELEMENTS_TIPS: (channelId: string) =>
@@ -293,27 +330,17 @@ api.get("/theme", async (c) => {
 });
 
 api.get("/admin/verify", async (c) => {
+  const db = c.env.DB;
   const authHeader = c.req.header("Authorization");
   const clientToken = authHeader?.replace("Bearer ", "");
-  const expectedPassword = c.env.ADMIN_PASSWORD;
-
-  if (!expectedPassword || expectedPassword.trim() === "") {
-    safeLog(
-      "Critical Error: ADMIN_PASSWORD is not set or empty in environment.",
-      "ERROR",
-    );
-    return c.json(
-      { valid: false, error: "System validation not configured." },
-      500,
-    );
-  }
+  const jwtSecretKey = await getOrGenerateJwtSecret(db);
 
   if (!clientToken) {
     return c.json({ valid: false, error: "Missing authorization token." }, 401);
   }
 
   try {
-    const decoded = await verify(clientToken, expectedPassword, "HS256");
+    const decoded = await verify(clientToken, jwtSecretKey, "HS256");
     if (decoded && decoded.role === "admin") {
       return c.json({ valid: true }, 200);
     }
@@ -326,10 +353,12 @@ api.get("/admin/verify", async (c) => {
 api.post("/admin/login", jsonPayloadLimit, async (c) => {
   try {
     const env = c.env;
+    const db = env.DB;
     const body = await c.req.json();
     const inputPassword = body.password;
     const turnstileToken = body.turnstile_token;
     const expectedPassword = env.ADMIN_PASSWORD;
+    const jwtSecretKey = await getOrGenerateJwtSecret(db);
 
     if (!expectedPassword || expectedPassword.trim() === "") {
       safeLog(
@@ -389,7 +418,7 @@ api.post("/admin/login", jsonPayloadLimit, async (c) => {
       role: "admin",
       exp: Math.floor(Date.now() / 1000) + 7200,
     };
-    const token = await sign(payload, expectedPassword, "HS256");
+    const token = await sign(payload, jwtSecretKey, "HS256");
 
     return c.json({ success: true, token }, 200);
   } catch (error) {
@@ -405,36 +434,53 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
 
     const origin = c.req.header("origin");
     const url = new URL(c.req.url);
-    const host = c.req.header("host") || url.host;
-    const protocol = c.req.header("x-forwarded-proto") || url.protocol;
-    const expectedOrigin = `${protocol}://${host}`;
+    const hostHeader = c.req.header("host") || url.host;
 
-    if (!origin || origin !== expectedOrigin) {
+    let isCsrfSafe = false;
+    if (origin) {
+      try {
+        const originUrl = new URL(origin);
+        const originHostname = originUrl.hostname;
+        const hostUrl = new URL(`${url.protocol}//${hostHeader}`);
+        const requestHostname = hostUrl.hostname;
+
+        if (originHostname === requestHostname) {
+          isCsrfSafe = true;
+        }
+      } catch {
+        isCsrfSafe = false;
+      }
+    } else {
+      const referer = c.req.header("referer");
+      if (referer) {
+        try {
+          const refererUrl = new URL(referer);
+          const hostUrl = new URL(`${url.protocol}//${hostHeader}`);
+          if (refererUrl.hostname === hostUrl.hostname) {
+            isCsrfSafe = true;
+          }
+        } catch {
+          isCsrfSafe = false;
+        }
+      }
+    }
+
+    if (!isCsrfSafe) {
       safeLog(
-        `Security Alert: CSRF Blocked on Admin Save from ${origin}`,
+        `Security Alert: CSRF Blocked on Admin Save. Origin: ${origin || "None"}`,
         "WARN",
       );
       return c.json({ error: "Rejected Cross-Origin action" }, 403);
     }
 
     const authHeader = c.req.header("Authorization");
-    const expectedPassword = env.ADMIN_PASSWORD;
-
-    if (!expectedPassword || expectedPassword.trim() === "") {
-      safeLog(
-        "Critical Error: ADMIN_PASSWORD is not set or empty in environment.",
-        "ERROR",
-      );
-      return c.json({ error: "Admin authentication password is not set" }, 500);
-    }
-
     const clientToken = authHeader?.replace("Bearer ", "");
     if (!clientToken) {
       return c.json({ error: "Unauthorized: Missing token." }, 401);
     }
-
+    const jwtSecretKey = await getOrGenerateJwtSecret(db);
     try {
-      const decoded = await verify(clientToken, expectedPassword, "HS256");
+      const decoded = await verify(clientToken, jwtSecretKey, "HS256");
       if (!decoded || decoded.role !== "admin") {
         return c.json({ error: "Unauthorized: Invalid credentials." }, 401);
       }

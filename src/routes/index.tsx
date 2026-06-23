@@ -131,6 +131,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = createSignal<"support" | "leaderboard">(
     "support",
   );
+  const [activeModal, setActiveModal] = createSignal<
+    "terms" | "refund" | "privacy" | "contact" | null
+  >(null);
   const [leaderboard, setLeaderboard] = createSignal<
     { name: string; points: number }[]
   >([]);
@@ -383,6 +386,37 @@ export default function Home() {
       alert("Payment system is temporarily unavailable.");
       setActionLoading(false);
     }
+  };
+
+  const modalContent = {
+    terms: {
+      title: "Terms of Service",
+      text: `1. Points Purchase System: This portal provides interactive community points for supporting the creator. 1 THB is equivalent to 1 community activity point.
+2. Immediate Digital Point Delivery: Points will be instantly credited and displayed on the monthly Leaderboard once your payment is successfully completed. Since all digital goods delivery processes are irreversibly executed at the time of purchase, points acquired cannot be returned, exchanged, or converted into physical cash under any circumstances.
+3. Strict Personal Use: Points are strictly intended for stream interactions (such as song requests, voting participation, alert widgets). They hold no physical or monetary cash-out value.
+4. Non-transferability: Points are bounded to the username provided during checkout and cannot be merged, sold, or transferred to other accounts.`,
+    },
+    refund: {
+      title: "Refund & Return Policy",
+      text: `1. Instant Digital Delivery: Because all points purchased on this portal are digitally rendered and instantly delivered to the active database upon webhook verification, all transactions are final.
+2. Non-Refundable Policy: Under any circumstances (including user input errors, changed minds, or internet connection drops on the viewer's side), points purchased are strictly non-refundable and non-returnable.
+3. System Discrepancies: If a transaction was processed successfully by the bank but fails to display on stream within 24 hours, please contact the creator immediately via the support email listed in our 'Contact Us' section with your payment receipt for manual validation.`,
+    },
+    privacy: {
+      title: "Privacy & Data Protection Policy (PDPA)",
+      text: `1. Information We Collect: To securely facilitate transaction accounting, we collect only your provided nickname, supportive messages, and payment reference numbers.
+2. Complete Bank Data Isolation: We DO NOT process, log, or store sensitive credit card or bank account details. All transactions are securely completed through PCI-DSS certified gateway, Beam Checkout.
+3. Data Retention and Deletion: In accordance with our privacy values, transaction database records containing nicknames and messages are subject to automatic deletion after 60 days to respect viewer privacy.
+4. Third-party Sharing: Your data is never sold, traded, or distributed to any third party under any circumstances.`,
+    },
+    contact: {
+      title: "Contact Us",
+      text: `For any inquiries, transaction issues, or business partnerships, please contact the creator team through the channel below:
+
+• Brand/Creator Name: ${config().vtuberName}
+• Support & Helpdesk Email: ${config().supportEmail || "support@yourdomain.com"}
+• Country of Business: Thailand`,
+    },
   };
 
   return (
@@ -865,62 +899,90 @@ export default function Home() {
           </div>
         </div>
         <footer
-          class="mt-auto pt-3 pb-1 border-t text-center text-[10px] space-y-1 z-10"
+          class="mt-auto pt-4 pb-3 border-t text-center text-[10px] space-y-1.5 z-10"
           style={{
             "border-color": config().cardBorderColor,
             color: hexToRgba(config().generalTextColor, 0.6),
           }}
         >
-          <div class="flex flex-wrap justify-center gap-x-5 gap-y-1">
+          <div class="flex flex-wrap justify-center gap-x-5 gap-y-1.5">
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "TERMS OF SERVICE:\n- 1 THB equals 1 Point.\n- Points are used strictly for community interactive events, song requests, and streamer-led polls.\n- Sharing or trading points outside the platform is prohibited.",
-                )
-              }
-              class="underline cursor-pointer hover:opacity-80"
+              onClick={() => setActiveModal("terms")}
+              class="underline cursor-pointer hover:opacity-80 font-bold transition"
             >
               Terms of Service
             </button>
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "REFUND POLICY:\n- All point purchases are delivered digitally and instantly.\n- Since digital delivery is irreversible, all transactions are strictly non-refundable and non-returnable under any circumstances.",
-                )
-              }
-              class="underline cursor-pointer hover:opacity-80"
+              onClick={() => setActiveModal("refund")}
+              class="underline cursor-pointer hover:opacity-80 font-bold transition"
             >
               Refund Policy
             </button>
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "PRIVACY POLICY:\n- We collect only your nickname, payment details, and optional messages for processing transactions.\n- We adhere to the Thailand PDPA regulations and do not share your private data with third parties.",
-                )
-              }
-              class="underline cursor-pointer hover:opacity-80"
+              onClick={() => setActiveModal("privacy")}
+              class="underline cursor-pointer hover:opacity-80 font-bold transition"
             >
               Privacy Policy
             </button>
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  `CONTACT US:\nCreator Name: ${config().vtuberName}\nEmail: ${config().supportEmail || "support@yourdomain.com"}\nBusiness Location: Thailand`,
-                )
-              }
-              class="underline cursor-pointer hover:opacity-80"
+              onClick={() => setActiveModal("contact")}
+              class="underline cursor-pointer hover:opacity-80 font-bold transition"
             >
               Contact Us
             </button>
           </div>
           <p class="text-[9px] tracking-wide">
-            © {new Date().getFullYear()} {config().vtuberName} Points Store.
-            Powered by Hono & D1 SQLite.
+            © {new Date().getFullYear()} {config().vtuberName} Support Store.
+            Powered by Hono & Cloudflare Workers.
           </p>
+
+          {/* ตรรกะแสดงผลกล่องลอย (Modal) เมื่อแอดมินหรือผู้ชมคลิกเปิดอ่าน */}
+          <Show when={activeModal()}>
+            {(modalType) => (
+              <div
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+                onClick={() => setActiveModal(null)}
+              >
+                <div
+                  class="bg-white text-[#2C2520] border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-md w-full max-h-[75vh] overflow-y-auto shadow-2xl text-left flex flex-col justify-between"
+                  onClick={(e) => e.stopPropagation()} // ป้องกันกล่องปิดตัวเองเมื่อคลิกตัวข้อความด้านใน
+                >
+                  <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                      <h3 class="text-sm font-black uppercase tracking-wider text-slate-800">
+                        {modalContent[modalType()].title}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal(null)}
+                        class="text-slate-400 hover:text-slate-600 font-bold text-base cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <p class="text-xs leading-relaxed text-[#5C4F45] whitespace-pre-line text-left select-text">
+                      {modalContent[modalType()].text}
+                    </p>
+                  </div>
+
+                  <div class="mt-6 border-t border-slate-100 pt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal(null)}
+                      class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-black rounded-xl cursor-pointer transition shadow-xs uppercase tracking-wider"
+                    >
+                      Understand & Acknowledge
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Show>
         </footer>
       </main>
     </Show>
