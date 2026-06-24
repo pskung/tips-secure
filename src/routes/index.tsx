@@ -870,13 +870,21 @@ export default function Home() {
                     </div>
 
                     <div
-                      class="border-t pt-2 text-center text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-1"
-                      style={{
-                        "border-color": config().cardBorderColor,
-                        color: config().generalTextColor,
-                      }}
+                      class="border-t pt-2.5 flex flex-col items-center justify-center gap-1"
+                      style={{ "border-color": config().cardBorderColor }}
                     >
-                      🪙 1 THB = 1 Point
+                      <div
+                        class="text-center text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-1"
+                        style={{ color: config().generalTextColor }}
+                      >
+                        🪙 1 THB = 1 Point
+                      </div>
+                      <div
+                        class="text-[8px] font-bold opacity-60 tracking-wider text-center uppercase"
+                        style={{ color: config().generalTextColor }}
+                      >
+                        *Leaderboard updates daily at 00:00 (UTC+7)
+                      </div>
                     </div>
                   </div>
                 </Show>
