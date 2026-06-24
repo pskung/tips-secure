@@ -33,17 +33,21 @@ function parseDirectImageUrl(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  const imgHtmlRegex = /<img[^>]+src=["']([^"']+)["']/i;
-  const htmlMatch = trimmed.match(imgHtmlRegex);
-  if (htmlMatch && htmlMatch[1]) return htmlMatch[1];
-
-  const bbcodeRegex = /\[img\](.*?)\[\/img\]/i;
-  const bbMatch = trimmed.match(bbcodeRegex);
-  if (bbMatch && bbMatch[1]) return bbMatch[1];
-
-  const urlRegex = /(https?:\/\/[^\s"'<>]+)/;
-  const urlMatch = trimmed.match(urlRegex);
-  if (urlMatch && urlMatch[1]) return urlMatch[1];
+  if (
+    trimmed.startsWith("<") &&
+    typeof window !== "undefined" &&
+    window.DOMParser
+  ) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(trimmed, "text/html");
+      const img = doc.querySelector("img");
+      if (img && img.src) return img.src;
+    } catch {}
+  }
+  if (URL.canParse(trimmed)) {
+    return trimmed;
+  }
 
   return trimmed;
 }

@@ -320,21 +320,42 @@ api.get("/theme", async (c) => {
       }
 
       if (!cacheData || cacheData.last_updated !== bangkokDateStr) {
-        const currentEpoch = Math.floor(Date.now() / 1000);
-        const thirtyDaysAgo = currentEpoch - 30 * 24 * 60 * 60;
+        const ictOffset = 7 * 60 * 60 * 1000;
+        const now = new Date();
+
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Bangkok",
+          year: "numeric",
+          month: "numeric",
+        });
+
+        const parts = formatter.formatToParts(now);
+        const ictYearStr =
+          parts.find((p) => p.type === "year")?.value || "2026";
+        const ictMonthStr = parts.find((p) => p.type === "month")?.value || "1";
+
+        const ictYear = parseInt(ictYearStr, 10);
+        const ictMonth = parseInt(ictMonthStr, 10) - 1;
+
+        const startOfMonthICT = new Date(
+          Date.UTC(ictYear, ictMonth, 1, 0, 0, 0),
+        );
+        const startOfMonthEpoch = Math.floor(
+          (startOfMonthICT.getTime() - ictOffset) / 1000,
+        );
 
         const dbResults = await db
           .prepare(
             `
-            SELECT name, SUM(amount) as points
-            FROM transactions
-            WHERE status = 'success' AND name IS NOT NULL AND name != '' AND created_at >= ?
-            GROUP BY name
-            ORDER BY points DESC
-            LIMIT 5
-          `,
+                SELECT name, SUM(amount) as points
+                FROM transactions
+                WHERE status = 'success' AND name IS NOT NULL AND name != '' AND created_at >= ?
+                GROUP BY name
+                ORDER BY points DESC
+                LIMIT 5
+              `,
           )
-          .bind(thirtyDaysAgo)
+          .bind(startOfMonthEpoch)
           .all<{ name: string; points: number }>();
 
         leaderboardData = dbResults.results || [];
@@ -672,7 +693,6 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
     const authHeader =
       "Basic " + btoa(`${env.BEAM_MERCHANT_ID}:${env.BEAM_API_KEY}`);
 
-    // ส่งข้อมูลบันทึก Note สำหรับ Webhook เคลียร์ระบบ
     const response = await fetch(`${beamUrl}/api/v1/payment-links`, {
       method: "POST",
       headers: {
@@ -685,7 +705,7 @@ api.post("/donate", jsonPayloadLimit, async (c) => {
           currency: "THB",
           netAmount: netAmountInSatang,
           description: `Leaderboard point purchase by ${sanitizedName}`,
-          referenceId: `donate_${now}_${Math.random().toString(36).substring(2, 7)}`,
+          referenceId: `donate_${now}_${crypto.randomUUID().split("-")[0]}`,
           internalNote: JSON.stringify({
             donor_name: sanitizedName,
             donor_message: sanitizedMessage || "",

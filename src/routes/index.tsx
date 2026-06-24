@@ -883,7 +883,8 @@ export default function Home() {
                         class="text-[8px] font-bold opacity-60 tracking-wider text-center uppercase"
                         style={{ color: config().generalTextColor }}
                       >
-                        *Leaderboard updates daily at 00:00 (UTC+7)
+                        Leaderboard resets monthly. Updates daily at 00:00
+                        (UTC+7)
                       </div>
                     </div>
                   </div>
