@@ -159,11 +159,23 @@ export default function Home() {
     setCustomAmountVal("");
 
     try {
-      const res = await fetch("/api/theme");
+      const isAdmin = !!sessionStorage.getItem("admin_token");
+
+      const apiUrl = isAdmin
+        ? `/api/theme?nocache=${Date.now()}`
+        : "/api/theme";
+
+      const res = await fetch(apiUrl);
       if (res.ok) {
-        const payload = (await res.json()) as ThemeResponse;
+        const payload = (await res.json()) as {
+          theme: any;
+          leaderboard: any[];
+          turnstileSiteKey: string;
+        };
         setThemeData(payload.theme);
         setTurnstileSiteKey(payload.turnstileSiteKey);
+
+        setLeaderboard(payload.leaderboard || []);
       } else {
         setThemeData(defaultTheme);
       }
@@ -304,34 +316,8 @@ export default function Home() {
   });
 
   const fetchLeaderboard = async () => {
-    setLeaderboardLoading(true);
     setAnimateBar(false);
-    try {
-      const res = await fetch("/api/leaderboard");
-      if (res.ok) {
-        const data = (await res.json()) as { name: string; points: number }[];
-        setLeaderboard(data);
-      } else {
-        setLeaderboard([
-          { name: "Top Supporter", points: 2500 },
-          { name: "Elite Member", points: 1500 },
-          { name: "Loyal Viewer", points: 1000 },
-          { name: "Active Chat", points: 500 },
-          { name: "New Friend", points: 100 },
-        ]);
-      }
-    } catch {
-      setLeaderboard([
-        { name: "Top Supporter", points: 2500 },
-        { name: "Elite Member", points: 1500 },
-        { name: "Loyal Viewer", points: 1000 },
-        { name: "Active Chat", points: 500 },
-        { name: "New Friend", points: 100 },
-      ]);
-    } finally {
-      setLeaderboardLoading(false);
-      setTimeout(() => setAnimateBar(true), 120);
-    }
+    setTimeout(() => setAnimateBar(true), 120);
   };
 
   const maxPoints = createMemo(() => {

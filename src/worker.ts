@@ -292,41 +292,84 @@ api.use("*", async (c, next) => {
   await next();
 });
 
-api.get("/leaderboard", async (c) => {
-  const db = c.env.DB;
-  if (!db) return c.json([]);
-  try {
-    const currentEpoch = Math.floor(Date.now() / 1000);
-    const thirtyDaysAgo = currentEpoch - 30 * 24 * 60 * 60;
-
-    const results = await db
-      .prepare(
-        `
-        SELECT name, SUM(amount) as points 
-        FROM transactions 
-        WHERE status = 'success' AND name IS NOT NULL AND name != '' AND created_at >= ?
-        GROUP BY name 
-        ORDER BY points DESC 
-        LIMIT 5
-      `,
-      )
-      .bind(thirtyDaysAgo)
-      .all<{ name: string; points: number }>();
-
-    return c.json(results.results || []);
-  } catch (error) {
-    safeLog("Leaderboard fetch failed. Returning empty list.", "WARN", error);
-    return c.json([]);
-  }
-});
-
 api.get("/theme", async (c) => {
   const turnstileSiteKey = c.env.TURNSTILE_SITE_KEY || "";
-  const theme = await getTheme(c.env.DB);
-  return c.json({ theme, turnstileSiteKey }, 200, {
-    "Cache-Control":
-      "public, max-age=5, s-maxage=10, stale-while-revalidate=20",
-  });
+  const db = c.env.DB;
+  const theme = await getTheme(db);
+
+  let leaderboardData: any[] = [];
+
+  if (db) {
+    try {
+      const cachedRecord = await db
+        .prepare("SELECT value FROM settings WHERE key = ?")
+        .bind("leaderboard_daily_cache")
+        .first<{ value: string }>();
+
+      const bangkokDateStr = new Date(Date.now() + 7 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      let cacheData: { last_updated: string; data: any[] } | null = null;
+
+      if (cachedRecord) {
+        try {
+          cacheData = JSON.parse(cachedRecord.value);
+        } catch {
+          cacheData = null;
+        }
+      }
+
+      if (!cacheData || cacheData.last_updated !== bangkokDateStr) {
+        const currentEpoch = Math.floor(Date.now() / 1000);
+        const thirtyDaysAgo = currentEpoch - 30 * 24 * 60 * 60;
+
+        const dbResults = await db
+          .prepare(
+            `
+            SELECT name, SUM(amount) as points
+            FROM transactions
+            WHERE status = 'success' AND name IS NOT NULL AND name != '' AND created_at >= ?
+            GROUP BY name
+            ORDER BY points DESC
+            LIMIT 5
+          `,
+          )
+          .bind(thirtyDaysAgo)
+          .all<{ name: string; points: number }>();
+
+        leaderboardData = dbResults.results || [];
+        const newCacheValue = {
+          last_updated: bangkokDateStr,
+          data: leaderboardData,
+        };
+
+        await db
+          .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+          .bind("leaderboard_daily_cache", JSON.stringify(newCacheValue))
+          .run();
+      } else {
+        leaderboardData = cacheData.data;
+      }
+    } catch (error) {
+      safeLog("Leaderboard fetch failed during theme bundling.", "WARN", error);
+    }
+  }
+
+  const hasNoCache = c.req.query("nocache");
+  const headers: Record<string, string> = {};
+
+  if (hasNoCache) {
+    headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+  } else {
+    headers["Cache-Control"] =
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=30";
+  }
+
+  return c.json(
+    { theme, leaderboard: leaderboardData, turnstileSiteKey },
+    200,
+    headers,
+  );
 });
 
 api.get("/admin/verify", async (c) => {
