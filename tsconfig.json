@@ -3,6 +3,7 @@
     "moduleResolution": "bundler",
     "target": "ESNext",
     "module": "ESNext",
+    "lib": ["ESNext"],
     "strict": true,
     "allowJs": true,
     "checkJs": true,
