@@ -122,6 +122,22 @@ function SkeletonUI() {
   );
 }
 
+function hexToRgba(hex: string, opacity: number): string {
+  if (!hex) return `rgba(255, 255, 255, ${opacity})`;
+  let cleanHex = hex.trim().replace("#", "");
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex
+      .split("")
+      .map((char) => char + char)
+      .join("");
+  }
+  if (cleanHex.length !== 6) return hex;
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 export default function Home() {
   const [themeData, setThemeData] = createSignal<any>(null);
   const [turnstileSiteKey, setTurnstileSiteKey] = createSignal<string>("");
@@ -254,22 +270,6 @@ export default function Home() {
       generalTextColorFooter: hexToRgba(conf.generalTextColor, 0.6),
     };
   });
-
-  const hexToRgba = (hex: string, opacity: number): string => {
-    if (!hex) return `rgba(255, 255, 255, ${opacity})`;
-    let cleanHex = hex.trim().replace("#", "");
-    if (cleanHex.length === 3) {
-      cleanHex = cleanHex
-        .split("")
-        .map((char) => char + char)
-        .join("");
-    }
-    if (cleanHex.length !== 6) return hex;
-    const r = parseInt(cleanHex.substring(0, 2), 16);
-    const g = parseInt(cleanHex.substring(2, 4), 16);
-    const b = parseInt(cleanHex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
 
   const initTurnstile = () => {
     if (typeof window === "undefined" || !(window as any).turnstile) return;
