@@ -245,6 +245,16 @@ export default function Home() {
     ].filter((link) => link.url && link.url.trim() !== "");
   });
 
+  const rgbaColors = createMemo(() => {
+    const conf = config();
+    return {
+      inputPlaceholder: hexToRgba(conf.inputTextColor, 0.6),
+      generalTextColorFaded: hexToRgba(conf.generalTextColor, 0.7),
+      inputFaded: hexToRgba(conf.inputTextColor, 0.1),
+      generalTextColorFooter: hexToRgba(conf.generalTextColor, 0.6),
+    };
+  });
+
   const hexToRgba = (hex: string, opacity: number): string => {
     if (!hex) return `rgba(255, 255, 255, ${opacity})`;
     let cleanHex = hex.trim().replace("#", "");
@@ -536,10 +546,7 @@ export default function Home() {
                 style={{
                   "border-color": config().cardBorderColor,
                   "background-color": config().cardBgColor,
-                  "--placeholder-color": hexToRgba(
-                    config().inputTextColor,
-                    0.6,
-                  ),
+                  "--placeholder-color": rgbaColors().inputPlaceholder,
                   "--placeholder-font": `'${activeFont()}'`,
                 }}
               >
@@ -712,7 +719,7 @@ export default function Home() {
                       <div
                         class="absolute bottom-1 right-3 text-[9px] select-none"
                         style={{
-                          color: hexToRgba(config().inputTextColor, 0.6),
+                          color: rgbaColors().inputPlaceholder,
                         }}
                       >
                         {255 - message().length}
@@ -723,7 +730,7 @@ export default function Home() {
                       <div
                         class="text-[9px] leading-normal"
                         style={{
-                          color: hexToRgba(config().generalTextColor, 0.7),
+                          color: rgbaColors().generalTextColorFaded,
                         }}
                       >
                         By purchasing points, you agree to our standard{" "}
@@ -832,10 +839,7 @@ export default function Home() {
                                 <div
                                   class="w-full h-1.5 rounded-full overflow-hidden bg-black/5"
                                   style={{
-                                    "background-color": hexToRgba(
-                                      config().inputTextColor,
-                                      0.1,
-                                    ),
+                                    "background-color": rgbaColors().inputFaded,
                                   }}
                                 >
                                   <div
@@ -856,10 +860,7 @@ export default function Home() {
                             <div
                               class="text-center py-10 text-xs"
                               style={{
-                                color: hexToRgba(
-                                  config().generalTextColor,
-                                  0.6,
-                                ),
+                                color: rgbaColors().generalTextColorFooter,
                               }}
                             >
                               No points this month. Support to rank up!
@@ -897,7 +898,7 @@ export default function Home() {
           class="mt-auto pt-4 pb-3 border-t text-center text-[10px] space-y-1.5 z-10"
           style={{
             "border-color": config().cardBorderColor,
-            color: hexToRgba(config().generalTextColor, 0.6),
+            color: rgbaColors().generalTextColorFooter,
           }}
         >
           <div class="flex flex-wrap justify-center gap-x-5 gap-y-1.5">
@@ -935,8 +936,8 @@ export default function Home() {
             Powered by Hono & Cloudflare Workers.
           </p>
 
-          <Show when={activeModal()}>
-            {(modalType) => (
+          <Show when={activeModal()} keyed>
+            {(modalType: "terms" | "refund" | "privacy" | "contact") => (
               <div
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
                 onClick={() => setActiveModal(null)}
@@ -948,7 +949,7 @@ export default function Home() {
                   <div class="space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                       <h3 class="text-sm font-black uppercase tracking-wider text-slate-800">
-                        {modalContent()[modalType()].title}
+                        {modalContent()[modalType].title}
                       </h3>
                       <button
                         type="button"
@@ -960,7 +961,7 @@ export default function Home() {
                     </div>
 
                     <p class="text-xs leading-relaxed text-[#5C4F45] whitespace-pre-line text-left select-text">
-                      {modalContent()[modalType()].text}
+                      {modalContent()[modalType].text}
                     </p>
                   </div>
 

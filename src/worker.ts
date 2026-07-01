@@ -259,20 +259,24 @@ api.use("*", async (c, next) => {
     try {
       await db.batch([
         db.prepare(`
-          CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-          )
-        `),
+              CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+              )
+            `),
         db.prepare(`
-          CREATE TABLE IF NOT EXISTS transactions (
-            id TEXT PRIMARY KEY,
-            status TEXT NOT NULL,
-            name TEXT,
-            amount REAL,
-            created_at INTEGER NOT NULL
-          )
-        `),
+              CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                name TEXT,
+                amount REAL,
+                created_at INTEGER NOT NULL
+              )
+            `),
+        db.prepare(`
+              CREATE INDEX IF NOT EXISTS idx_transactions_status_created 
+              ON transactions(status, created_at)
+            `),
       ]);
 
       try {
@@ -306,9 +310,13 @@ api.get("/theme", async (c) => {
         .bind("leaderboard_daily_cache")
         .first<{ value: string }>();
 
-      const bangkokDateStr = new Date(Date.now() + 7 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10);
+      const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Bangkok",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      const bangkokDateStr = dateFormatter.format(new Date());
       let cacheData: { last_updated: string; data: any[] } | null = null;
 
       if (cachedRecord) {
@@ -497,36 +505,16 @@ api.post("/admin/save", jsonPayloadLimit, async (c) => {
     const db = env.DB;
 
     const origin = c.req.header("origin");
-    const url = new URL(c.req.url);
-    const hostHeader = c.req.header("host") || url.host;
+    const referer = c.req.header("referer");
+    const requestHostname = new URL(c.req.url).hostname;
+    const originHostname = origin ? new URL(origin).hostname : null;
+    const refererHostname = referer ? new URL(referer).hostname : null;
 
     let isCsrfSafe = false;
-    if (origin) {
-      try {
-        const originUrl = new URL(origin);
-        const originHostname = originUrl.hostname;
-        const hostUrl = new URL(`${url.protocol}//${hostHeader}`);
-        const requestHostname = hostUrl.hostname;
-
-        if (originHostname === requestHostname) {
-          isCsrfSafe = true;
-        }
-      } catch {
-        isCsrfSafe = false;
-      }
-    } else {
-      const referer = c.req.header("referer");
-      if (referer) {
-        try {
-          const refererUrl = new URL(referer);
-          const hostUrl = new URL(`${url.protocol}//${hostHeader}`);
-          if (refererUrl.hostname === hostUrl.hostname) {
-            isCsrfSafe = true;
-          }
-        } catch {
-          isCsrfSafe = false;
-        }
-      }
+    if (originHostname && originHostname === requestHostname) {
+      isCsrfSafe = true;
+    } else if (refererHostname && refererHostname === requestHostname) {
+      isCsrfSafe = true;
     }
 
     if (!isCsrfSafe) {
@@ -935,19 +923,6 @@ api.post("/webhook/beam", jsonPayloadLimit, async (c) => {
           ),
         );
       }
-
-      if (Math.random() < 0.01) {
-        const sixtyDaysAgo = nowEpoch - 60 * 24 * 60 * 60; // 60 Days retention
-        ctx.waitUntil(
-          db
-            .prepare("DELETE FROM transactions WHERE created_at < ?")
-            .bind(sixtyDaysAgo)
-            .run()
-            .catch((err: any) =>
-              safeLog("D1 old transaction purging failed", "WARN", err),
-            ),
-        );
-      }
     }
     return c.json({ success: true }, 200);
   } catch (error) {
@@ -960,4 +935,27 @@ app.all("*", async (c) => {
   return await c.env.ASSETS.fetch(c.req.raw);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
+    const db = env.DB;
+    if (db) {
+      const sixtyDaysAgo = Math.floor(Date.now() / 1000) - 60 * 24 * 60 * 60;
+      ctx.waitUntil(
+        db
+          .prepare("DELETE FROM transactions WHERE created_at < ?")
+          .bind(sixtyDaysAgo)
+          .run()
+          .then(() => {
+            safeLog(
+              "Cron: Successfully purged transactions older than 60 days.",
+              "INFO",
+            );
+          })
+          .catch((err: unknown) =>
+            safeLog("Cron: D1 old transaction purging failed", "WARN", err),
+          ),
+      );
+    }
+  },
+};
